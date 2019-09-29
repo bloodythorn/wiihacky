@@ -1,3 +1,6 @@
+# Sublime Text project files
+*.sublime-*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
