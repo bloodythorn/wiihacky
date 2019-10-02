@@ -20,20 +20,6 @@ lg.basicConfig(
 CONFIG_NAME = 'config.yml'
 
 
-def to_dict(msg):
-    """Convert to dict()."""
-    output = {}
-    output['id'] = msg.id
-    output['author'] = msg.author.id
-    output['dest'] = msg.dest.id
-    output['subject'] = msg.subject
-    output['subreddit'] = msg.subreddit
-    output['created_utc'] = msg.created_utc
-    output['was_comment'] = msg.was_comment
-    output['body'] = msg.body
-    return output
-
-
 class WiiHacky(pr.Reddit):
     """WiiHacky's direct interface."""
 
