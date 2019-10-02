@@ -10,14 +10,16 @@ import praw as pr
 import yaml as yl
 
 FORMAT_STRING = '%(asctime)s:%(name)s:%(levelname)s:%(message)s'
-FORMAT_DATE = '%y-%m-%dT%H:%M:%S'
-LOG_NAME = 'log.txt'
 lg.basicConfig(
     level=lg.INFO,
-    format=FORMAT_STRING,
-    datefmt=FORMAT_DATE)
+    format=FORMAT_STRING)
 
 CONFIG_NAME = 'config.yml'
+
+# Output Text (all in one place for uniformity)
+# TODO Move to const?
+SC_USER = 'scraping user...'
+SC_COMP = 'scraping completed.'
 
 
 class WiiHacky(pr.Reddit):
@@ -30,7 +32,6 @@ class WiiHacky(pr.Reddit):
 
         # init logger
         self.log = lg.getLogger(self.__class__.__name__)
-        self.log.addHandler(lg.FileHandler(LOG_NAME))
         self.log.info("successfully initialized logger.")
 
         # init reddit instance
@@ -86,7 +87,7 @@ class WiiHacky(pr.Reddit):
         # Log
         info = self.log.info
 
-        info("scraping user...")
+        info(SC_USER)
         user = self.user
         output = {
             'me': user.me(),
@@ -97,21 +98,26 @@ class WiiHacky(pr.Reddit):
             'mult': [a.name for a in list(user.multireddits())],
             'pref': dict(self.user.preferences()),
             'subs': [a.id for a in list(user.subreddits())]}
-        info("scraping finished.")
+        info(SC_COMP)
         return output
 
     def scrape_inbox(self, freq=None):
         """Scrape inbox.
 
         This function will scrape the inbox and make sure it is up to date.
+
+        Return
+        ------
+        This will return a dictionary with all inbox data.
+
         """
-        self.log.info("scraping inbox...")
-        self.log.ingo("inbox scraping completed")
+        # Log
+        info = self.log.info
+        info("scraping inbox...")
+        info("inbox scraping completed")
 
 
 if __name__ == "__main__":
-    # TODO load a different config.
-    # TODO Custom logging level
     # TODO flesh out logger
     # TODO interactive mode
     WH = WiiHacky()
