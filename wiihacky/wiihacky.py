@@ -58,9 +58,6 @@ class WiiHacky(pr.Reddit):
         self.log.info("successfully initialized reddit instance.")
         self.log.info("logged in as %s", self.user.me())
 
-        # Scrapers
-        self._scrapers = []
-
     @staticmethod
     def load_config():
         """Get Configuration.
