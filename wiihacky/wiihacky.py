@@ -21,6 +21,7 @@ IN_LOGG = 'successfully initialized logger.'
 IN_SUCC = 'successfully initialized reddit instance.'
 IN_USER = 'logged in as %s'
 SC_USER = 'scraping user...'
+SC_INBX = 'scraping inbox...'
 SC_COMP = 'scraping completed.'
 RU_STRT = 'starting bot. press ctrl-c to interupt.'
 RU_INTR = 'ctrl-c interupt detected.'
@@ -68,11 +69,11 @@ class WiiHacky(pr.Reddit):
 
     def cache_object(self, obj):
         """Cache object."""
-        self.log.info(CO_OBJC)
         if isinstance(obj, (list, tuple)):
             for item in obj:
                 self.cache_object(item)
             return
+        self.log.info(CO_OBJC)
         self.log.error(CO_UNSP, type(obj))
 
     def run(self):
@@ -110,14 +111,14 @@ class WiiHacky(pr.Reddit):
         mult = list(user.multireddits())
         subs = list(user.subreddits())
         output = {
-            'me': user.me(),
-            'blck': [a.id for a in blck],
-            'frnd': [a.id for a in frnd],
-            'krma': user.karma(),
-            'mods': [a.id for a in mods],
-            'mult': [a.name for a in mult],
-            'pref': dict(self.user.preferences()),
-            'subs': [a.id for a in subs]}
+            'id': user.me().id,
+            'blocked': [a.id for a in blck],
+            'friends': [a.id for a in frnd],
+            'karma': user.karma(),
+            'moderating': [a.id for a in mods],
+            'multireddits': [a.name for a in mult],
+            'preferences': dict(self.user.preferences()),
+            'subscriptions': [a.id for a in subs]}
         self.cache_object([blck, frnd, mods, mult, subs])
         info(SC_COMP)
         return output
@@ -134,8 +135,8 @@ class WiiHacky(pr.Reddit):
         """
         # Log
         info = self.log.info
-        info("scraping inbox...")
-        info("inbox scraping completed")
+        info(SC_INBX)
+        info(SC_COMP)
 
 
 if __name__ == "__main__":
