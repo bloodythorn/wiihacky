@@ -50,18 +50,24 @@ class WiiHacky(pr.Reddit):
         A dictionary containing all configuration options.
 
         """
-        file_np = "{}/{}".format(os.getcwd(), CONFIG_NAME)
+        file_np = "{}/{}".format(os.getcwd(), const.LOG_FORMAT_STRING)
         with open(file_np, 'r') as config_file:
             return yl.load(config_file)
 
-    def cache_object(self, obj):
-        """Cache object."""
+    def scrape(self, obj):
+        """Cache object.
+
+        The idea behind this function is that in some instances, we scrape
+        items that might have pulled down items only discard them.
+
+        This function will check to make sure the item has already been
+        cached, cache it, and update it.
+        """
         if isinstance(obj, (list, tuple)):
             for item in obj:
-                self.cache_object(item)
+                self.scrape(item)
             return
-        self.log.info(CO_OBJC)
-        self.log.error(CO_UNSP, type(obj))
+        self.log.error(const.TXT_SCRP_NOT_SUPPORTED, type(obj))
 
     def run(self):
         """Run bot.
@@ -69,13 +75,13 @@ class WiiHacky(pr.Reddit):
         The bot will perform scheduled tasks and eventually respond to
         CLI-like commands until told to exit.
         """
-        self.log.info(RU_STRT)
+        self.log.info(const.TXT_RUN_START_BOT)
         # interactive (hopefully) loop
         try:
             while True:
                 sleep(0.5)
         except KeyboardInterrupt:
-            self.log.info(RU_INTR)
+            self.log.info(const.TXT_RUN_INTERUPT)
 
     def scrape_user(self):
         """Scrape user.
@@ -90,7 +96,7 @@ class WiiHacky(pr.Reddit):
         # Log
         info = self.log.info
 
-        info(SC_USER)
+        info(const.TXT_SCRP_USER)
         user = self.user
         blck = list(user.blocked())
         frnd = list(user.friends())
@@ -98,16 +104,17 @@ class WiiHacky(pr.Reddit):
         mult = list(user.multireddits())
         subs = list(user.subreddits())
         output = {
+            'record_type': user.__class__.__name__,
             'id': user.me().id,
-            'blocked': [a.id for a in blck],
-            'friends': [a.id for a in frnd],
-            'karma': user.karma(),
-            'moderating': [a.id for a in mods],
-            'multireddits': [a.name for a in mult],
-            'preferences': dict(self.user.preferences()),
-            'subscriptions': [a.id for a in subs]}
-        self.cache_object([blck, frnd, mods, mult, subs])
-        info(SC_COMP)
+            user.blocked.__name__: [a.id for a in blck],
+            user.friends.__name__: [a.id for a in frnd],
+            user.karma.__name__: user.karma(),
+            user.moderator_subreddits.__name__: [a.id for a in mods],
+            user.multireddits.__name__: [a.name for a in mult],
+            user.preferences.__class__.__name__: dict(user.preferences()),
+            user.subreddits.__name__: [a.id for a in subs]}
+        self.scrape([blck, frnd, mods, mult, subs])
+        info(const.TXT_SCRP_COMPLETE)
         return output
 
     def scrape_inbox(self):
