@@ -9,24 +9,11 @@ from time import sleep
 import praw as pr
 import yaml as yl
 
-FORMAT_STRING = '%(asctime)s:%(name)s:%(levelname)s:%(message)s'
+from . import const
+
 lg.basicConfig(
     level=lg.INFO,
-    format=FORMAT_STRING)
-
-CONFIG_NAME = 'config.yml'
-
-# Output Text
-IN_LOGG = 'successfully initialized logger.'
-IN_SUCC = 'successfully initialized reddit instance.'
-IN_USER = 'logged in as %s'
-SC_USER = 'scraping user...'
-SC_INBX = 'scraping inbox...'
-SC_COMP = 'scraping completed.'
-RU_STRT = 'starting bot. press ctrl-c to interupt.'
-RU_INTR = 'ctrl-c interupt detected.'
-CO_OBJC = 'scraping object...'
-CO_UNSP = 'cache does not support type %s'
+    format=const.LOG_FORMAT_STRING)
 
 
 class WiiHacky(pr.Reddit):
@@ -39,7 +26,7 @@ class WiiHacky(pr.Reddit):
 
         # init logger
         self.log = lg.getLogger(self.__class__.__name__)
-        self.log.info(IN_LOGG)
+        self.log.info(const.TXT_INIT_LOGGER_SUCC)
 
         # init reddit instance
         pr.Reddit.__init__(
@@ -49,8 +36,8 @@ class WiiHacky(pr.Reddit):
             client_secret=self.config['auth']['client_secret'],
             username=self.config['auth']['username'],
             password=self.config['auth']['password'])
-        self.log.info(IN_SUCC)
-        self.log.info(IN_USER, self.user.me())
+        self.log.info(const.TXT_INIT_REDDIT_SUCC)
+        self.log.info(const.TXT_INIT_LOGGED_IN, self.user.me())
 
     @staticmethod
     def load_config():
@@ -135,10 +122,5 @@ class WiiHacky(pr.Reddit):
         """
         # Log
         info = self.log.info
-        info(SC_INBX)
-        info(SC_COMP)
-
-
-if __name__ == "__main__":
-    WH = WiiHacky()
-    WH.run()
+        info(const.TXT_SCRP_INBOX)
+        info(const.TXT_SCRP_COMPLETE)
