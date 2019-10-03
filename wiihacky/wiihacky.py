@@ -16,8 +16,7 @@ lg.basicConfig(
 
 CONFIG_NAME = 'config.yml'
 
-# Output Text (all in one place for uniformity)
-# TODO Move to const?
+# Output Text
 IN_LOGG = 'successfully initialized logger.'
 IN_SUCC = 'successfully initialized reddit instance.'
 IN_USER = 'logged in as %s'
@@ -25,6 +24,8 @@ SC_USER = 'scraping user...'
 SC_COMP = 'scraping completed.'
 RU_STRT = 'starting bot. press ctrl-c to interupt.'
 RU_INTR = 'ctrl-c interupt detected.'
+CO_OBJC = 'scraping object...'
+CO_UNSP = 'cache does not support type %s'
 
 
 class WiiHacky(pr.Reddit):
@@ -65,6 +66,15 @@ class WiiHacky(pr.Reddit):
         with open(file_np, 'r') as config_file:
             return yl.load(config_file)
 
+    def cache_object(self, obj):
+        """Cache object."""
+        self.log.info(CO_OBJC)
+        if isinstance(obj, (list, tuple)):
+            for item in obj:
+                self.cache_object(item)
+            return
+        self.log.error(CO_UNSP, type(obj))
+
     def run(self):
         """Run bot.
 
@@ -94,17 +104,21 @@ class WiiHacky(pr.Reddit):
 
         info(SC_USER)
         user = self.user
-        # TODO All information that is collected here should probably be
-        # cached. Since each pulls down the objects themseves.
+        blck = list(user.blocked())
+        frnd = list(user.friends())
+        mods = list(user.moderator_subreddits())
+        mult = list(user.multireddits())
+        subs = list(user.subreddits())
         output = {
             'me': user.me(),
-            'blck': [a.id for a in list(user.blocked())],
-            'frnd': [a.id for a in list(user.friends())],
+            'blck': [a.id for a in blck],
+            'frnd': [a.id for a in frnd],
             'krma': user.karma(),
-            'mods': [a.id for a in list(user.moderator_subreddits())],
-            'mult': [a.name for a in list(user.multireddits())],
+            'mods': [a.id for a in mods],
+            'mult': [a.name for a in mult],
             'pref': dict(self.user.preferences()),
-            'subs': [a.id for a in list(user.subreddits())]}
+            'subs': [a.id for a in subs]}
+        self.cache_object([blck, frnd, mods, mult, subs])
         info(SC_COMP)
         return output
 
@@ -125,7 +139,5 @@ class WiiHacky(pr.Reddit):
 
 
 if __name__ == "__main__":
-    # TODO flesh out logger
-    # TODO interactive mode
     WH = WiiHacky()
     WH.run()
