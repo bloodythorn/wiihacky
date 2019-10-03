@@ -18,8 +18,13 @@ CONFIG_NAME = 'config.yml'
 
 # Output Text (all in one place for uniformity)
 # TODO Move to const?
+IN_LOGG = 'successfully initialized logger.'
+IN_SUCC = 'successfully initialized reddit instance.'
+IN_USER = 'logged in as %s'
 SC_USER = 'scraping user...'
 SC_COMP = 'scraping completed.'
+RU_STRT = 'starting bot. press ctrl-c to interupt.'
+RU_INTR = 'ctrl-c interupt detected.'
 
 
 class WiiHacky(pr.Reddit):
@@ -32,7 +37,7 @@ class WiiHacky(pr.Reddit):
 
         # init logger
         self.log = lg.getLogger(self.__class__.__name__)
-        self.log.info("successfully initialized logger.")
+        self.log.info(IN_LOGG)
 
         # init reddit instance
         pr.Reddit.__init__(
@@ -42,8 +47,8 @@ class WiiHacky(pr.Reddit):
             client_secret=self.config['auth']['client_secret'],
             username=self.config['auth']['username'],
             password=self.config['auth']['password'])
-        self.log.info("successfully initialized reddit instance.")
-        self.log.info("logged in as %s", self.user.me())
+        self.log.info(IN_SUCC)
+        self.log.info(IN_USER, self.user.me())
 
     @staticmethod
     def load_config():
@@ -66,13 +71,13 @@ class WiiHacky(pr.Reddit):
         The bot will perform scheduled tasks and eventually respond to
         CLI-like commands until told to exit.
         """
-        self.log.info("starting bot. press ctrl-c to exit.")
+        self.log.info(RU_STRT)
         # interactive (hopefully) loop
         try:
             while True:
                 sleep(0.5)
         except KeyboardInterrupt:
-            self.log.info("ctrl-c interupt detected.")
+            self.log.info(RU_INTR)
 
     def scrape_user(self):
         """Scrape user.
@@ -89,6 +94,8 @@ class WiiHacky(pr.Reddit):
 
         info(SC_USER)
         user = self.user
+        # TODO All information that is collected here should probably be
+        # cached. Since each pulls down the objects themseves.
         output = {
             'me': user.me(),
             'blck': [a.id for a in list(user.blocked())],
@@ -101,7 +108,7 @@ class WiiHacky(pr.Reddit):
         info(SC_COMP)
         return output
 
-    def scrape_inbox(self, freq=None):
+    def scrape_inbox(self):
         """Scrape inbox.
 
         This function will scrape the inbox and make sure it is up to date.
