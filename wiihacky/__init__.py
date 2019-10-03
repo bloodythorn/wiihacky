@@ -6,5 +6,3 @@ information on reddit. It will cache and analyze specified data.
 
 https://github.com/bloodythorn/wiihacky
 """
-
-from .const import __version__
