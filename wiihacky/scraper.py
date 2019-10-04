@@ -28,13 +28,24 @@ class Scraper:
         of dicts if more than one object was given.
         """
         if isinstance(target, (list, tuple)):
-            return [self.scrape(item) for item in target]
+            lin = [self.scrape(item) for item in target]
+            lout = []
+            while len(lin) > 0:
+                item = lin.pop()
+                if isinstance(item, list):
+                    lin = lin + item
+                else:
+                    lout.append(item)
+            return lout
 
         if isinstance(target, pr.models.user.User):
             return self.scrape_user(target)
 
+        if isinstance(target, pr.models.inbox.Inbox):
+            return self.scrape_inbox(target)
+
         self.log.error(const.SCRAPE_TYPE_UNSUPPORTED, type(target))
-        return []
+        return {}
 
     def scrape_inbox(self, inbox):
         """Scrape inbox.
@@ -49,7 +60,19 @@ class Scraper:
         # Log
         info = self.log.info
         info(const.SCRAPE_INBOX)
+
+        recv = list(inbox.all())
+        sent = list(inbox.sent())
+
+        output = {
+            const.SCRAPE_TYPE: inbox.__class__.__name__,
+            const.SCRAPE_UTC_STAMP: int(tm.time()),
+            inbox.all.__name__: [a.id for a in recv],
+            inbox.sent.__name__: [a.id for a in sent]}
+
+        xtras = self.scrape([recv, sent])
         info(const.SCRAPE_COMPLETE)
+        return xtras + [output] if isinstance(xtras, list) else [xtras, output]
 
     def scrape_user(self, user):
         """Scrape user.
@@ -65,11 +88,15 @@ class Scraper:
         info = self.log.info
 
         info(const.SCRAPE_USER)
+
+        # Pull all info
         blck = list(user.blocked())
         frnd = list(user.friends())
         mods = list(user.moderator_subreddits())
         mult = list(user.multireddits())
         subs = list(user.subreddits())
+
+        # Put it in data
         output = {
             const.SCRAPE_UTC_STAMP: int(tm.time()),
             const.SCRAPE_TYPE: user.__class__.__name__,
@@ -81,6 +108,7 @@ class Scraper:
             user.multireddits.__name__: [a.name for a in mult],
             user.preferences.__class__.__name__: dict(user.preferences()),
             user.subreddits.__name__: [a.id for a in subs]}
-        self.scrape([blck, frnd, mods, mult, subs])
+
+        xtras = self.scrape([blck, frnd, mods, mult, subs])
         info(const.SCRAPE_COMPLETE)
-        return output
+        return xtras + [output] if isinstance(xtras, list) else [xtras, output]
