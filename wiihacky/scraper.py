@@ -27,7 +27,7 @@ class Scraper:
         """
         recv = list(inbox.all())
         sent = list(inbox.sent())
-        st_name, st_time = self.get_timestamp()
+        st_name, st_time = hlp.get_timestamp()
 
         output = {
             const.SCRAPE_TYPE: inbox.__class__.__name__,
@@ -59,11 +59,32 @@ class Scraper:
         del output['subreddits']
         auth = output['_author']
         del output['_author']
-        st_name, st_time = self.get_timestamp()
+        st_name, st_time = hlp.get_timestamp()
         output[st_name] = st_time
 
         xtras = subs + [auth]
         return (output, xtras)
+
+    def scrape_redditor(self, redditor):
+        """Scrape a redditor.
+
+        This function will scrape a redditor and return a data structure
+        reflecting its state.
+        Anything it had to evaluate (make a reddit request for) is returned
+        also.
+
+        Return
+        ------
+        This will return a tuple containing a dictionary with the scraped
+        information, as well as a list of all praw objects that had to be
+        evaluated to complete the task.
+
+        """
+        output = vars(redditor)
+        del output['_reddit']
+        st_name, st_time = hlp.get_timestamp()
+        output[st_name] = st_time
+        return output
 
     def scrape_user(self, user):
         """Scrape user.
@@ -87,7 +108,7 @@ class Scraper:
         mods = list(user.moderator_subreddits())
         mult = list(user.multireddits())
         subs = list(user.subreddits())
-        st_name, st_time = self.get_timestamp()
+        st_name, st_time = hlp.get_timestamp()
 
         # Put it in data
         output = {
