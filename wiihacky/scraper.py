@@ -1,8 +1,7 @@
 """Scrapper Module."""
 
-import time as tm
-
 import wiihacky.const as const
+import wiihacky.helpers as hlp
 
 
 class Scraper:
@@ -10,11 +9,6 @@ class Scraper:
 
     def __init__(self):
         """Initialize the scraper."""
-
-    @staticmethod
-    def get_timestamp():
-        """Obtain a timestamp in utc unix."""
-        return (const.SCRAPE_UTC_STAMP, int(tm.time()))
 
     def scrape_inbox(self, inbox):
         """Scrape inbox.
