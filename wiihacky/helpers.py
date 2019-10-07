@@ -1,7 +1,7 @@
 """Helper functions."""
 
 import time as tm
-import wiihacky.const as const
+import const
 
 
 def get_timestamp():

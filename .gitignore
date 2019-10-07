@@ -1,8 +1,11 @@
-# Running dir for personal configurations.
+# Testing
 run/
 
-# Sublime Text project files
-*.sublime-*
+# Sublime Project Files
+*sublime-*
+
+# JetBrains Project Files
+.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

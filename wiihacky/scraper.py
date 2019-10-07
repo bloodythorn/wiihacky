@@ -1,7 +1,7 @@
 """Scrapper Module."""
 
-import wiihacky.const as const
-import wiihacky.helpers as hlp
+import const
+import helpers as hlp
 
 
 class Scraper:
@@ -15,72 +15,58 @@ class Scraper:
 
         This function will scrape the inbox return a data structure reflecting
         its state.
-        Anything it had to evaluate (make a reddit request for) is returned
-        also.
 
         Return
         ------
-        This will return a tuple containing a dictionary with the scraped
-        information, as well as a list of all praw objects that had to be
-        evaluated to complete the task.
+        a dict with scraped data.
 
         """
         recv = list(inbox.all())
         sent = list(inbox.sent())
         st_name, st_time = hlp.get_timestamp()
 
-        output = {
+        return {
             const.SCRAPE_TYPE: inbox.__class__.__name__,
             st_name: st_time,
             inbox.all.__name__: [a.id for a in recv],
             inbox.sent.__name__: [a.id for a in sent]}
-
-        xtras = recv + sent
-        return (output, xtras)
 
     def scrape_multireddit(self, multi):
         """Scrape a multi reddit.
 
         This function will scrape the multiredit return a data structure
         reflecting its state.
-        Anything it had to evaluate (make a reddit request for) is returned
-        also.
 
         Return
         ------
-        This will return a tuple containing a dictionary with the scraped
-        information, as well as a list of all praw objects that had to be
-        evaluated to complete the task.
+        a dict with scraped data.
 
         """
         output = dict(vars(multi))
         del output['_reddit']
-        subs = output['subreddits']
-        del output['subreddits']
+        output['subreddits'] = [a.id for a in output['subreddits']]
         auth = output['_author']
         del output['_author']
+        output['author_id'] = auth.id
         st_name, st_time = hlp.get_timestamp()
         output[st_name] = st_time
 
-        xtras = subs + [auth]
-        return (output, xtras)
+        return output
 
     def scrape_redditor(self, redditor):
         """Scrape a redditor.
 
         This function will scrape a redditor and return a data structure
         reflecting its state.
-        Anything it had to evaluate (make a reddit request for) is returned
-        also.
 
         Return
         ------
-        This will return a tuple containing a dictionary with the scraped
-        information, as well as a list of all praw objects that had to be
-        evaluated to complete the task.
+        a dict with scraped data.
 
         """
-        output = vars(redditor)
+        if not redditor._fetched:
+            redditor._fetch()
+        output = dict(vars(redditor))
         del output['_reddit']
         st_name, st_time = hlp.get_timestamp()
         output[st_name] = st_time
@@ -91,37 +77,24 @@ class Scraper:
 
         This function will scrape the user return a data structure reflecting
         its state.
-        Anything it had to evaluate (make a reddit request for) is returned
-        also.
 
         Return
         ------
-        This will return a tuple containing a dictionary with the scraped
-        information, as well as a list of all praw objects that had to be
-        evaluated to complete the task.
+        a dict with scraped data.
 
         """
-        # Pull all info
-        me = user._me
-        blck = list(user.blocked())
-        frnd = list(user.friends())
-        mods = list(user.moderator_subreddits())
-        mult = list(user.multireddits())
-        subs = list(user.subreddits())
         st_name, st_time = hlp.get_timestamp()
 
-        # Put it in data
-        output = {
+        return {
             st_name: st_time,
             const.SCRAPE_TYPE: user.__class__.__name__,
-            const.SCRAPE_ID: me.id,
-            user.blocked.__name__: [a.id for a in blck],
-            user.friends.__name__: [a.id for a in frnd],
+            const.SCRAPE_ID: user._me.id,
+            user.blocked.__name__: [a.id for a in list(user.blocked())],
+            user.friends.__name__: [a.id for a in list(user.friends())],
             user.karma.__name__: user.karma(),
-            user.moderator_subreddits.__name__: [a.id for a in mods],
-            user.multireddits.__name__: [a.name for a in mult],
+            user.moderator_subreddits.__name__:
+                [a.id for a in list(user.moderator_subreddits())],
+            user.multireddits.__name__:
+                [a.name for a in list(user.multireddits())],
             user.preferences.__class__.__name__: dict(user.preferences()),
-            user.subreddits.__name__: [a.id for a in subs]}
-
-        xtras = blck + frnd + mods + mult + subs + [me]
-        return (output, xtras)
+            user.subreddits.__name__: [a.id for a in list(user.subreddits())]}

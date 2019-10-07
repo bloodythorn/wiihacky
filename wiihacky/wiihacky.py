@@ -6,8 +6,8 @@ from time import sleep
 import praw as pr
 import yaml as yl
 
-import wiihacky.const as const
-import wiihacky.scraper as scrap
+import const
+import scraper
 
 lg.basicConfig(
     level=lg.INFO,
@@ -24,7 +24,7 @@ class WiiHacky(pr.Reddit):
 
         # init logger
         self.log = lg.getLogger(self.__class__.__name__)
-        self.log.info(const.WH_INIT_LOGGER_SUCC)
+        self.log.info(wiihacky.const.WH_INIT_LOGGER_SUCC)
 
         # init reddit instance
         pr.Reddit.__init__(
@@ -34,12 +34,12 @@ class WiiHacky(pr.Reddit):
             client_secret=self.config['auth']['client_secret'],
             username=self.config['auth']['username'],
             password=self.config['auth']['password'])
-        self.log.info(const.WH_INIT_REDDIT_SUCC)
-        self.log.info(const.WH_INIT_LOGGED_IN, self.user.me())
+        self.log.info(wiihacky.const.WH_INIT_REDDIT_SUCC)
+        self.log.info(wiihacky.const.WH_INIT_LOGGED_IN, self.user.me())
 
         # init scraper
         self.scraper = scrap.Scraper()
-        self.log.info(const.WH_INIT_SCRAPER)
+        self.log.info(wiihacky.const.WH_INIT_SCRAPER)
 
     @staticmethod
     def load_config():
@@ -62,10 +62,10 @@ class WiiHacky(pr.Reddit):
         The bot will perform scheduled tasks and eventually respond to
         CLI-like commands until told to exit.
         """
-        self.log.info(const.WH_RUN_START_BOT)
+        self.log.info(wiihacky.const.WH_RUN_START_BOT)
         # interactive (hopefully) loop
         try:
             while True:
                 sleep(0.5)
         except KeyboardInterrupt:
-            self.log.info(const.WH_RUN_INTERUPT)
+            self.log.info(wiihacky.const.WH_RUN_INTERUPT)
