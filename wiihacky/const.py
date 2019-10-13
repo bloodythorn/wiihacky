@@ -13,8 +13,8 @@ WH_INIT_LOGGED_IN = 'logged in as %s.'
 WH_INIT_LOGGER_SUCC = 'successfully initialized logger.'
 WH_INIT_REDDIT_SUCC = 'successfully initialized reddit instance.'
 WH_INIT_SCRAPER = 'successfully initialized scraper.'
-WH_RUN_INTERUPT = 'ctrl-c interupt detected.'
-WH_RUN_START_BOT = 'starting bot. press ctrl-c to interupt.'
+WH_RUN_INTERRUPT = 'ctrl-c interrupt detected.'
+WH_RUN_START_BOT = 'starting bot. press ctrl-c to interrupt.'
 
 # Scraper module txt constants
 SCRAPE_UTC_STAMP = 'utc_timestamp'

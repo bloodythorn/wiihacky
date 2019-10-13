@@ -1,4 +1,7 @@
 """Server start."""
 
+import wiihacky
+
 if __name__ == "__main__":
-    print("Start execution Here for daemon")
+    wh = wiihacky.WiiHacky()
+    wh.run()

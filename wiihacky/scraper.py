@@ -10,7 +10,8 @@ class Scraper:
     def __init__(self):
         """Initialize the scraper."""
 
-    def scrape_inbox(self, inbox):
+    @staticmethod
+    def inbox(inbox):
         """Scrape inbox.
 
         This function will scrape the inbox return a data structure reflecting
@@ -21,17 +22,23 @@ class Scraper:
         a dict with scraped data.
 
         """
-        recv = list(inbox.all())
-        sent = list(inbox.sent())
         st_name, st_time = hlp.get_timestamp()
 
         return {
             const.SCRAPE_TYPE: inbox.__class__.__name__,
             st_name: st_time,
-            inbox.all.__name__: [a.id for a in recv],
-            inbox.sent.__name__: [a.id for a in sent]}
+            inbox.all.__name__: [a.id for a in list(inbox.all())],
+            inbox.mentions.__name__: [a.id for a in list(inbox.mentions())],
+            inbox.sent.__name__: [a.id for a in list(inbox.sent())],
+            inbox.unread.__name__: [a.id for a in list(inbox.unread())]}
 
-    def scrape_multireddit(self, multi):
+    @staticmethod
+    def fetch(fetchable):
+        if redditor._fetched == False:
+            redditor._fetch()
+
+    @staticmethod
+    def multireddit(multi):
         """Scrape a multi reddit.
 
         This function will scrape the multiredit return a data structure
@@ -53,7 +60,8 @@ class Scraper:
 
         return output
 
-    def scrape_redditor(self, redditor):
+    @staticmethod
+    def redditor(redditor):
         """Scrape a redditor.
 
         This function will scrape a redditor and return a data structure
@@ -64,15 +72,34 @@ class Scraper:
         a dict with scraped data.
 
         """
-        if not redditor._fetched:
-            redditor._fetch()
+        fetch(redditor)
         output = dict(vars(redditor))
         del output['_reddit']
         st_name, st_time = hlp.get_timestamp()
         output[st_name] = st_time
         return output
 
-    def scrape_user(self, user):
+    @staticmethod
+    def subreddit(subreddit):
+        """Scrape a subreddit.
+
+        This function will scrape a subreddit and return a data structure
+        reflecting its state.
+
+        Return
+        ------
+        a dict with scraped data.
+
+        """
+        fetch(subreddit)
+        output = dict(vars(subreddit))
+        del output['_reddit']
+        st_name, st_time = hlp.get_timestamp()
+        output[st_name] = st_time
+        return output
+
+    @staticmethod
+    def user(user):
         """Scrape user.
 
         This function will scrape the user return a data structure reflecting
