@@ -11,6 +11,19 @@ class Scraper:
         """Initialize the scraper."""
 
     @staticmethod
+    def comment(comment):
+        """Scrape a comment.
+
+        This function will scrape the comment return a data structure reflecting
+        its state.
+
+        Return
+        ------
+        a dict with scraped data.
+
+        """
+
+    @staticmethod
     def inbox(inbox):
         """Scrape inbox.
 
@@ -22,20 +35,17 @@ class Scraper:
         a dict with scraped data.
 
         """
-        st_name, st_time = hlp.get_timestamp()
-
-        return {
+        return hlp.get_stamped_dict({
             const.SCRAPE_TYPE: inbox.__class__.__name__,
-            st_name: st_time,
             inbox.all.__name__: [a.id for a in list(inbox.all())],
             inbox.mentions.__name__: [a.id for a in list(inbox.mentions())],
             inbox.sent.__name__: [a.id for a in list(inbox.sent())],
-            inbox.unread.__name__: [a.id for a in list(inbox.unread())]}
+            inbox.unread.__name__: [a.id for a in list(inbox.unread())]})
 
     @staticmethod
     def fetch(fetchable):
-        if redditor._fetched == False:
-            redditor._fetch()
+        if fetchable._fetched is False:
+            fetchable._fetch()
 
     @staticmethod
     def multireddit(multi):
@@ -49,15 +59,12 @@ class Scraper:
         a dict with scraped data.
 
         """
-        output = dict(vars(multi))
+        output = hlp.get_stamped_dict(dict(vars(multi)))
         del output['_reddit']
         output['subreddits'] = [a.id for a in output['subreddits']]
         auth = output['_author']
         del output['_author']
         output['author_id'] = auth.id
-        st_name, st_time = hlp.get_timestamp()
-        output[st_name] = st_time
-
         return output
 
     @staticmethod
@@ -72,12 +79,23 @@ class Scraper:
         a dict with scraped data.
 
         """
-        fetch(redditor)
-        output = dict(vars(redditor))
+        Scraper.fetch(redditor)
+        output = hlp.get_stamped_dict(dict(vars(redditor)))
         del output['_reddit']
-        st_name, st_time = hlp.get_timestamp()
-        output[st_name] = st_time
         return output
+
+    @staticmethod
+    def submission(submission):
+        """Scrape a submission.
+
+        This function will scrape a submission and return a data structure
+        reflecting its state.
+
+        Return
+        ------
+        a dict with scraped data.
+
+        """
 
     @staticmethod
     def subreddit(subreddit):
@@ -91,11 +109,9 @@ class Scraper:
         a dict with scraped data.
 
         """
-        fetch(subreddit)
-        output = dict(vars(subreddit))
+        Scraper.fetch(subreddit)
+        output = hlp.get_stamped_dict(dict(vars(subreddit)))
         del output['_reddit']
-        st_name, st_time = hlp.get_timestamp()
-        output[st_name] = st_time
         return output
 
     @staticmethod
@@ -110,10 +126,7 @@ class Scraper:
         a dict with scraped data.
 
         """
-        st_name, st_time = hlp.get_timestamp()
-
-        return {
-            st_name: st_time,
+        output = hlp.get_stamped_dict({
             const.SCRAPE_TYPE: user.__class__.__name__,
             const.SCRAPE_ID: user._me.id,
             user.blocked.__name__: [a.id for a in list(user.blocked())],
@@ -124,4 +137,5 @@ class Scraper:
             user.multireddits.__name__:
                 [a.name for a in list(user.multireddits())],
             user.preferences.__class__.__name__: dict(user.preferences()),
-            user.subreddits.__name__: [a.id for a in list(user.subreddits())]}
+            user.subreddits.__name__: [a.id for a in list(user.subreddits())]})
+        return output
