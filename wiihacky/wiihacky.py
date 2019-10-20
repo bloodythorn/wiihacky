@@ -7,12 +7,12 @@ import praw as pr
 import yaml as yl
 
 import const
-import scraper
+# import scrape
 
 lg.basicConfig(level=lg.INFO, format=const.LOG_FORMAT_STRING)
 
 
-class WiiHacky():
+class WiiHacky:
     """WiiHacky's direct interface."""
 
     def __init__(self):
@@ -33,10 +33,6 @@ class WiiHacky():
             password=self.config['auth']['password'])
         self.log.info(const.WH_INIT_REDDIT_SUCC)
         self.log.info(const.WH_INIT_LOGGED_IN, self.reddit.user.me())
-
-        # init scraper
-        self.scrape = scraper.Scraper()
-        self.log.info(const.WH_INIT_SCRAPER)
 
     # TODO Move this to the data management class
     @staticmethod
