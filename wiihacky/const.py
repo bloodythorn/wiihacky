@@ -1,6 +1,8 @@
 """Constants for WiiHacky."""
 
-__version__ = "v0.0.2"
+__version__ = 'v0.0.2'
+VERSION_TEXT = 'wiihacky_version'
+UTC_STAMP = 'utc_timestamp'
 
 # Logger Related
 LOG_FORMAT_STRING = '%(asctime)s:%(name)s:%(levelname)s:%(message)s'
@@ -17,7 +19,9 @@ WH_RUN_INTERRUPT = 'ctrl-c interrupt detected.'
 WH_RUN_START_BOT = 'starting bot. press ctrl-c to interrupt.'
 
 # Scraper module txt constants
-SCRAPE_UTC_STAMP = 'utc_timestamp'
+SCRAPE_DEL_REDDIT = '_reddit'
+SCRAPE_AUTHOR = 'author'
+SCRAPE_SUBREDDIT = 'subreddit'
 SCRAPE_USER = 'scraping user...'
 SCRAPE_INBOX = 'scraping inbox...'
 SCRAPE_COMPLETE = 'scraping complete.'
