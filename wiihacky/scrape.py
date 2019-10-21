@@ -13,7 +13,7 @@ import praw as pr
 def strip_underscore(dct: dict):
     """TODO: Doccument Me"""
     if const.SCRAPE_DEL_AUTHOR in dct:
-        del output[const.SCRAPE_DEL_AUTHOR]
+        del dct[const.SCRAPE_DEL_AUTHOR]
     if const.SCRAPE_DEL_AWARDERS in dct:
         del dct[const.SCRAPE_DEL_AWARDERS]
     if const.SCRAPE_DEL_FETCHED in dct:
@@ -40,48 +40,6 @@ def prep_dict(dct: dict, tp: str):
 def fetch(fetchable):
     if fetchable._fetched is False:
         fetchable._fetch()
-
-
-def list_of_display_names(name: str, lg: pr.reddit.models.ListingGenerator):
-    """Scrape list generator to display_names.
-
-    Given one of praw's list generators, it will return a list of display_names
-    from the items in the list generator.
-
-    Return
-    ------
-    a tuple containing a key name and value as a list with scraped data.
-
-    """
-    return name, [a.display_name for a in lg]
-
-
-def list_of_ids(name: str, lg: pr.reddit.models.ListingGenerator):
-    """Scrape list generator to id.
-
-    Given one of praw's list generators, it will return a list of ids
-    from the items in the list generator.
-
-    Return
-    ------
-    a tuple containing a key name and value as a list with scraped data.
-
-    """
-    return name, [a.id for a in lg]
-
-
-def list_of_names(name: str, lg: pr.reddit.models.ListingGenerator):
-    """Scrape list generator to name.
-
-    Given one of praw's list generators, it will return a list of names
-    from the items in the list generator.
-
-    Return
-    ------
-    a tuple containing a key name and value as a list with scraped data.
-
-    """
-    return name, [a.name for a in lg]
 
 
 # Top Level Scrapers
@@ -121,10 +79,10 @@ def inbox(ib: pr.reddit.models.Inbox):
     output = dict()
     prep_dict(output, ib.__class__.__name__)
     output.update([
-        list_of_ids(ib.all.__name__, ib.all()),
-        list_of_ids(ib.mentions.__name__, ib.mentions()),
-        list_of_ids(ib.sent.__name__, ib.sent()),
-        list_of_ids(ib.unread.__name__, ib.unread()),
+        (ib.all.__name__, [a.id for a in ib.all()]),
+        (ib.mentions.__name__, [a.id for a in ib.mentions()]),
+        (ib.sent.__name__, [a.id for a in ib.sent()]),
+        (ib.unread.__name__, [a.id for a in ib.unread()]),
     ])
     return strip_underscore(output)
 
@@ -165,11 +123,11 @@ def multireddit(mr: pr.reddit.models.Multireddit):
         [a.display_name for a in output[const.SCRAPE_SUBREDDITS]]
     output.update([
         (const.SCRAPE_COMMENTS, [a.id for a in mr.comments()]),
-        list_of_ids(mr.controversial),
-        list_of_ids(mr.hot),
-        list_of_ids(mr.new),
-        list_of_ids(mr.rising),
-        list_of_ids(mr.top),
+        (mr.controversial.__name__, [a.id for a in mr.controversial()]),
+        (mr.hot.__name__, [a.id for a in mr.hot()]),
+        (mr.new.__name__, [a.id for a in mr.new()]),
+        (mr.rising.__name__, [a.id for a in mr.rising()]),
+        (mr.top.__name__, [a.id for a in mr.top()]),
     ])
     return strip_underscore(output)
 
@@ -189,22 +147,24 @@ def redditor(rd: pr.reddit.models.Redditor):
     output = dict(vars(rd))
     prep_dict(output, rd.__class__.__name__)
     output.update([
-        list_of_names(rd.trophies),
-        list_of_names(rd.multireddits),
+        (rd.trophies.__name__, [a.name for a in rd.trophies()]),
+        (rd.multireddits.__name__, [a.name for a in rd.multireddits()]),
     ])
     output[const.SCRAPE_COMMENTS] = {}
     output[const.SCRAPE_COMMENTS].update([
-        list_of_ids(rd.comments.controversial),
-        list_of_ids(rd.comments.hot),
-        list_of_ids(rd.comments.new),
-        list_of_ids(rd.comments.top),
+        (rd.comments.controversial.__name__,
+         [a.id for a in rd.comments.controversial()]),
+        (rd.comments.hot.__name__, [a.id for a in rd.comments.hot()]),
+        (rd.comments.new.__name__, [a.id for a in rd.comments.new()]),
+        (rd.comments.top.__name__, [a.id for a in rd.comments.top()]),
     ])
     output[const.SCRAPE_SUBMISSIONS] = {}
     output[const.SCRAPE_SUBMISSIONS].update([
-        list_of_ids(rd.submissions.controversial),
-        list_of_ids(rd.submissions.hot),
-        list_of_ids(rd.submissions.new),
-        list_of_ids(rd.submissions.top),
+        (rd.submissions.controversial.__name__,
+         [a.id for a in rd.submissions.controversial()]),
+        (rd.submissions.hot.__name__, [a.id for a in rd.submissions.hot()]),
+        (rd.submissions.new.__name__, [a.id for a in rd.submissions.new()]),
+        (rd.submissions.top.__name__, [a.id for a in rd.submissions.top()]),
     ])
     return strip_underscore(output)
 
@@ -220,6 +180,14 @@ def submission(sm: pr.reddit.models.Submission):
     a dict with scraped data.
 
     """
+    fetch(sm)
+    output = dict(vars(sm))
+    prep_dict(output, sm.__class__.__name__)
+    del output[const.SCRAPE_DEL_REDDIT]
+    output[const.SCRAPE_SUBREDDIT] = \
+        output[const.SCRAPE_SUBREDDIT].display_name
+    output[const.SCRAPE_AUTHOR] = output[const.SCRAPE_AUTHOR].name
+    return strip_underscore(output)
     # TODO: Implement me
 
 
@@ -236,15 +204,16 @@ def subreddit(sr: pr.reddit.models.Subreddit):
     """
     fetch(sr)
     output = dict(vars(sr))
+    prep_dict(output, sr.__class__.__name__)
     del output[const.SCRAPE_DEL_REDDIT]
     output.update([
-        hlp.get_timestamp(),
         (const.SCRAPE_COMMENTS, [a.id for a in sr.comments()]),
-        list_of_ids(sr.controversial),
-        list_of_ids(sr.hot),
-        list_of_ids(sr.new),
-        list_of_ids(sr.rising),
-        list_of_ids(sr.top)])
+        (sr.controversial.__name__, [a.id for a in sr.controversial()]),
+        (sr.hot.__name__, [a.id for a in sr.hot()]),
+        (sr.new.__name__, [a.id for a in sr.new()]),
+        (sr.rising.__name__, [a.id for a in sr.rising()]),
+        (sr.top.__name__, [a.id for a in sr.top()]),
+    ])
     return output
 
 
@@ -260,16 +229,16 @@ def user(us: pr.reddit.models.User):
 
     """
     output = dict()
+    prep_dict(output, us.__class__.__name__)
     output.update([
-        hlp.get_timestamp(),
-        (const.SCRAPE_TYPE, us.__class__.__name__),
-        (const.SCRAPE_ID, us._me.id),
+        (const.SCRAPE_NAME, us._me.name),
         (const.SCRAPE_KARMA, us.karma),
         (us.preferences.__class__.__name__, dict(us.preferences())),
-        list_of_display_names(us.moderator_subreddits),
-        list_of_display_names(us.subreddits),
-        list_of_names(us.blocked),
-        list_of_names(us.friends),
-        list_of_names(us.multireddits),
+        (us.moderator_subreddits.__name__,
+         [a.display_name for a in us.moderator_subreddits()]),
+        (us.subreddits.__name__, [a.display_name for a in us.subreddits()]),
+        (us.blocked.__name__, [a.display_name for a in us.blocked()]),
+        (us.friends.__name__, [a.display_name for a in us.friends()]),
+        (us.multireddits.__name__, [a.display_name for a in us.multireddits()]),
     ])
     return output
