@@ -16,6 +16,10 @@ def strip_underscore(dct: dict):
         del dct[const.SCRAPE_DEL_AUTHOR]
     if const.SCRAPE_DEL_AWARDERS in dct:
         del dct[const.SCRAPE_DEL_AWARDERS]
+    if const.SCRAPE_DEL_COMMENTS in dct:
+        del dct[const.SCRAPE_DEL_COMMENTS]
+    if const.SCRAPE_DEL_COMMENTS_BY_ID in dct:
+        del dct[const.SCRAPE_DEL_COMMENTS_BY_ID]
     if const.SCRAPE_DEL_FETCHED in dct:
         del dct[const.SCRAPE_DEL_FETCHED]
     if const.SCRAPE_DEL_REDDIT in dct:
@@ -38,7 +42,8 @@ def prep_dict(dct: dict, tp: str):
 
 
 def fetch(fetchable):
-    if fetchable._fetched is False:
+    if const.SCRAPE_DEL_FETCHED in fetchable.__dict__ \
+            and not fetchable._fetched:
         fetchable._fetch()
 
 
@@ -60,6 +65,7 @@ def comment(cm: pr.reddit.models.Comment):
     prep_dict(output, cm.__class__.__name__)
     output[const.SCRAPE_AUTHOR] = output[const.SCRAPE_AUTHOR].name
     output[const.SCRAPE_SUBREDDIT] = output[const.SCRAPE_SUBREDDIT].name
+    output[const.SCRAPE_SUBMISSION] = output[const.SCRAPE_DEL_SUBMISSION]
     output[const.SCRAPE_REPLIES] = \
         [a.id for a in output[const.SCRAPE_DEL_REPLIES]]
     return strip_underscore(output)
@@ -187,8 +193,16 @@ def submission(sm: pr.reddit.models.Submission):
     output[const.SCRAPE_SUBREDDIT] = \
         output[const.SCRAPE_SUBREDDIT].display_name
     output[const.SCRAPE_AUTHOR] = output[const.SCRAPE_AUTHOR].name
+    temp = sm.comments.list()
+    comments = []
+    while len(temp) != 0:
+        a = temp.pop()
+        if a is pr.reddit.models.MoreComments:
+            temp = temp + a()
+        else:
+            comments.append(a.id)
+    output[const.SCRAPE_COMMENTS] = comments
     return strip_underscore(output)
-    # TODO: Implement me
 
 
 def subreddit(sr: pr.reddit.models.Subreddit):
@@ -232,7 +246,7 @@ def user(us: pr.reddit.models.User):
     prep_dict(output, us.__class__.__name__)
     output.update([
         (const.SCRAPE_NAME, us._me.name),
-        (const.SCRAPE_KARMA, us.karma),
+        (const.SCRAPE_KARMA, dict(us.karma())),
         (us.preferences.__class__.__name__, dict(us.preferences())),
         (us.moderator_subreddits.__name__,
          [a.display_name for a in us.moderator_subreddits()]),
