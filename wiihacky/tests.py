@@ -49,4 +49,3 @@ def test_scrape(wh: wiihacky.WiiHacky):
 
 if __name__ == "__main__":
     wiihacky = wiihacky.WiiHacky()
-    test_scrape(wiihacky)

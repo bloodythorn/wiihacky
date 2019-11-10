@@ -1,7 +1,0 @@
-auth:
-    user_agent: SampleAgent
-    client_id: SampleID
-    client_secret: SampleSecret
-    username: SampleUsername
-    password: SamplePassword
-    admins: ["SampleUser1", "SampleUser2"]

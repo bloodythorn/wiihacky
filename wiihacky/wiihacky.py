@@ -1,15 +1,12 @@
 """WiiHacky Module."""
 
 import logging as lg
-import os
 from time import sleep
+
 import praw as pr
-import yaml as yl
 
 import const
-# import scrape
-
-lg.basicConfig(level=lg.INFO, format=const.LOG_FORMAT_STRING)
+import data
 
 
 class WiiHacky:
@@ -17,12 +14,13 @@ class WiiHacky:
 
     def __init__(self):
         """Initialize WiiHacky."""
-        # store configuration
-        self.config = self.load_config()
-
         # init logger
+        lg.basicConfig(level=lg.INFO, format=const.LOG_FORMAT_STRING)
         self.log = lg.getLogger(self.__class__.__name__)
         self.log.info(const.WH_INIT_LOGGER_SUCC)
+
+        # store configuration
+        self.config = data.load_config()
 
         # init reddit instance
         self.reddit = pr.Reddit(
@@ -33,22 +31,6 @@ class WiiHacky:
             password=self.config['auth']['password'])
         self.log.info(const.WH_INIT_REDDIT_SUCC)
         self.log.info(const.WH_INIT_LOGGED_IN, self.reddit.user.me())
-
-    # TODO Move this to the data management class
-    @staticmethod
-    def load_config():
-        """Get Configuration.
-
-        This function will retrieve the configuration dict from yaml file.
-
-        Returns
-        -------
-        A dictionary containing all configuration options.
-
-        """
-        file_np = "{}/{}".format(os.getcwd(), const.FILE_DEFAULT_CONFIG)
-        with open(file_np, 'r') as config_file:
-            return yl.safe_load(config_file)
 
     def run(self):
         """Run bot.

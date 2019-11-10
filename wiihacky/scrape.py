@@ -11,7 +11,7 @@ import praw as pr
 # Helper Functions
 
 def strip_underscore(dct: dict):
-    """TODO: Doccument Me"""
+    """TODO: Document Me"""
     if const.SCRAPE_DEL_AUTHOR in dct:
         del dct[const.SCRAPE_DEL_AUTHOR]
     if const.SCRAPE_DEL_AWARDERS in dct:
@@ -32,7 +32,7 @@ def strip_underscore(dct: dict):
 
 
 def prep_dict(dct: dict, tp: str):
-    """TODO: Doccument Me"""
+    """TODO: Document Me"""
     dct.update([
         (const.SCRAPE_TYPE, tp),
         hlp.get_timestamp(),
