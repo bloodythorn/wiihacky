@@ -44,9 +44,7 @@ def test_scrape(wh: wiihacky.WiiHacky):
     sc_sm = scrape_submission(wh)  # submission
     sc_sr = scrape_subreddit(wh)  # subreddit
     sc_us = scrape_user(wh)  # user
-    sc_wk = scrape_wiki(wh) # wiki
-    #sc_wp = scrape_wiki_page(wh) # wiki page
-    return sc_ib, sc_cm, sc_ms, sc_mr, sc_rd, sc_sm, sc_sr, sc_us, sc_wk
+    return sc_ib, sc_cm, sc_ms, sc_mr, sc_rd, sc_sm, sc_sr, sc_us
 
 
 if __name__ == "__main__":
