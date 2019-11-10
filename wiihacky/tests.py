@@ -2,12 +2,12 @@ import scrape
 import wiihacky
 
 
-def scrape_inbox(wh: wiihacky.WiiHacky):
-    return scrape.inbox(wh.reddit.inbox)
-
-
 def scrape_comment(wh: wiihacky.WiiHacky):
     return scrape.comment(wh.reddit.comment('f25ltu2'))
+
+
+def scrape_inbox(wh: wiihacky.WiiHacky):
+    return scrape.inbox(wh.reddit.inbox)
 
 
 def scrape_message(wh: wiihacky.WiiHacky):
@@ -44,8 +44,11 @@ def test_scrape(wh: wiihacky.WiiHacky):
     sc_sm = scrape_submission(wh)  # submission
     sc_sr = scrape_subreddit(wh)  # subreddit
     sc_us = scrape_user(wh)  # user
-    return sc_ib, sc_cm, sc_ms, sc_mr, sc_rd, sc_sm, sc_sr, sc_us
+    sc_wk = scrape_wiki(wh) # wiki
+    #sc_wp = scrape_wiki_page(wh) # wiki page
+    return sc_ib, sc_cm, sc_ms, sc_mr, sc_rd, sc_sm, sc_sr, sc_us, sc_wk
 
 
 if __name__ == "__main__":
-    wh = wiihacky.WiiHacky()
+    wiihacky = wiihacky.WiiHacky()
+    test_scrape(wiihacky)
