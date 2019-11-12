@@ -3,36 +3,38 @@
     A collection of functions to scrape data-items from Reddit.
 """
 
+import praw as pr
+
 import const
 import helpers as hlp
-import praw as pr
 
 
 # Helper Functions
 
+def strip_all(dct: dict):
+    # TODO: Docu
+    return strip_empty_string(strip_none(strip_underscore(dct)))
+
+
+def strip_empty_string(dct: dict):
+    # TODO: Docu
+    return {i: dct[i] for i in dct if dct[i] != ''}
+
+
+def strip_none(dct: dict):
+    # TODO: Docu
+    return {i: dct[i] for i in dct if dct[i] is not None}
+
+
 def strip_underscore(dct: dict):
-    """TODO: Document Me"""
-    if const.SCRAPE_DEL_AUTHOR in dct:
-        del dct[const.SCRAPE_DEL_AUTHOR]
-    if const.SCRAPE_DEL_AWARDERS in dct:
-        del dct[const.SCRAPE_DEL_AWARDERS]
-    if const.SCRAPE_DEL_COMMENTS in dct:
-        del dct[const.SCRAPE_DEL_COMMENTS]
-    if const.SCRAPE_DEL_COMMENTS_BY_ID in dct:
-        del dct[const.SCRAPE_DEL_COMMENTS_BY_ID]
-    if const.SCRAPE_DEL_FETCHED in dct:
-        del dct[const.SCRAPE_DEL_FETCHED]
-    if const.SCRAPE_DEL_REDDIT in dct:
-        del dct[const.SCRAPE_DEL_REDDIT]
-    if const.SCRAPE_DEL_REPLIES in dct:
-        del dct[const.SCRAPE_DEL_REPLIES]
-    if const.SCRAPE_DEL_SUBMISSION in dct:
-        del dct[const.SCRAPE_DEL_SUBMISSION]
-    return dct
+    """Remove's praw's underscore members from the given dict."""
+    return {i: dct[i] for i in dct if i[0] != '_'}
 
 
 def prep_dict(dct: dict, tp: str):
-    """TODO: Document Me"""
+    """This function will prep a dict with all required information for
+    storage.
+    """
     dct.update([
         (const.SCRAPE_TYPE, tp),
         hlp.get_timestamp(),
@@ -42,6 +44,9 @@ def prep_dict(dct: dict, tp: str):
 
 
 def fetch(fetchable):
+    """This function will make sure the given praw item has been fetched.
+    This does so by accessing restricted data members.
+    """
     if const.SCRAPE_DEL_FETCHED in fetchable.__dict__ \
             and not fetchable._fetched:
         fetchable._fetch()
@@ -68,7 +73,7 @@ def comment(cm: pr.reddit.models.Comment):
     output[const.SCRAPE_SUBMISSION] = output[const.SCRAPE_DEL_SUBMISSION]
     output[const.SCRAPE_REPLIES] = \
         [a.id for a in output[const.SCRAPE_DEL_REPLIES]]
-    return strip_underscore(output)
+    return strip_all(output)
 
 
 def inbox(ib: pr.reddit.models.Inbox):
@@ -90,7 +95,7 @@ def inbox(ib: pr.reddit.models.Inbox):
         (ib.sent.__name__, [a.id for a in ib.sent()]),
         (ib.unread.__name__, [a.id for a in ib.unread()]),
     ])
-    return strip_underscore(output)
+    return strip_all(output)
 
 
 def message(msg: pr.reddit.models.Message):
@@ -108,7 +113,8 @@ def message(msg: pr.reddit.models.Message):
     prep_dict(output, msg.__class__.__name__)
     output[const.SCRAPE_REPLIES] = [a.id for a in output[const.SCRAPE_REPLIES]]
     output[const.SCRAPE_AUTHOR] = output[const.SCRAPE_AUTHOR].name
-    return strip_underscore(output)
+    output[const.SCRAPE_DEST] = output[const.SCRAPE_DEST].name
+    return strip_all(output)
 
 
 def multireddit(mr: pr.reddit.models.Multireddit):
@@ -127,6 +133,8 @@ def multireddit(mr: pr.reddit.models.Multireddit):
     prep_dict(output, mr.__class__.__name__)
     output[const.SCRAPE_SUBREDDITS] = \
         [a.display_name for a in output[const.SCRAPE_SUBREDDITS]]
+    output[const.SCRAPE_PATH] = output[const.SCRAPE_DEL_PATH]
+    output[const.SCRAPE_AUTHOR] = output[const.SCRAPE_DEL_AUTHOR].name
     output.update([
         (const.SCRAPE_COMMENTS, [a.id for a in mr.comments()]),
         (mr.controversial.__name__, [a.id for a in mr.controversial()]),
@@ -135,7 +143,7 @@ def multireddit(mr: pr.reddit.models.Multireddit):
         (mr.rising.__name__, [a.id for a in mr.rising()]),
         (mr.top.__name__, [a.id for a in mr.top()]),
     ])
-    return strip_underscore(output)
+    return strip_all(output)
 
 
 def redditor(rd: pr.reddit.models.Redditor):
@@ -152,6 +160,7 @@ def redditor(rd: pr.reddit.models.Redditor):
     fetch(rd)
     output = dict(vars(rd))
     prep_dict(output, rd.__class__.__name__)
+    output[const.SCRAPE_PATH] = output[const.SCRAPE_DEL_PATH]
     output.update([
         (rd.trophies.__name__, [a.name for a in rd.trophies()]),
         (rd.multireddits.__name__, [a.name for a in rd.multireddits()]),
@@ -172,7 +181,7 @@ def redditor(rd: pr.reddit.models.Redditor):
         (rd.submissions.new.__name__, [a.id for a in rd.submissions.new()]),
         (rd.submissions.top.__name__, [a.id for a in rd.submissions.top()]),
     ])
-    return strip_underscore(output)
+    return strip_all(output)
 
 
 def submission(sm: pr.reddit.models.Submission):
@@ -189,20 +198,13 @@ def submission(sm: pr.reddit.models.Submission):
     fetch(sm)
     output = dict(vars(sm))
     prep_dict(output, sm.__class__.__name__)
-    del output[const.SCRAPE_DEL_REDDIT]
     output[const.SCRAPE_SUBREDDIT] = \
         output[const.SCRAPE_SUBREDDIT].display_name
     output[const.SCRAPE_AUTHOR] = output[const.SCRAPE_AUTHOR].name
-    temp = sm.comments.list()
-    comments = []
-    while len(temp) != 0:
-        a = temp.pop()
-        if a is pr.reddit.models.MoreComments:
-            temp = temp + a()
-        else:
-            comments.append(a.id)
-    output[const.SCRAPE_COMMENTS] = comments
-    return strip_underscore(output)
+    sm.comments.replace_more(limit=0)
+    output[const.SCRAPE_COMMENTS] = \
+        [a.id for a in sm.comments.list()]
+    return strip_all(output)
 
 
 def subreddit(sr: pr.reddit.models.Subreddit):
@@ -219,7 +221,7 @@ def subreddit(sr: pr.reddit.models.Subreddit):
     fetch(sr)
     output = dict(vars(sr))
     prep_dict(output, sr.__class__.__name__)
-    del output[const.SCRAPE_DEL_REDDIT]
+    output[const.SCRAPE_PATH] = output[const.SCRAPE_DEL_PATH]
     output.update([
         (const.SCRAPE_COMMENTS, [a.id for a in sr.comments()]),
         (sr.controversial.__name__, [a.id for a in sr.controversial()]),
@@ -228,7 +230,7 @@ def subreddit(sr: pr.reddit.models.Subreddit):
         (sr.rising.__name__, [a.id for a in sr.rising()]),
         (sr.top.__name__, [a.id for a in sr.top()]),
     ])
-    return output
+    return strip_all(output)
 
 
 def user(us: pr.reddit.models.User):
@@ -246,7 +248,8 @@ def user(us: pr.reddit.models.User):
     prep_dict(output, us.__class__.__name__)
     output.update([
         (const.SCRAPE_NAME, us._me.name),
-        (const.SCRAPE_KARMA, dict(us.karma())),
+        (const.SCRAPE_KARMA,
+         dict([(a.display_name, b) for a, b in us.karma().items()])),
         (us.preferences.__class__.__name__, dict(us.preferences())),
         (us.moderator_subreddits.__name__,
          [a.display_name for a in us.moderator_subreddits()]),
@@ -255,4 +258,4 @@ def user(us: pr.reddit.models.User):
         (us.friends.__name__, [a.display_name for a in us.friends()]),
         (us.multireddits.__name__, [a.display_name for a in us.multireddits()]),
     ])
-    return output
+    return strip_all(output)

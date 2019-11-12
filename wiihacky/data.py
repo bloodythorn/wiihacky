@@ -1,15 +1,32 @@
 import os
 import yaml as yl
+
 import const
 
-DEFAULT_CONFIG = {
-    'auth': {
-        'user_agent': 'PutAgentNameHere',
-        'client_id': 'PutClientIDHere',
-        'client_secret': 'PutClientSecretHere',
-        'username': 'PutUserNameHere',
-        'password': 'PutPasswordHere',
-        'admins': ["ListAdmins", "ByUserName", "Here"]}}
+def gen_filename(scrape: dict):
+    """When given a properly processed dict, it returns an appropriate
+        filename.
+    """
+    tp = scrape[const.SCRAPE_TYPE]
+    st = scrape[const.UTC_STAMP]
+
+    # Inbox and User have the same format.
+    if tp == const.TYPE_INBOX or tp == const.TYPE_USER:
+        return const.FILE_FORMAT_ONE.format(tp, st)
+
+    if tp == const.TYPE_COMMENT or tp == const.TYPE_MESSAGE or \
+        tp == const.TYPE_SUBMISSION:
+        ident = scrape[const.KEY_ID]
+        return const.FILE_FORMAT_TWO.format(tp, ident, st)
+
+    if tp == const.TYPE_REDDITOR or tp == const.TYPE_SUBREDDIT:
+        nm = scrape[const.KEY_NAME]
+        return const.FILE_FORMAT_TWO.format(tp, nm, st)
+
+    if tp == const.TYPE_MULTIREDDIT:
+        ow = scrape[const.KEY_OWNER]
+        nm = scrape[const.KEY_NAME]
+        return const.FILE_FORMAT_THREE.format(tp, ow, nm, st)
 
 
 def load_config():
@@ -22,10 +39,6 @@ def load_config():
     A dictionary containing all configuration options.
 
     """
-    file_np = "{}/{}".format(os.getcwd(), const.FILE_DEFAULT_CONFIG)
+    file_np = const.LOAD_CONFIG.format(os.getcwd(), const.FILE_DEFAULT_CONFIG)
     with open(file_np, 'r') as config_file:
         return yl.safe_load(config_file)
-
-
-def save_data(scrape: dict):
-    """This function will save the given scrape in the proper location."""

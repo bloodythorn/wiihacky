@@ -1,38 +1,49 @@
+import yaml as yl
+
 import scrape
+import data
 import wiihacky
 
 
 def scrape_comment(wh: wiihacky.WiiHacky):
-    return scrape.comment(wh.reddit.comment('f25ltu2'))
+    sc = scrape.comment(wh.reddit.comment('f25ltu2'))
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def scrape_inbox(wh: wiihacky.WiiHacky):
-    return scrape.inbox(wh.reddit.inbox)
+    sc = scrape.inbox(wh.reddit.inbox)
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def scrape_message(wh: wiihacky.WiiHacky):
-    return scrape.message(wh.reddit.inbox.message('j901cu'))
+    sc = scrape.message(wh.reddit.inbox.message('j901cu'))
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def scrape_multireddit(wh: wiihacky.WiiHacky):
-    return scrape.multireddit(
+    sc = scrape.multireddit(
         wh.reddit.multireddit(redditor='bloodythorn', name='dev'))
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def scrape_redditor(wh: wiihacky.WiiHacky):
-    return scrape.redditor(wh.reddit.redditor('bloodythorn'))
+    sc = scrape.redditor(wh.reddit.redditor('bloodythorn'))
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def scrape_submission(wh: wiihacky.WiiHacky):
-    return scrape.submission(wh.reddit.submission('dknfgw'))
+    sc = scrape.submission(wh.reddit.submission('dknfgw'))
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def scrape_subreddit(wh: wiihacky.WiiHacky):
-    return scrape.subreddit(wh.reddit.subreddit('wiihacks'))
+    sc = scrape.subreddit(wh.reddit.subreddit('wiihacks'))
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def scrape_user(wh: wiihacky.WiiHacky):
-    return scrape.user(wh.reddit.user)
+    sc = scrape.user(wh.reddit.user)
+    return data.gen_filename(sc), yl.safe_dump(sc)
 
 
 def test_scrape(wh: wiihacky.WiiHacky):
