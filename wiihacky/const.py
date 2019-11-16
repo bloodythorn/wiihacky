@@ -45,6 +45,8 @@ SCRAPE_TYPE = 'type'
 LOAD_CONFIG = '{}/{}'
 
 FILE_DELIM = '-'
+FILE_SUFFIX = '.yml'
+FILE_PATH = '/'
 FILE_FORMAT_ONE = '{}'+FILE_DELIM+'{}.dat'
 FILE_FORMAT_TWO = '{}'+FILE_DELIM+'{}'+FILE_DELIM+'{}.dat'
 FILE_FORMAT_THREE = '{}'+FILE_DELIM+'{}'+FILE_DELIM+'{}'+FILE_DELIM+'{}.dat'

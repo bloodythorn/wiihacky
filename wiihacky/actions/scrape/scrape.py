@@ -1,15 +1,94 @@
-"""Scrapper Module.
+"""Scraper Module.
 
-    A collection of functions to scrape data-items from Reddit.
+    A collection of functions to scrape data-items from Reddit. And actions
+    that use them.
 """
+
+import logging as lg
+from pathlib import Path
+import time as tm
+import yaml as yl
 
 import praw as pr
 
+from actions import Action
 import const
-import helpers as hlp
 
 
+# TODO: Remove STRING const
+# TODO: Docu
 # Helper Functions
+
+def fetch(fetchable):
+    """This function will make sure the given praw item has been fetched.
+    This does so by accessing restricted data members.
+    """
+    # noinspection PyProtectedMember
+    if const.SCRAPE_DEL_FETCHED in fetchable.__dict__ \
+            and not fetchable._fetched:
+        # noinspection PyProtectedMember
+        fetchable._fetch()
+
+
+def gen_filename(scrape: dict):
+    """When given a properly processed dict, it returns an appropriate
+        filename.
+    """
+    tp = scrape[const.SCRAPE_TYPE]
+    st = scrape[const.UTC_STAMP]
+
+    file_name = ""
+
+    # Dir or file?
+    dir_name = tp
+
+    if tp == const.TYPE_COMMENT or tp == const.TYPE_MESSAGE or \
+            tp == const.TYPE_SUBMISSION:
+        file_name = file_name + const.FILE_DELIM + scrape[const.KEY_ID]
+    elif tp == const.TYPE_REDDITOR or tp == const.TYPE_SUBREDDIT:
+        file_name = file_name + const.FILE_DELIM + scrape[const.KEY_NAME]
+    elif tp == const.TYPE_MULTIREDDIT:
+        file_name = file_name \
+                   + const.FILE_DELIM \
+                   + scrape[const.KEY_OWNER] \
+                   + const.FILE_DELIM \
+                   + scrape[const.KEY_NAME]
+
+    file_name = file_name + str(st)
+
+    file_name = file_name + const.FILE_SUFFIX
+
+    return dir_name, file_name
+
+
+def gen_timestamp():
+    """Obtain a timestamp in utc unix."""
+    return const.UTC_STAMP, int(tm.time())
+
+
+def gen_version_stamp():
+    """Obtain a stamp containing software version."""
+    return const.VERSION_TEXT, const.__version__
+
+
+def prep_dict(dct: dict, tp: str):
+    """This function will prep a dict with all required information for
+    storage.
+    """
+    dct.update([
+        (const.SCRAPE_TYPE, tp),
+        gen_timestamp(),
+        gen_version_stamp(),
+    ])
+    return dct
+
+
+def save_file(file: str, data):
+    with open(file, 'w') as f:
+        data = yl.safe_dump(data)
+        f.write(data)
+    return True
+
 
 def strip_all(dct: dict):
     # TODO: Docu
@@ -31,30 +110,16 @@ def strip_underscore(dct: dict):
     return {i: dct[i] for i in dct if i[0] != '_'}
 
 
-def prep_dict(dct: dict, tp: str):
-    """This function will prep a dict with all required information for
-    storage.
-    """
-    dct.update([
-        (const.SCRAPE_TYPE, tp),
-        hlp.get_timestamp(),
-        hlp.get_version_stamp(),
-    ])
-    return dct
+def verify_dir(ls: str):
+    p = Path(ls)
+    if not p.exists():
+        p.mkdir()
+    return p.exists()
 
 
-def fetch(fetchable):
-    """This function will make sure the given praw item has been fetched.
-    This does so by accessing restricted data members.
-    """
-    if const.SCRAPE_DEL_FETCHED in fetchable.__dict__ \
-            and not fetchable._fetched:
-        fetchable._fetch()
+# Scraper Functions
 
-
-# Top Level Scrapers
-
-def comment(cm: pr.reddit.models.Comment):
+def sc_comment(cm: pr.reddit.models.Comment):
     """Scrape a comment.
 
     This function will scrape the comment return a data structure reflecting
@@ -76,7 +141,7 @@ def comment(cm: pr.reddit.models.Comment):
     return strip_all(output)
 
 
-def inbox(ib: pr.reddit.models.Inbox):
+def sc_inbox(ib: pr.reddit.models.Inbox):
     """Scrape inbox.
 
     This function will scrape the inbox return a data structure reflecting
@@ -98,7 +163,7 @@ def inbox(ib: pr.reddit.models.Inbox):
     return strip_all(output)
 
 
-def message(msg: pr.reddit.models.Message):
+def sc_message(msg: pr.reddit.models.Message):
     """Scrape a message.
 
     This function will scrape a message and return a data structure
@@ -117,7 +182,7 @@ def message(msg: pr.reddit.models.Message):
     return strip_all(output)
 
 
-def multireddit(mr: pr.reddit.models.Multireddit):
+def sc_multireddit(mr: pr.reddit.models.Multireddit):
     """Scrape a multi reddit.
 
     This function will scrape the multiredit return a data structure
@@ -146,7 +211,7 @@ def multireddit(mr: pr.reddit.models.Multireddit):
     return strip_all(output)
 
 
-def redditor(rd: pr.reddit.models.Redditor):
+def sc_redditor(rd: pr.reddit.models.Redditor):
     """Scrape a redditor.
 
     This function will scrape a redditor and return a data structure
@@ -184,7 +249,7 @@ def redditor(rd: pr.reddit.models.Redditor):
     return strip_all(output)
 
 
-def submission(sm: pr.reddit.models.Submission):
+def sc_submission(sm: pr.reddit.models.Submission):
     """Scrape a submission.
 
     This function will scrape a submission and return a data structure
@@ -207,7 +272,7 @@ def submission(sm: pr.reddit.models.Submission):
     return strip_all(output)
 
 
-def subreddit(sr: pr.reddit.models.Subreddit):
+def sc_subreddit(sr: pr.reddit.models.Subreddit):
     """Scrape a subreddit.
 
     This function will scrape a subreddit and return a data structure
@@ -233,7 +298,7 @@ def subreddit(sr: pr.reddit.models.Subreddit):
     return strip_all(output)
 
 
-def user(us: pr.reddit.models.User):
+def sc_user(us: pr.reddit.models.User):
     """Scrape user.
 
     This function will scrape the user return a data structure reflecting
@@ -246,6 +311,7 @@ def user(us: pr.reddit.models.User):
     """
     output = dict()
     prep_dict(output, us.__class__.__name__)
+    # noinspection PyProtectedMember
     output.update([
         (const.SCRAPE_NAME, us._me.name),
         (const.SCRAPE_KARMA,
@@ -259,3 +325,72 @@ def user(us: pr.reddit.models.User):
         (us.multireddits.__name__, [a.display_name for a in us.multireddits()]),
     ])
     return strip_all(output)
+
+
+# Scraper Actions
+
+class ScrapeInbox(Action):
+
+    def __init__(self, log: lg.Logger, inbox: pr.reddit.models.Inbox):
+        Action.__init__(self, log)
+        self.inbox = inbox
+
+    def execute(self):
+        complete = False
+        result = {}
+        try:
+            self.log.info('Scraping Inbox.')
+            result = sc_inbox(self.inbox)
+        except Exception as e:
+            self.log.error(
+                'An exception occurred while scraping inbox: {}'.format(e))
+
+        try:
+            self.log.info('Saving Inbox data.')
+            pfn = gen_filename(result)
+            fn = pfn[0] + const.FILE_PATH + pfn[1]
+            if verify_dir(pfn[0]):
+                if save_file(fn, result):
+                    complete = True
+                else:
+                    self.log.error('Could not save file: {}'.format(fn))
+            else:
+                self.log.error(
+                    'Could not verify directory:{}'.format(pfn[0]))
+        except Exception as e:
+            self.log.error(
+                'An exception occurred while saving: {}'.format(e))
+
+        self.log.info(
+            'Scrape Inbox action concluded with{} issues.'.format(
+                " out" if complete else ""))
+
+
+class ScrapeUser(Action):
+
+    def __init__(self, log: lg.Logger, user: pr.reddit.models.User):
+        Action.__init__(self, log)
+        self.user = user
+
+    def execute(self):
+        complete = False
+        try:
+            self.log.info("Scraping User.")
+            result = sc_user(self.user)
+            pfn = gen_filename(result)
+            fn = pfn[0] + const.FILE_PATH + pfn[1]
+            if verify_dir(pfn[0]):
+                if save_file(fn, result):
+                    complete = True
+                else:
+                    self.log.error('Could not save file: {}'.format(fn))
+            else:
+                self.log.error(
+                    'Could not verify directory:{}'.format(pfn[0]))
+        except Exception as e:
+            self.log.error(
+                'An exception occurred while saving: {}'.format(e))
+
+        self.log.info(
+            'Scrape User action concluded with{} issues.'.format(
+                " out" if complete else ""))

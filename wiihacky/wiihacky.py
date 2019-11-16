@@ -1,12 +1,28 @@
 """WiiHacky Module."""
 
 import logging as lg
+import os
 from time import sleep
+import yaml as yl
 
 import praw as pr
 
 import const
-import data
+
+
+def load_config():
+    """Get Configuration.
+
+    This function will retrieve the configuration dict from yaml file.
+
+    Returns
+    -------
+    A dictionary containing all configuration options.
+
+    """
+    file_np = const.LOAD_CONFIG.format(os.getcwd(), const.FILE_DEFAULT_CONFIG)
+    with open(file_np, 'r') as config_file:
+        return yl.safe_load(config_file)
 
 
 class WiiHacky:
@@ -20,7 +36,7 @@ class WiiHacky:
         self.log.info(const.WH_INIT_LOGGER_SUCC)
 
         # store configuration
-        self.config = data.load_config()
+        self.config = load_config()
 
         # init reddit instance
         self.reddit = pr.Reddit(
