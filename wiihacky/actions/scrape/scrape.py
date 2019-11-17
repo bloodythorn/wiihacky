@@ -17,16 +17,24 @@ import const
 
 # TODO: Remove STRING const
 # TODO: Docu
+# TODO: Some of these functions need to move up a level.
+
+AC_SCRAPE = 'Scraping'
+AC_SAVE = 'Saving {} data'
+OB_INBOX = 'Inbox'
+OB_USER = 'User'
+ER_FILESAVE = 'Could not save file: {}'
+ER_VERDIREC = 'Could not verify directory: {}'
+
+
 # Helper Functions
 
 def fetch(fetchable):
     """This function will make sure the given praw item has been fetched.
     This does so by accessing restricted data members.
     """
-    # noinspection PyProtectedMember
     if const.SCRAPE_DEL_FETCHED in fetchable.__dict__ \
             and not fetchable._fetched:
-        # noinspection PyProtectedMember
         fetchable._fetch()
 
 
@@ -75,33 +83,34 @@ def prep_dict(dct: dict, tp: str):
     """This function will prep a dict with all required information for
     storage.
     """
-    dct.update([
-        (const.SCRAPE_TYPE, tp),
-        gen_timestamp(),
-        gen_version_stamp(),
-    ])
+    dct.update(
+        [(const.SCRAPE_TYPE, tp), gen_timestamp(), gen_version_stamp()])
     return dct
 
 
 def save_file(file: str, data):
+    """Given a filename/path and encodable data, this function will write
+        that file.
+    """
     with open(file, 'w') as f:
-        data = yl.safe_dump(data)
-        f.write(data)
+        f.write(yl.safe_dump(data))
     return True
 
 
 def strip_all(dct: dict):
-    # TODO: Docu
+    """This function combines all strip functions to make sure a dictionary is
+        encodable.
+    """
     return strip_empty_string(strip_none(strip_underscore(dct)))
 
 
 def strip_empty_string(dct: dict):
-    # TODO: Docu
+    """Strips all data containing an empty string."""
     return {i: dct[i] for i in dct if dct[i] != ''}
 
 
 def strip_none(dct: dict):
-    # TODO: Docu
+    """Strips all keys who's data type is None."""
     return {i: dct[i] for i in dct if dct[i] is not None}
 
 
@@ -111,6 +120,8 @@ def strip_underscore(dct: dict):
 
 
 def verify_dir(ls: str):
+    """Given a directory name, this function will verify that it exists,
+        and if not, create it."""
     p = Path(ls)
     if not p.exists():
         p.mkdir()
@@ -327,70 +338,173 @@ def sc_user(us: pr.reddit.models.User):
     return strip_all(output)
 
 
+def action_concluded(log: lg.Logger, ac: str, complete: bool):
+    """This will log the conclusion of the action."""
+    log.info(
+        '{} action concluded with{} issues.'.format(
+            ac,
+            "out" if complete else ""))
+
+
+def ex_occurred(log: lg.Logger, tp: str, e: Exception):
+    """Will log exceptions."""
+    err = 'An exception occurred while {}: {}'
+    log.error(err.format(tp, e))
+
+
 # Scraper Actions
 
 class ScrapeInbox(Action):
+    """This action when given the inbox will scrape and save the data."""
 
     def __init__(self, log: lg.Logger, inbox: pr.reddit.models.Inbox):
+        """Only the inbox is needed."""
         Action.__init__(self, log)
         self.inbox = inbox
 
     def execute(self):
+        """Execute Action."""
+        # Prep
+        ac = AC_SCRAPE + ' ' + OB_INBOX
         complete = False
         result = {}
+        # Scrape
         try:
-            self.log.info('Scraping Inbox.')
+            self.log.info(ac + '.')
             result = sc_inbox(self.inbox)
         except Exception as e:
-            self.log.error(
-                'An exception occurred while scraping inbox: {}'.format(e))
-
+            ex_occurred(self.log, ac + ':', e)
+        # Save
         try:
-            self.log.info('Saving Inbox data.')
+            self.log.info(AC_SAVE.format(OB_INBOX))
             pfn = gen_filename(result)
             fn = pfn[0] + const.FILE_PATH + pfn[1]
             if verify_dir(pfn[0]):
                 if save_file(fn, result):
                     complete = True
                 else:
-                    self.log.error('Could not save file: {}'.format(fn))
+                    self.log.error(ER_FILESAVE.format(fn))
             else:
-                self.log.error(
-                    'Could not verify directory:{}'.format(pfn[0]))
+                self.log.error(ER_VERDIREC.format(pfn[0]))
         except Exception as e:
-            self.log.error(
-                'An exception occurred while saving: {}'.format(e))
-
-        self.log.info(
-            'Scrape Inbox action concluded with{} issues.'.format(
-                " out" if complete else ""))
+            ex_occurred(self.log, AC_SAVE.format(OB_INBOX), e)
+        # End of Action
+        action_concluded(self.log, ac, complete)
 
 
 class ScrapeUser(Action):
+    """This action when given the user will scrape and save the data."""
 
     def __init__(self, log: lg.Logger, user: pr.reddit.models.User):
+        """Only the user is needed."""
         Action.__init__(self, log)
         self.user = user
 
     def execute(self):
+        """Execute Action."""
+        # Prep
+        ac = AC_SCRAPE + ' ' + OB_USER
         complete = False
+        result = {}
+        # Scrape
         try:
-            self.log.info("Scraping User.")
+            self.log.info(ac + '.')
             result = sc_user(self.user)
+        except Exception as e:
+            ex_occurred(self.log, ac + ':', e)
+        # Save
+        try:
+            self.log.info(AC_SAVE.format(OB_USER))
             pfn = gen_filename(result)
             fn = pfn[0] + const.FILE_PATH + pfn[1]
             if verify_dir(pfn[0]):
                 if save_file(fn, result):
                     complete = True
                 else:
-                    self.log.error('Could not save file: {}'.format(fn))
+                    self.log.error(ER_FILESAVE.format(fn))
             else:
-                self.log.error(
-                    'Could not verify directory:{}'.format(pfn[0]))
+                self.log.error(ER_VERDIREC.format(pfn[0]))
         except Exception as e:
-            self.log.error(
-                'An exception occurred while saving: {}'.format(e))
+            ex_occurred(self.log, AC_SAVE.format(OB_USER), e)
+        # End of Action
+        action_concluded(self.log, ac, complete)
 
-        self.log.info(
-            'Scrape User action concluded with{} issues.'.format(
-                " out" if complete else ""))
+
+class ScrapeComment(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
+
+
+class ScrapeMessage(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
+
+
+class ScrapeSubmission(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
+
+
+class ScrapeMultireddit(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
+
+
+class ScrapeRedditor(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
+
+
+class ScrapeSubreddit(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
+
+
+class ScrapeWiki(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
+
+
+class ScrapeWikiPage(Action):
+
+    def __init__(self, log: lg.Logger):
+        Action.__init__(self, log)
+        pass
+
+    def execute(self):
+        pass
