@@ -8,3 +8,4 @@ https://github.com/bloodythorn/wiihacky
 """
 
 from .wiihacky import WiiHacky
+from . import actions
