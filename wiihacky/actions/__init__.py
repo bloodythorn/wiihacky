@@ -8,4 +8,5 @@ from .scrape.inbox import ScrapeInbox
 from .scrape.message import ScrapeMessage
 from .scrape.redditor import ScrapeRedditor
 from .scrape.submission import ScrapeSubmission
+from .scrape.subreddit import ScrapeSubreddit
 from .scrape.user import ScrapeUser
