@@ -5,3 +5,4 @@ from .action import (
     action_concluded)
 from .constants import *
 from .scrape.inbox import ScrapeInbox
+from .scrape.user import ScrapeUser

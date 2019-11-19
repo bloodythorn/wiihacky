@@ -34,17 +34,17 @@ class ScrapeInbox(Action):
                 const.TXT_SAVING.format(self.TXT_INBOX.capitalize()))
             # Assemble filename and path
             fn = data[const.TXT_TYPE].lower() + '-' + \
-                str(data[const.TXT_UTC_STAMP]) + '.' + \
-                const.FILE_SUFFIX
-            from pathlib import Path, Path
+                str(data[const.TXT_UTC_STAMP])
+            from pathlib import Path
             pth = Path(const.DATA_DIR) / data[const.TXT_TYPE].lower() / fn
             # Confirm directories
             from os import makedirs
             makedirs(pth.parent, exist_ok=True)
             # Save File
-            with open(pth, 'w') as f:
+            with open(pth.with_suffix(const.FILE_SUFFIX), 'w') as f:
                 from yaml import safe_dump
                 f.write(safe_dump(data))
+            complete = True
         except Exception as e:
             scrape.ex_occurred(
                 self.log, const.TXT_SAVING.format(self.TXT_INBOX), e)

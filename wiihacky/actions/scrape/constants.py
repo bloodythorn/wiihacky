@@ -43,9 +43,9 @@ TXT_FETCH_FUNC = pr.models.reddit.base.RedditBase._fetch.__name__
 #SCRAPE_DEL_PATH = '_path'
 #SCRAPE_DEL_REDDIT = '_reddit'
 #SCRAPE_DEST = 'dest'
-#SCRAPE_NAME = 'name'
+
 #SCRAPE_COMMENTS = 'comments'
-#SCRAPE_KARMA = 'karma'
+
 #SCRAPE_PATH = 'path'
 #SCRAPE_SUBMISSIONS = 'submissions'
 #SCRAPE_SUBREDDITS = 'subreddits'
