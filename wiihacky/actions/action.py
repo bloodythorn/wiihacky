@@ -1,10 +1,17 @@
 """Base class for all actions."""
 import logging as lg
 
-import actions.constants as constants
+import actions.constants as const
+
+
+def action_concluded(log: lg.Logger, ac: str, complete: bool):
+    """This will log the conclusion of the action."""
+    log.info(const.ACTION_DONE.format(ac, const.ACTION_OK if complete else ""))
+
 
 class Action:
     """Base action class."""
+    ACTION_NAME = 'EmptyAction'
 
     def __init__(self, log: lg.Logger, msg="", priority=10):
         """Initialization takes a logger, and optional message and
@@ -23,6 +30,5 @@ class Action:
             print the log message.
         """
         self.log.info(self.msg)
-        self.log.info(constants.ACTION_DONE.format(
-            constants.ACTION_NAME, constants.ACTION_OK))
+        action_concluded(self.log, self.ACTION_NAME, const.ACTION_OK)
         self.executed = True
