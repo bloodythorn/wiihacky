@@ -1,25 +1,25 @@
 import logging as lg
 
-from praw.models import Inbox
+from praw.models import Comment
 
 from actions import (Action, action_concluded)
 import actions.scrape.constants as const
 import actions.scrape as scrape
 
 
-class ScrapeInbox(Action):
-    """This action when given the inbox will scrape and save the data."""
+class ScrapeComment(Action):
+    """This action when given a comment will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, inbx: Inbox):
+    def __init__(self, log: lg.Logger, cmnt: Comment):
         """Initialize the action."""
         Action.__init__(self, log)
-        self.inbox = inbx
-        self.TXT_INBOX = self.inbox.__class__.__name__
+        self.cmnt = cmnt
+        self.TXT_COMMENT = self.cmnt.__class__.__name__
 
     def execute(self):
         """Execute Action."""
         # Prep
-        ac = const.TXT_START + ' ' + self.TXT_INBOX
+        ac = const.TXT_START + ' ' + self.TXT_COMMENT
         complete = False
         data = {}
         # Scrape
@@ -31,9 +31,10 @@ class ScrapeInbox(Action):
         # Save
         try:
             self.log.info(
-                const.TXT_SAVING.format(self.TXT_INBOX.capitalize()))
+                const.TXT_SAVING.format(self.TXT_COMMENT.capitalize()))
             # Assemble filename and path
-            fn = data[const.TXT_TYPE].lower() + '-' + \
+            fn = data[const.TXT_TYPE].lower() + '_' + \
+                data[const.TXT_ID] + '_' + \
                 str(data[const.TXT_UTC_STAMP])
             from pathlib import Path
             pth = Path(const.DATA_DIR) / data[const.TXT_TYPE].lower() / fn
@@ -47,14 +48,14 @@ class ScrapeInbox(Action):
             complete = True
         except Exception as e:
             scrape.ex_occurred(
-                self.log, const.TXT_SAVING.format(self.TXT_INBOX), e)
-        # End of Action
+                self.log, const.TXT_SAVING.format(self.TXT_COMMENT), e)
+        # End of action
         action_concluded(self.log, ac, complete)
 
     def scrape(self):
-        """Scrape inbox.
+        """Scrape a comment.
 
-        This function will scrape the inbox return a data structure reflecting
+        This function will scrape the comment return a data structure reflecting
         its state.
 
         Return
@@ -62,12 +63,12 @@ class ScrapeInbox(Action):
         a dict with scraped data.
 
         """
-        output = dict()
-        scrape.prep_dict(output, self.inbox.__class__.__name__)
-        output.update([
-            (self.inbox.all.__name__, [a.id for a in self.inbox.all()]),
-            (self.inbox.mentions.__name__,
-             [a.id for a in self.inbox.mentions()]),
-            (self.inbox.sent.__name__, [a.id for a in self.inbox.sent()]),
-            (self.inbox.unread.__name__, [a.id for a in self.inbox.unread()])])
+        scrape.fetch(self.cmnt)
+        output = dict(vars(self.cmnt))
+        scrape.prep_dict(output, self.cmnt.__class__.__name__)
+        output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
+        output[const.TXT_SUBREDDIT] = output[const.TXT_SUBREDDIT].name
+        output[const.TXT_SUBMISSION] = output['_' + const.TXT_SUBMISSION]
+        output[const.TXT_REPLIES] = \
+            [a.id for a in output['_' + const.TXT_REPLIES]]
         return scrape.strip_all(output)
