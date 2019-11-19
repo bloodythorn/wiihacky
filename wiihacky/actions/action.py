@@ -11,7 +11,6 @@ def action_concluded(log: lg.Logger, ac: str, complete: bool):
 
 class Action:
     """Base action class."""
-    ACTION_NAME = 'EmptyAction'
 
     def __init__(self, log: lg.Logger, msg="", priority=10):
         """Initialization takes a logger, and optional message and
@@ -29,6 +28,7 @@ class Action:
             If the function is not, or if the base class is executed, it will
             print the log message.
         """
+        ACTION_NAME = 'EmptyAction'
         self.log.info(self.msg)
-        action_concluded(self.log, self.ACTION_NAME, const.ACTION_OK)
+        action_concluded(self.log, ACTION_NAME, const.ACTION_OK)
         self.executed = True

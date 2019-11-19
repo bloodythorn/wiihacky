@@ -3,4 +3,3 @@ from .scrape import (
     fetch,
     prep_dict,
     strip_all)
-

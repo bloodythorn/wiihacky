@@ -1,25 +1,25 @@
 import logging as lg
 
-from praw.models import Comment
+from praw.models import Message
 
 from actions import (Action, action_concluded)
 import actions.scrape.constants as const
 import actions.scrape as scrape
 
 
-class ScrapeComment(Action):
+class ScrapeMessage(Action):
     """This action when given a comment will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, cmnt: Comment):
+    def __init__(self, log: lg.Logger, msg: Message):
         """Initialize the action."""
         Action.__init__(self, log)
-        self.cmnt = cmnt
-        self.TXT_COMMENT = self.cmnt.__class__.__name__
+        self.msg = msg
+        self.TXT_MESSAGE = self.msg.__class__.__name__
 
     def execute(self):
-        """Execute Action."""
+        """Execute action."""
         # Prep
-        ac = const.TXT_START + ' ' + self.TXT_COMMENT
+        ac = const.TXT_START + ' ' + self.TXT_MESSAGE
         complete = False
         data = {}
         # Scrape
@@ -31,7 +31,7 @@ class ScrapeComment(Action):
         # Save
         try:
             self.log.info(
-                const.TXT_SAVING.format(self.TXT_COMMENT.capitalize()))
+                const.TXT_SAVING.format(self.TXT_MESSAGE.capitalize()))
             # Assemble filename and path
             fn = data[const.TXT_TYPE].lower() + '-' + \
                 data[const.TXT_ID] + '-' + \
@@ -48,27 +48,24 @@ class ScrapeComment(Action):
             complete = True
         except Exception as e:
             scrape.ex_occurred(
-                self.log, const.TXT_SAVING.format(self.TXT_COMMENT), e)
-        # End of action
+                self.log, const.TXT_SAVING.format(self.TXT_MESSAGE), e)
+        # End of Action
         action_concluded(self.log, ac, complete)
 
     def scrape(self):
-        """Scrape a comment.
+        """Scrape a message.
 
-        This function will scrape the comment return a data structure reflecting
-        its state.
+        This function will scrape a message and return a data structure
+        reflecting its state.
 
         Return
         ------
         a dict with scraped data.
-
         """
-        scrape.fetch(self.cmnt)
-        output = dict(vars(self.cmnt))
-        scrape.prep_dict(output, self.cmnt.__class__.__name__)
+        scrape.fetch(self.msg)
+        output = dict(vars(self.msg))
+        scrape.prep_dict(output, self.msg.__class__.__name__)
+        output[const.TXT_REPLIES] = [a.id for a in output[const.TXT_REPLIES]]
         output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
-        output[const.TXT_SUBREDDIT] = output[const.TXT_SUBREDDIT].name
-        output[const.TXT_SUBMISSION] = output['_' + const.TXT_SUBMISSION]
-        output[const.TXT_REPLIES] = \
-            [a.id for a in output['_' + const.TXT_REPLIES]]
+        output[const.TXT_DEST] = output[const.TXT_DEST].name
         return scrape.strip_all(output)

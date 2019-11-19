@@ -10,6 +10,7 @@ TXT_ERR_EXCEPT = 'An exception occurred while {}: {}'
 TXT_ERR_SAVE = 'Could not save file: {}'
 
 TXT_AUTHOR = 'author'
+TXT_DEST = 'dest'
 TXT_ID = 'id'
 TXT_KARMA = 'karma'
 TXT_NAME = 'name'
