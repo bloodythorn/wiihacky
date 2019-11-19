@@ -5,23 +5,24 @@ DATA_DIR = 'data'
 FILE_DELIM = '-'
 FILE_SUFFIX = '.yml'
 
-KEY_ID = 'id'
-KEY_NAME = 'name'
-
-TXT_START = 'Scraping'
-TXT_SAVING = 'Saving {} data'
 TXT_ERR_DIR = 'Could not verify directory: {}'
+TXT_ERR_EXCEPT = 'An exception occurred while {}: {}'
 TXT_ERR_SAVE = 'Could not save file: {}'
 
-TXT_COMMENT = 'Comment'
-TXT_FETCH_FUNC = pr.models.reddit.base.RedditBase._fetch.__name__
+TXT_ID = 'id'
+TXT_KARMA = 'karma'
+TXT_NAME = 'name'
+TXT_START = 'Scraping'
+TXT_SAVING = 'Saving {} data'
 TXT_TYPE = 'type'
 TXT_UTC_STAMP = 'utc_timestamp'
 
-SCRAPE_EXCEPT = 'An exception occurred while {}: {}'
+TXT_FETCH_FUNC = pr.models.reddit.base.RedditBase._fetch.__name__
+
 
 # TXT_AUTHOR = 'author'
 # TXT_INBOX = 'Inbox'
+# TXT_COMMENT = 'comment'
 # TXT_MESSAGE = 'Message'
 # TXT_REDDITOR = 'redditor'
 # TXT_REPLIES = 'replies'
