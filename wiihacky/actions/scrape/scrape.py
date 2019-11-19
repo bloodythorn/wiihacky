@@ -14,7 +14,7 @@ import actions.scrape.constants as const
 
 def ex_occurred(log: lg.Logger, tp: str, e: Exception):
     """Will log exceptions."""
-    log.error(const.SCRAPE_EXCEPT.format(tp, e))
+    log.error(const.TXT_ERR_EXCEPT.format(tp, e))
 
 
 # TODO: clean up gen_filename
