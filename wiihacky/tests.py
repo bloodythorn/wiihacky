@@ -6,5 +6,5 @@ if __name__ == "__main__":
     # subreddit = wh.reddit.subreddit('wiihacks')
     # comment = random.choice(list(subreddit.comments()))
     # message = random.choice(list(wh.reddit.inbox.messages()))
-    redditor = wh.reddit.redditor('bloodythorn')
-    ac = wiihacky.actions.ScrapeRedditor(wh.log, redditor)
+    # redditor = wh.reddit.redditor('bloodythorn')
+    # submission = random.choice(list(redditor.submissions.new()))

@@ -7,6 +7,8 @@ import actions.scrape.constants as const
 import actions.scrape as scrape
 
 
+# TODO: Check scrape to make sure it's as data-complete as it can be.
+
 class ScrapeRedditor(Action):
     """This action when given a redditor will scrape and save the data."""
 
