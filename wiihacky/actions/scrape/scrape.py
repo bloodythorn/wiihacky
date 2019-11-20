@@ -26,7 +26,7 @@ def fetch(fetchable):
     """This function will make sure the given praw item has been fetched.
     This does so by accessing restricted data members.
     """
-    if const.TXT_FETCH_FUNC in fetchable.__dict__ \
+    if str('_' + const.TXT_FETCHED) in fetchable.__dict__ \
             and not fetchable._fetched:
         fetchable._fetch()
 

@@ -6,6 +6,7 @@ from .constants import *
 from .scrape.comment import ScrapeComment
 from .scrape.inbox import ScrapeInbox
 from .scrape.message import ScrapeMessage
+from .scrape.multireddit import ScrapeMultireddit
 from .scrape.redditor import ScrapeRedditor
 from .scrape.submission import ScrapeSubmission
 from .scrape.subreddit import ScrapeSubreddit

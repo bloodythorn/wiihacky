@@ -13,6 +13,7 @@ TXT_AUTHOR = 'author'
 TXT_COMMENTS = 'comments'
 TXT_DEST = 'dest'
 TXT_DISPLAY_NAME = 'display_name'
+TXT_FETCHED = 'fetched'
 TXT_ID = 'id'
 TXT_KARMA = 'karma'
 TXT_NAME = 'name'
@@ -24,9 +25,6 @@ TXT_SUBMISSION = 'submission'
 TXT_SUBREDDIT = 'subreddit'
 TXT_TYPE = 'type'
 TXT_UTC_STAMP = 'utc_timestamp'
-
-# noinspection PyUnresolvedReferences
-TXT_FETCH_FUNC = pr.models.reddit.base.RedditBase._fetch.__name__
 
 # TXT_INBOX = 'Inbox'
 # TXT_COMMENT = 'comment'

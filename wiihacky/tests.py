@@ -8,5 +8,6 @@ if __name__ == "__main__":
     # message = random.choice(list(wh.reddit.inbox.messages()))
     # redditor = wh.reddit.redditor('bloodythorn')
     # submission = random.choice(list(redditor.submissions.new()))
-    subreddit = wh.reddit.subreddit('wiihacks')
-    ac = wiihacky.actions.ScrapeSubreddit(wh.log, subreddit)
+    # subreddit = wh.reddit.subreddit('wiihacks')
+    multi = wh.reddit.multireddit(redditor='bloodythorn', name='dev')
+    ac = wiihacky.actions.ScrapeMultireddit(wh.log, multi)
