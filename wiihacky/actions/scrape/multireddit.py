@@ -2,7 +2,7 @@ import logging as lg
 
 from praw.models import Multireddit
 
-from actions import (Action, action_concluded)
+from wiihacky.actions import (Action, action_concluded)
 import actions.scrape.constants as const
 import actions.scrape as scrape
 

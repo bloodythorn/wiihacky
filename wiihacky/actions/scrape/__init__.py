@@ -1,5 +1,10 @@
-from .scrape import (
-    ex_occurred,
-    fetch,
-    prep_dict,
-    strip_all)
+from .comment import ScrapeComment
+from .inbox import ScrapeInbox
+from .message import ScrapeMessage
+from .multireddit import ScrapeMultireddit
+from .redditor import ScrapeRedditor
+from .submission import ScrapeSubmission
+from .subreddit import ScrapeSubreddit
+from .user import ScrapeUser
+
+from .scrape import *

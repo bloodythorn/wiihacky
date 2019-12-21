@@ -2,9 +2,9 @@ import logging as lg
 
 from praw.models import Comment
 
-from actions import (Action, action_concluded)
-import actions.scrape.constants as const
-import actions.scrape as scrape
+from wiihacky.actions import (Action, action_concluded)
+import wiihacky.actions.scrape.constants as const
+import wiihacky.actions.scrape as scrape
 
 
 class ScrapeComment(Action):

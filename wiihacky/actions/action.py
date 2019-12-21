@@ -28,7 +28,7 @@ class Action:
             If the function is not, or if the base class is executed, it will
             print the log message.
         """
-        ACTION_NAME = 'EmptyAction'
+        action_name = 'EmptyAction'
         self.log.info(self.msg)
-        action_concluded(self.log, ACTION_NAME, const.ACTION_OK)
+        action_concluded(self.log, action_name, const.ACTION_OK)
         self.executed = True

@@ -31,36 +31,6 @@ def fetch(fetchable):
         fetchable._fetch()
 
 
-def gen_filename(scr: dict):
-    """When given a properly processed dict, it returns an appropriate
-        filename.
-    """
-    tp = scr[const.TXT_TYPE]
-    st = scr[const.TXT_UTC_STAMP]
-
-    file_name = ""
-
-    # Dir or file?
-    dir_name = tp
-
-#    if tp == const.TXT_COMMENT or \
-#            tp == const.TXT_MESSAGE.capitalize() or \
-#            tp == const.TXT_SUBMISSION.capitalize():
-#        file_name = file_name + const.FILE_DELIM + scr[const.KEY_ID]
-#    elif tp == const.TXT_REDDITOR.capitalize() or \
-#            tp == const.TXT_SUBREDDIT.capitalize():
-#        file_name = file_name + const.FILE_DELIM + scr[const.KEY_NAME]
-#    elif tp == TYPE_MULTIREDDIT:
-#        file_name = file_name \
-#                    + const.FILE_DELIM \
-#                    + scr[KEY_OWNER] \
-#                    + const.FILE_DELIM \
-#                    + scr[KEY_NAME]
-#    file_name = file_name + str(st)
-#    file_name = file_name + FILE_SUFFIX
-    return dir_name, file_name
-
-
 def gen_timestamp():
     """Obtain a timestamp in utc unix."""
     return const.TXT_UTC_STAMP, int(tm.time())

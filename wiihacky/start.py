@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Server start."""
 
-import wiihacky
+from wiihacky import WiiHacky
 
 if __name__ == "__main__":
-    wh = wiihacky.WiiHacky()
+    wh = WiiHacky()
     wh.run()

@@ -66,8 +66,8 @@ class ScrapeSubmission(Action):
         scrape.fetch(self.subm)
         output = dict(vars(self.subm))
         scrape.prep_dict(output, self.subm.__class__.__name__)
-        output[const.TXT_SUBREDDIT] = \
-            output[const.TXT_SUBREDDIT].display_name
+        display_name = output[const.TXT_SUBREDDIT].display_name
+        output[const.TXT_SUBREDDIT] = display_name
         output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
         self.subm.comments.replace_more(limit=0)
         output[const.TXT_COMMENTS] = \
