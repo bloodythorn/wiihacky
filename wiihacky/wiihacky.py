@@ -1,6 +1,5 @@
 """WiiHacky Module."""
 
-import actions
 import constants
 
 
@@ -34,7 +33,11 @@ class WiiHacky:
         self.log.info(constants.TXT_LOGGER_SUCC)
 
         # store configuration
-        self.config = load_config()
+        try:
+            self.config = load_config()
+        except Exception as e:
+            self.log.critical('failed to load config: {}'.format(e))
+            exit(-1)
 
         # init reddit instance
         import praw as pr
@@ -47,17 +50,13 @@ class WiiHacky:
         self.log.info(constants.TXT_REDDIT_SUCC)
         self.log.info(constants.TXT_LOGGED_IN, self.reddit.user.me())
 
+        # set interactive
+        self.running = False
+
     def run(self):
         """Run bot.
 
         The bot will perform scheduled tasks and eventually respond to
         CLI-like commands until told to exit.
         """
-        self.log.info(constants.TXT_START_BOT)
-        # interactive (hopefully) loop
-        try:
-            while True:
-                from time import sleep
-                sleep(0.5)
-        except KeyboardInterrupt:
-            self.log.info(constants.TXT_INTERRUPT)
+        # TODO: Two modes single cycle, or interactive.

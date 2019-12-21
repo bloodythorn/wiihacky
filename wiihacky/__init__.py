@@ -9,4 +9,3 @@ https://github.com/bloodythorn/wiihacky
 from .wiihacky import (
     load_config,
     WiiHacky)
-

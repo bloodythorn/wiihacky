@@ -63,7 +63,7 @@ class ScrapeUser(Action):
 
         """
         output = dict()
-        scrape.prep_dict(output, self.user.__class__.__name__)
+        scrape.prep_dict(output, self.TXT_USER)
         # noinspection PyProtectedMember
         output.update([
             (const.TXT_NAME, self.user._me.name),

@@ -68,4 +68,7 @@ class ScrapeMessage(Action):
         output[const.TXT_REPLIES] = [a.id for a in output[const.TXT_REPLIES]]
         output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
         output[const.TXT_DEST] = output[const.TXT_DEST].name
+        if self.msg.subreddit:
+            output[const.TXT_SUBREDDIT] = \
+                output[const.TXT_SUBREDDIT].display_name
         return scrape.strip_all(output)

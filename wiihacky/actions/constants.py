@@ -3,7 +3,14 @@ ACTION_OK = 'out'
 
 ACTION_TREE = {
     'action': {},
+    'quit': {},
     'scrape': {
+        'comment': {},
         'inbox': {},
-        'user': {}
+        'message': {},
+        'multireddit': {},
+        'redditor': {},
+        'submission': {},
+        'subreddit': {},
+        'user': {},
     }}
