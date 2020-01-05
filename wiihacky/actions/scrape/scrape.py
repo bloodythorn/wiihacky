@@ -31,6 +31,16 @@ def fetch(fetchable):
         fetchable._fetch()
 
 
+def gen_filename(data):
+    from wiihacky.actions.scrape.constants import TXT_TYPE
+    if TXT_TYPE in data:
+        if data[TXT_TYPE].lower() == 'comment':
+            return data[const.TXT_TYPE].lower() + '-' + \
+                   data[const.TXT_ID] + '-' + \
+                   str(data[const.TXT_UTC_STAMP])
+    return 'Nope'
+
+
 def gen_timestamp():
     """Obtain a timestamp in utc unix."""
     return const.TXT_UTC_STAMP, int(tm.time())
