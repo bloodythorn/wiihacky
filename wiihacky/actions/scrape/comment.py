@@ -2,9 +2,7 @@ import logging as lg
 
 from praw.models import Comment
 
-from wiihacky.actions import (Action, action_concluded)
-import wiihacky.actions.scrape.constants as const
-import wiihacky.actions.scrape as scrape
+from wiihacky.actions import Action
 
 
 class ScrapeComment(Action):
@@ -13,44 +11,52 @@ class ScrapeComment(Action):
     def __init__(self, log: lg.Logger, cmnt: Comment):
         """Initialize the action."""
         Action.__init__(self, log)
+        self.complete = False
         self.cmnt = cmnt
+        self.data = {}
         self.TXT_COMMENT = self.cmnt.__class__.__name__
+        from wiihacky.actions.scrape.constants import TXT_START
+        self.ac = TXT_START + ' ' + self.TXT_COMMENT
 
     def execute(self):
         """Execute Action."""
-        # Prep
-        ac = const.TXT_START + ' ' + self.TXT_COMMENT
-        complete = False
-        data = {}
+        from wiihacky.actions.scrape import ex_occurred, gen_filename
+        from wiihacky.actions.scrape.constants import (
+            DATA_DIR, FILE_SUFFIX, TXT_SAVING, TXT_TYPE)
+
         # Scrape
         try:
-            self.log.info(ac + '.')
-            data = self.scrape()
+            self.log.info(self.ac + '.')
+            self.data = self.scrape()
         except Exception as e:
-            scrape.ex_occurred(self.log, ac + ':', e)
+            ex_occurred(self.log, self.ac + ':', e)
+
         # Save
         try:
             self.log.info(
-                const.TXT_SAVING.format(self.TXT_COMMENT.capitalize()))
+                TXT_SAVING.format(self.TXT_COMMENT.capitalize()))
+
             # Assemble filename and path
-            fn = data[const.TXT_TYPE].lower() + '-' + \
-                data[const.TXT_ID] + '-' + \
-                str(data[const.TXT_UTC_STAMP])
+            fn = gen_filename(self.data)
             from pathlib import Path
-            pth = Path(const.DATA_DIR) / data[const.TXT_TYPE].lower() / fn
+            pth = Path(DATA_DIR) / self.data[TXT_TYPE].lower() / fn
+
             # Confirm directories
             from os import makedirs
             makedirs(pth.parent, exist_ok=True)
+
             # Save File
-            with open(pth.with_suffix(const.FILE_SUFFIX), 'w') as f:
+            with open(pth.with_suffix(FILE_SUFFIX), 'w') as f:
                 from yaml import safe_dump
-                f.write(safe_dump(data))
-            complete = True
+                f.write(safe_dump(self.data))
+            self.complete = True
         except Exception as e:
-            scrape.ex_occurred(
-                self.log, const.TXT_SAVING.format(self.TXT_COMMENT), e)
+            ex_occurred(
+                self.log, TXT_SAVING.format(self.TXT_COMMENT), e)
+
         # End of action
-        action_concluded(self.log, ac, complete)
+        from wiihacky.actions import action_concluded
+        action_concluded(self.log, self.ac, self.complete)
 
     def scrape(self):
         """Scrape a comment.
@@ -63,12 +69,16 @@ class ScrapeComment(Action):
         a dict with scraped data.
 
         """
-        scrape.fetch(self.cmnt)
+        from wiihacky.actions.scrape.constants import (
+            TXT_AUTHOR, TXT_REPLIES, TXT_SUBREDDIT, TXT_SUBMISSION)
+        from wiihacky.actions.scrape import (fetch, prep_dict, strip_all)
+
+        fetch(self.cmnt)
         output = dict(vars(self.cmnt))
-        scrape.prep_dict(output, self.cmnt.__class__.__name__)
-        output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
-        output[const.TXT_SUBREDDIT] = output[const.TXT_SUBREDDIT].name
-        output[const.TXT_SUBMISSION] = output['_' + const.TXT_SUBMISSION]
-        output[const.TXT_REPLIES] = \
-            [a.id for a in output['_' + const.TXT_REPLIES]]
-        return scrape.strip_all(output)
+        prep_dict(output, self.cmnt.__class__.__name__)
+        output[TXT_AUTHOR] = output[TXT_AUTHOR].name
+        output[TXT_SUBREDDIT] = output[TXT_SUBREDDIT].name
+        output[TXT_SUBMISSION] = output['_' + TXT_SUBMISSION]
+        output[TXT_REPLIES] = \
+            [a.id for a in output['_' + TXT_REPLIES]]
+        return strip_all(output)

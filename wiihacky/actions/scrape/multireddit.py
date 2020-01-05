@@ -2,9 +2,7 @@ import logging as lg
 
 from praw.models import Multireddit
 
-from wiihacky.actions import (Action, action_concluded)
-import actions.scrape.constants as const
-import actions.scrape as scrape
+from wiihacky.actions import Action
 
 
 class ScrapeMultireddit(Action):
@@ -18,8 +16,13 @@ class ScrapeMultireddit(Action):
 
     def execute(self):
         """Execute Action."""
-        # Prep
-        ac = const.TXT_START + ' ' + self.TXT_MULTIREDDIT
+        from wiihacky.actions.scrape.constants import (
+            DATA_DIR, FILE_SUFFIX, TXT_DISPLAY_NAME, TXT_SAVING,
+            TXT_START, TXT_TYPE, TXT_UTC_STAMP)
+        from wiihacky.actions import action_concluded
+        from wiihacky.actions.scrape import ex_occurred
+
+        ac = TXT_START + ' ' + self.TXT_MULTIREDDIT
         complete = False
         data = {}
         # Scrape
@@ -27,28 +30,28 @@ class ScrapeMultireddit(Action):
             self.log.info(ac + '.')
             data = self.scrape()
         except Exception as e:
-            scrape.ex_occurred(self.log, ac + ':', e)
+            ex_occurred(self.log, ac + ':', e)
         # Save
         try:
             self.log.info(
-                const.TXT_SAVING.format(self.TXT_MULTIREDDIT.capitalize()))
+                TXT_SAVING.format(self.TXT_MULTIREDDIT.capitalize()))
             # Assemble filename and path
-            fn = data[const.TXT_TYPE].lower() + '-' + \
-                data[const.TXT_DISPLAY_NAME].lower() + '-' + \
-                str(data[const.TXT_UTC_STAMP])
+            fn = data[TXT_TYPE].lower() + '-' + \
+                data[TXT_DISPLAY_NAME].lower() + '-' + \
+                str(data[TXT_UTC_STAMP])
             from pathlib import Path
-            pth = Path(const.DATA_DIR) / data[const.TXT_TYPE].lower() / fn
+            pth = Path(DATA_DIR) / data[TXT_TYPE].lower() / fn
             # Confirm directories
             from os import makedirs
             makedirs(pth.parent, exist_ok=True)
             # Save File
-            with open(pth.with_suffix(const.FILE_SUFFIX), 'w') as f:
+            with open(pth.with_suffix(FILE_SUFFIX), 'w') as f:
                 from yaml import safe_dump
                 f.write(safe_dump(data))
             complete = True
         except Exception as e:
-            scrape.ex_occurred(
-                self.log, const.TXT_SAVING.format(self.TXT_MULTIREDDIT), e)
+            ex_occurred(
+                self.log, TXT_SAVING.format(self.TXT_MULTIREDDIT), e)
         # End of Action
         action_concluded(self.log, ac, complete)
 
@@ -63,15 +66,19 @@ class ScrapeMultireddit(Action):
         a dict with scraped data.
 
         """
-        scrape.fetch(self.multi)
+        from wiihacky.actions.scrape import (fetch, prep_dict, strip_all)
+        from wiihacky.actions.scrape.constants import (
+            TXT_AUTHOR, TXT_COMMENTS, TXT_PATH, TXT_SUBREDDIT)
+
+        fetch(self.multi)
         output = dict(vars(self.multi))
-        scrape.prep_dict(output, self.multi.__class__.__name__)
-        output[const.TXT_SUBREDDIT + 's'] = \
-            [a.display_name for a in output[const.TXT_SUBREDDIT + 's']]
-        output[const.TXT_PATH] = output[const.TXT_PATH]
-        output[const.TXT_AUTHOR] = output['_' + const.TXT_AUTHOR].name
+        prep_dict(output, self.multi.__class__.__name__)
+        output[TXT_SUBREDDIT + 's'] = \
+            [a.display_name for a in output[TXT_SUBREDDIT + 's']]
+        output[TXT_PATH] = output[TXT_PATH]
+        output[TXT_AUTHOR] = output['_' + TXT_AUTHOR].name
         output.update([
-            (const.TXT_COMMENTS, [a.id for a in self.multi.comments()]),
+            (TXT_COMMENTS, [a.id for a in self.multi.comments()]),
             (self.multi.controversial.__name__,
              [a.id for a in self.multi.controversial()]),
             (self.multi.hot.__name__, [a.id for a in self.multi.hot()]),
@@ -79,4 +86,4 @@ class ScrapeMultireddit(Action):
             (self.multi.rising.__name__, [a.id for a in self.multi.rising()]),
             (self.multi.top.__name__, [a.id for a in self.multi.top()]),
         ])
-        return scrape.strip_all(output)
+        return strip_all(output)

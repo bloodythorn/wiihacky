@@ -7,4 +7,4 @@ from .submission import ScrapeSubmission
 from .subreddit import ScrapeSubreddit
 from .user import ScrapeUser
 
-from .scrape import *
+from .scrape import (ex_occurred, fetch, gen_filename, prep_dict, strip_all)

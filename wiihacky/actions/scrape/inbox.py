@@ -2,9 +2,7 @@ import logging as lg
 
 from praw.models import Inbox
 
-from actions import (Action, action_concluded)
-import actions.scrape.constants as const
-import actions.scrape as scrape
+from wiihacky.actions import Action
 
 
 class ScrapeInbox(Action):
@@ -15,41 +13,51 @@ class ScrapeInbox(Action):
         Action.__init__(self, log)
         self.inbox = inbx
         self.TXT_INBOX = self.inbox.__class__.__name__
+        from wiihacky.actions.scrape.constants import TXT_START
+        self.ac = ac = TXT_START + ' ' + self.TXT_INBOX
+        self.data = {}
+        self.complete = False
 
     def execute(self):
         """Execute Action."""
-        # Prep
-        ac = const.TXT_START + ' ' + self.TXT_INBOX
-        complete = False
-        data = {}
+        from wiihacky.actions.scrape.constants import (
+            DATA_DIR, FILE_SUFFIX, TXT_SAVING, TXT_TYPE, TXT_UTC_STAMP)
+        from wiihacky.actions.scrape import ex_occurred
+
         # Scrape
         try:
-            self.log.info(ac + '.')
-            data = self.scrape()
+            self.log.info(self.ac + '.')
+            self.data = self.scrape()
         except Exception as e:
-            scrape.ex_occurred(self.log, ac + ':', e)
+            ex_occurred(self.log, self.ac + ':', e)
+
         # Save
         try:
             self.log.info(
-                const.TXT_SAVING.format(self.TXT_INBOX.capitalize()))
+                TXT_SAVING.format(self.TXT_INBOX.capitalize()))
+
             # Assemble filename and path
-            fn = data[const.TXT_TYPE].lower() + '-' + \
-                str(data[const.TXT_UTC_STAMP])
+            fn = self.data[TXT_TYPE].lower() + '-' + \
+                str(self.data[TXT_UTC_STAMP])
             from pathlib import Path
-            pth = Path(const.DATA_DIR) / data[const.TXT_TYPE].lower() / fn
+            pth = Path(DATA_DIR) / self.data[TXT_TYPE].lower() / fn
+
             # Confirm directories
             from os import makedirs
             makedirs(pth.parent, exist_ok=True)
+
             # Save File
-            with open(pth.with_suffix(const.FILE_SUFFIX), 'w') as f:
+            with open(pth.with_suffix(FILE_SUFFIX), 'w') as f:
                 from yaml import safe_dump
-                f.write(safe_dump(data))
-            complete = True
+                f.write(safe_dump(self.data))
+            self.complete = True
         except Exception as e:
-            scrape.ex_occurred(
-                self.log, const.TXT_SAVING.format(self.TXT_INBOX), e)
+            ex_occurred(
+                self.log, TXT_SAVING.format(self.TXT_INBOX), e)
+
         # End of Action
-        action_concluded(self.log, ac, complete)
+        from wiihacky.actions import action_concluded
+        action_concluded(self.log, self.ac, self.complete)
 
     def scrape(self):
         """Scrape inbox.
@@ -62,12 +70,14 @@ class ScrapeInbox(Action):
         a dict with scraped data.
 
         """
+        from wiihacky.actions.scrape import prep_dict, strip_all
+
         output = dict()
-        scrape.prep_dict(output, self.inbox.__class__.__name__)
+        prep_dict(output, self.inbox.__class__.__name__)
         output.update([
             (self.inbox.all.__name__, [a.id for a in self.inbox.all()]),
             (self.inbox.mentions.__name__,
              [a.id for a in self.inbox.mentions()]),
             (self.inbox.sent.__name__, [a.id for a in self.inbox.sent()]),
             (self.inbox.unread.__name__, [a.id for a in self.inbox.unread()])])
-        return scrape.strip_all(output)
+        return strip_all(output)

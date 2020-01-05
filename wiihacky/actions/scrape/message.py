@@ -2,9 +2,7 @@ import logging as lg
 
 from praw.models import Message
 
-from actions import (Action, action_concluded)
-import actions.scrape.constants as const
-import actions.scrape as scrape
+from wiihacky.actions import Action
 
 
 class ScrapeMessage(Action):
@@ -19,6 +17,8 @@ class ScrapeMessage(Action):
     def execute(self):
         """Execute action."""
         # Prep
+        import wiihacky.actions.scrape.constants as const
+        from wiihacky.actions.scrape import ex_occurred
         ac = const.TXT_START + ' ' + self.TXT_MESSAGE
         complete = False
         data = {}
@@ -27,7 +27,7 @@ class ScrapeMessage(Action):
             self.log.info(ac + '.')
             data = self.scrape()
         except Exception as e:
-            scrape.ex_occurred(self.log, ac + ':', e)
+            ex_occurred(self.log, ac + ':', e)
         # Save
         try:
             self.log.info(
@@ -47,9 +47,10 @@ class ScrapeMessage(Action):
                 f.write(safe_dump(data))
             complete = True
         except Exception as e:
-            scrape.ex_occurred(
+            ex_occurred(
                 self.log, const.TXT_SAVING.format(self.TXT_MESSAGE), e)
         # End of Action
+        from wiihacky.actions import action_concluded
         action_concluded(self.log, ac, complete)
 
     def scrape(self):
@@ -62,13 +63,15 @@ class ScrapeMessage(Action):
         ------
         a dict with scraped data.
         """
-        scrape.fetch(self.msg)
+        import wiihacky.actions.scrape.constants as const
+        from wiihacky.actions.scrape import fetch, prep_dict, strip_all
+        fetch(self.msg)
         output = dict(vars(self.msg))
-        scrape.prep_dict(output, self.msg.__class__.__name__)
+        prep_dict(output, self.msg.__class__.__name__)
         output[const.TXT_REPLIES] = [a.id for a in output[const.TXT_REPLIES]]
         output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
         output[const.TXT_DEST] = output[const.TXT_DEST].name
         if self.msg.subreddit:
             output[const.TXT_SUBREDDIT] = \
                 output[const.TXT_SUBREDDIT].display_name
-        return scrape.strip_all(output)
+        return strip_all(output)

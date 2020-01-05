@@ -1,3 +1,2 @@
 import actions.scrape
-
-from .action import action_concluded, Action
+from .action import Action, action_concluded
