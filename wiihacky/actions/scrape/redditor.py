@@ -13,48 +13,37 @@ class ScrapeRedditor(Action):
         Action.__init__(self, log)
         self.rdr = rdr
         self.TXT_REDDITOR = self.rdr.__class__.__name__
+        from wiihacky.actions.scrape.constants import TXT_START
+        self.ac = TXT_START + ' ' + self.TXT_REDDITOR
+        self.complete = False
+        self.data = {}
 
     def execute(self):
         """Execute Action."""
-        # Prep
         from wiihacky.actions.scrape.constants import (
-            DATA_DIR, FILE_SUFFIX, TXT_NAME, TXT_SAVING,
-            TXT_START, TXT_TYPE, TXT_UTC_STAMP)
-        from wiihacky.actions.scrape import (ex_occurred)
-        from wiihacky.actions import (action_concluded)
+            TXT_ERR_EXCEPT, TXT_SAVING)
 
-        ac = TXT_START + ' ' + self.TXT_REDDITOR
-        complete = False
-        data = {}
         # Scrape
         try:
-            self.log.info(ac + '.')
-            data = self.scrape()
+            self.log.info(self.ac + '.')
+            self.data = self.scrape()
         except Exception as e:
-            ex_occurred(self.log, ac + ':', e)
+            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
+
         # Save
         try:
             self.log.info(
                 TXT_SAVING.format(self.TXT_REDDITOR.capitalize()))
-            # Assemble filename and path
-            fn = data[TXT_TYPE].lower() + '-' + \
-                data[TXT_NAME].lower() + '-' + \
-                str(data[TXT_UTC_STAMP])
-            from pathlib import Path
-            pth = Path(DATA_DIR) / data[TXT_TYPE].lower() / fn
-            # Confirm directories
-            from os import makedirs
-            makedirs(pth.parent, exist_ok=True)
-            # Save File
-            with open(pth.with_suffix(FILE_SUFFIX), 'w') as f:
-                from yaml import safe_dump
-                f.write(safe_dump(data))
-            complete = True
+            from wiihacky.actions.scrape import save_data
+            save_data(self.data)
+            self.complete = True
         except Exception as e:
-            ex_occurred(
-                self.log, TXT_SAVING.format(self.TXT_REDDITOR), e)
+            self.log.error(
+                TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_REDDITOR), e))
+
         # End of Action
-        action_concluded(self.log, ac, complete)
+        from wiihacky.actions import action_concluded
+        action_concluded(self.log, self.ac, self.complete)
 
     def scrape(self):
         """Scrape a redditor.

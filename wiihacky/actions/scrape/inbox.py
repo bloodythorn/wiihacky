@@ -14,46 +14,32 @@ class ScrapeInbox(Action):
         self.inbox = inbx
         self.TXT_INBOX = self.inbox.__class__.__name__
         from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = ac = TXT_START + ' ' + self.TXT_INBOX
+        self.ac = TXT_START + ' ' + self.TXT_INBOX
         self.data = {}
         self.complete = False
 
     def execute(self):
         """Execute Action."""
         from wiihacky.actions.scrape.constants import (
-            DATA_DIR, FILE_SUFFIX, TXT_SAVING, TXT_TYPE, TXT_UTC_STAMP)
-        from wiihacky.actions.scrape import ex_occurred
+            TXT_ERR_EXCEPT, TXT_SAVING)
 
         # Scrape
         try:
             self.log.info(self.ac + '.')
             self.data = self.scrape()
         except Exception as e:
-            ex_occurred(self.log, self.ac + ':', e)
+            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
 
         # Save
         try:
             self.log.info(
                 TXT_SAVING.format(self.TXT_INBOX.capitalize()))
-
-            # Assemble filename and path
-            fn = self.data[TXT_TYPE].lower() + '-' + \
-                str(self.data[TXT_UTC_STAMP])
-            from pathlib import Path
-            pth = Path(DATA_DIR) / self.data[TXT_TYPE].lower() / fn
-
-            # Confirm directories
-            from os import makedirs
-            makedirs(pth.parent, exist_ok=True)
-
-            # Save File
-            with open(pth.with_suffix(FILE_SUFFIX), 'w') as f:
-                from yaml import safe_dump
-                f.write(safe_dump(self.data))
+            from wiihacky.actions.scrape import save_data
+            save_data(self.data)
             self.complete = True
         except Exception as e:
-            ex_occurred(
-                self.log, TXT_SAVING.format(self.TXT_INBOX), e)
+            self.log.error(
+                TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_INBOX), e))
 
         # End of Action
         from wiihacky.actions import action_concluded

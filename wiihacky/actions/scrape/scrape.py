@@ -12,13 +12,6 @@ import yaml as yl
 import actions.scrape.constants as const
 
 
-def ex_occurred(log: lg.Logger, tp: str, e: Exception):
-    """Will log exceptions."""
-    log.error(const.TXT_ERR_EXCEPT.format(tp, e))
-
-
-# TODO: clean up gen_filename
-
 # Helper Functions
 
 # noinspection PyProtectedMember
@@ -32,13 +25,42 @@ def fetch(fetchable):
 
 
 def gen_filename(data):
-    from wiihacky.actions.scrape.constants import TXT_TYPE
-    if TXT_TYPE in data:
-        if data[TXT_TYPE].lower() == 'comment':
+    if const.TXT_TYPE in data:
+        if data[const.TXT_TYPE].lower() == 'comment' or \
+            data[const.TXT_TYPE].lower() == 'message':
             return data[const.TXT_TYPE].lower() + '-' + \
                    data[const.TXT_ID] + '-' + \
                    str(data[const.TXT_UTC_STAMP])
-    return 'Nope'
+        elif data[const.TXT_TYPE].lower() == 'inbox':
+            return data[const.TXT_TYPE].lower() + '-' + \
+                   str(data[const.TXT_UTC_STAMP])
+        elif data[const.TXT_TYPE].lower() == 'multireddit':
+            return data[const.TXT_TYPE].lower() + '-' + \
+                   data[const.TXT_AUTHOR].lower() + '-' + \
+                   data[const.TXT_DISPLAY_NAME].lower() + '-' + \
+                   str(data[const.TXT_UTC_STAMP])
+        elif data[const.TXT_TYPE].lower() == 'redditor':
+            return data[const.TXT_TYPE].lower() + '-' + \
+                   data[const.TXT_NAME].lower() + '-' + \
+                   str(data[const.TXT_UTC_STAMP])
+        elif data[const.TXT_TYPE].lower() == 'submission':
+            return data[const.TXT_TYPE].lower() + '-' + \
+                   data[const.TXT_ID] + '-' + \
+                   str(data[const.TXT_UTC_STAMP])
+        elif data[const.TXT_TYPE].lower() == 'subreddit':
+            return data[const.TXT_TYPE].lower() + '-' + \
+                   data[const.TXT_DISPLAY_NAME].lower() + '-' + \
+                   str(data[const.TXT_UTC_STAMP])
+        elif data[const.TXT_TYPE].lower() == 'user':
+            return data[const.TXT_TYPE].lower() + '-' + \
+                   str(data[const.TXT_UTC_STAMP])
+        else:
+            raise ValueError(
+                'No condition found for {}.\n {}'.format(
+                    data[const.TXT_TYPE], data))
+    else:
+        raise ValueError('{} not found in data.\n {}'.format(
+            const.TXT_TYPE, data))
 
 
 def gen_timestamp():
@@ -60,13 +82,23 @@ def prep_dict(dct: dict, tp: str):
     return dct
 
 
-def save_file(file: str, data):
+def save_data(data):
     """Given a filename/path and encodable data, this function will write
         that file.
     """
-    with open(file, 'w') as f:
-        f.write(yl.safe_dump(data))
-    return True
+    # Assemble filename and path
+    fn = gen_filename(data)
+    from pathlib import Path
+    pth = Path(const.DATA_DIR) / data[const.TXT_TYPE].lower() / fn
+
+    # Confirm directories
+    from os import makedirs
+    makedirs(pth.parent, exist_ok=True)
+
+    # Save File
+    with open(pth.with_suffix(const.FILE_SUFFIX), 'w') as f:
+        from yaml import safe_dump
+        f.write(safe_dump(data))
 
 
 def strip_all(dct: dict):
