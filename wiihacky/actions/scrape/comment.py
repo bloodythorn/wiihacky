@@ -11,7 +11,6 @@ class ScrapeComment(Action):
     def __init__(self, log: lg.Logger, comment: Comment):
         """Initialize the action."""
         Action.__init__(self, log)
-        self.complete = False
         self.comment = comment
         self.data = {}
         self.TXT_COMMENT = self.comment.__class__.__name__
@@ -36,14 +35,14 @@ class ScrapeComment(Action):
                 TXT_SAVING.format(self.TXT_COMMENT.capitalize()))
             from wiihacky.actions.scrape import save_data
             save_data(self.data)
-            self.complete = True
+            self.executed = True
         except Exception as e:
             self.log.error(
                 TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_COMMENT), e))
 
         # End of action
         from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.complete)
+        action_concluded(self.log, self.ac, self.executed)
 
     def scrape(self):
         """Scrape a comment.

@@ -5,9 +5,7 @@
 """
 
 from pathlib import Path
-import logging as lg
 import time as tm
-import yaml as yl
 
 import actions.scrape.constants as const
 
@@ -27,7 +25,7 @@ def fetch(fetchable):
 def gen_filename(data):
     if const.TXT_TYPE in data:
         if data[const.TXT_TYPE].lower() == 'comment' or \
-            data[const.TXT_TYPE].lower() == 'message':
+                data[const.TXT_TYPE].lower() == 'message':
             return data[const.TXT_TYPE].lower() + '-' + \
                    data[const.TXT_ID] + '-' + \
                    str(data[const.TXT_UTC_STAMP])
@@ -89,7 +87,7 @@ def save_data(data):
     # Assemble filename and path
     fn = gen_filename(data)
     from pathlib import Path
-    pth = Path(const.DATA_DIR) / data[const.TXT_TYPE].lower() / fn
+    pth = Path(const.DATA_DIR) / fn
 
     # Confirm directories
     from os import makedirs
