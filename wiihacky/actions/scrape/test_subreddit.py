@@ -3,10 +3,11 @@ def test_subreddit(wh):
     wh.log.info('-- Subreddit Test -')
     try:
         from wiihacky.actions.scrape import ScrapeSubreddit
-        subreddit = wh.reddit.random_subreddit()
-        wh.log.info('-- Target: {} -'.format(subreddit.display_name))
-        ac = ScrapeSubreddit(wh.log, subreddit)
-        ac.execute()
+        for a in range(10):
+            subreddit = wh.reddit.random_subreddit()
+            wh.log.info('-- Target: {} -'.format(subreddit.display_name))
+            ac = ScrapeSubreddit(wh.log, subreddit)
+            ac.execute()
     except Exception as e:
         wh.log.error('TEST**** ScrapeSubreddit failed!', e)
         assert False

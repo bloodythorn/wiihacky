@@ -29,6 +29,7 @@ class ScrapeSubmission(Action):
             self.data = self.scrape()
         except Exception as e:
             self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
+            raise e
 
         # Save
         try:
@@ -41,6 +42,7 @@ class ScrapeSubmission(Action):
             self.log.error(
                 TXT_ERR_EXCEPT.format(
                     TXT_SAVING.format(self.TXT_SUBMISSION), e))
+            raise e
 
         # End of action
         from wiihacky.actions import action_concluded

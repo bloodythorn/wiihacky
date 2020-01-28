@@ -5,10 +5,11 @@ def test_redditor(wh):
         from wiihacky.actions.scrape import ScrapeRedditor
         pops = list(wh.reddit.redditors.popular())
         from random import choice
-        redditor = wh.reddit.redditor(choice(pops).display_name[2:])
-        wh.log.info('-- Target: {} -'.format(redditor.name))
-        ac = ScrapeRedditor(wh.log, redditor)
-        ac.execute()
+        for a in range(10):
+            redditor = wh.reddit.redditor(choice(pops).display_name[2:])
+            wh.log.info('-- Target: {} -'.format(redditor.name))
+            ac = ScrapeRedditor(wh.log, redditor)
+            ac.execute()
     except Exception as e:
         wh.log.error('TEST**** ScrapeRedditor failed!', e)
         assert False

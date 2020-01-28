@@ -29,6 +29,7 @@ class ScrapeRedditor(Action):
             self.data = self.scrape()
         except Exception as e:
             self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
+            raise e
 
         # Save
         try:
@@ -40,6 +41,7 @@ class ScrapeRedditor(Action):
         except Exception as e:
             self.log.error(
                 TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_REDDITOR), e))
+            raise e
 
         # End of Action
         from wiihacky.actions import action_concluded
@@ -63,7 +65,7 @@ class ScrapeRedditor(Action):
         fetch(self.rdr)
         output = dict(vars(self.rdr))
         prep_dict(output, self.rdr.__class__.__name__)
-        output[TXT_PATH] = output['_' + TXT_PATH]
+        # output[TXT_PATH] = output['_' + TXT_PATH]
         output.update([
             (self.rdr.trophies.__name__,
              [a.name for a in self.rdr.trophies()]),

@@ -29,6 +29,7 @@ class ScrapeMessage(Action):
             self.data = self.scrape()
         except Exception as e:
             self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
+            raise e
 
         # Save
         try:
@@ -40,6 +41,7 @@ class ScrapeMessage(Action):
         except Exception as e:
             self.log.error(
                 TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_MESSAGE), e))
+            raise e
 
         # End of Action
         from wiihacky.actions import action_concluded

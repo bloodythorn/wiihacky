@@ -25,7 +25,8 @@ def fetch(fetchable):
 def gen_filename(data):
     if const.TXT_TYPE in data:
         if data[const.TXT_TYPE].lower() == 'comment' or \
-                data[const.TXT_TYPE].lower() == 'message':
+                data[const.TXT_TYPE].lower() == 'message' or \
+                data[const.TXT_TYPE].lower() == 'subredditmessage':
             return data[const.TXT_TYPE].lower() + '-' + \
                    data[const.TXT_ID] + '-' + \
                    str(data[const.TXT_UTC_STAMP])
