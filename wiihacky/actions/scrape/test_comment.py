@@ -6,8 +6,8 @@ def test_comment(wh):
         for a in range(10):
             comment = choice(list(wh.reddit.random_subreddit().comments()))
             wh.log.info('-- Target: {} -'.format(comment.id))
-            ac = ScrapeComment(wh.log, comment)
-            ac.execute()
+            ac = ScrapeComment(wh.log, comment.id)
+            ac.execute(wh.reddit)
     except Exception as e:
         wh.log.error('TEST**** ScrapeComment failed!', e)
         assert False

@@ -1,54 +1,58 @@
 import logging as lg
 
 from praw.models import Subreddit
+from praw import Reddit
 
-from wiihacky.actions import Action
+import wiihacky.actions.scrape.constants as const
+import actions
 
 
-class ScrapeSubreddit(Action):
+class ScrapeSubreddit(actions.Action):
     """This action when given a subreddit will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, subr: Subreddit):
+    TXT_AC = const.TXT_START + ' ' + const.TXT_SUBREDDIT
+
+    def __init__(self, log: lg.Logger, subreddit_name: str):
         """Initialize the action."""
-        Action.__init__(self, log)
-        self.subr = subr
-        self.TXT_SUBREDDIT = self.subr.__class__.__name__
-        from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = TXT_START + ' ' + self.TXT_SUBREDDIT
-        self.complete = False
+        actions.Action.__init__(self, log)
+        self.subreddit_name = subreddit_name
         self.data = {}
 
-    def execute(self):
+    def execute(self, reddit: Reddit):
         """Execute Action."""
-        from wiihacky.actions.scrape.constants import (
-            TXT_ERR_EXCEPT, TXT_SAVING)
-
-        # Scrape
         try:
-            self.log.info(self.ac + '.')
-            self.data = self.scrape()
-        except Exception as e:
-            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
-            raise e
+            subreddit = reddit.subreddit(self.subreddit_name)
 
-        # Save
-        try:
-            self.log.info(
-                TXT_SAVING.format(self.TXT_SUBREDDIT.capitalize()))
-            from wiihacky.actions.scrape import save_data
-            save_data(self.data)
-            self.complete = True
+            # Scrape
+            try:
+                self.log.info(self.TXT_AC + '.')
+                self.data = self.scrape(subreddit)
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                raise e
+
+            # Save
+            try:
+                self.log.info(
+                    const.TXT_SAVING.format(const.TXT_SUBREDDIT.capitalize()))
+                actions.scrape.save_data(self.data)
+                self.executed = True
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(
+                        const.TXT_SAVING.format(const.TXT_SUBREDDIT), e))
+                raise e
         except Exception as e:
-            self.log.error(
-                TXT_ERR_EXCEPT.format(
-                    TXT_SAVING.format(self.TXT_SUBREDDIT), e))
+            self.log.error(const.TXT_ERR_EXCEPT.format(
+                const.TXT_FETCHING, self.subreddit_name))
             raise e
 
         # End of Action
-        from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.complete)
+        actions.action_concluded(self.log, self.TXT_AC, self.executed)
 
-    def scrape(self):
+    @staticmethod
+    def scrape(subr: Subreddit):
         """Scrape a subreddit.
 
         This function will scrape a subreddit and return a data structure
@@ -59,21 +63,18 @@ class ScrapeSubreddit(Action):
         a dict with scraped data.
 
         """
-        from wiihacky.actions.scrape.constants import (
-            TXT_COMMENTS, TXT_PATH)
-        from wiihacky.actions.scrape import (fetch, prep_dict, strip_all)
 
-        fetch(self.subr)
-        output = dict(vars(self.subr))
-        prep_dict(output, self.subr.__class__.__name__)
-        output[TXT_PATH] = output['_' + TXT_PATH]
+        actions.scrape.fetch(subr)
+        output = dict(vars(subr))
+        actions.scrape.prep_dict(output, const.TXT_SUBREDDIT)
+        output[const.TXT_PATH] = output['_' + const.TXT_PATH]
         output.update([
-            (TXT_COMMENTS, [a.id for a in self.subr.comments()]),
-            (self.subr.controversial.__name__,
-             [a.id for a in self.subr.controversial()]),
-            (self.subr.hot.__name__, [a.id for a in self.subr.hot()]),
-            (self.subr.new.__name__, [a.id for a in self.subr.new()]),
-            (self.subr.rising.__name__, [a.id for a in self.subr.rising()]),
-            (self.subr.top.__name__, [a.id for a in self.subr.top()]),
+            (const.TXT_COMMENTS, [a.id for a in subr.comments()]),
+            (subr.controversial.__name__,
+             [a.id for a in subr.controversial()]),
+            (subr.hot.__name__, [a.id for a in subr.hot()]),
+            (subr.new.__name__, [a.id for a in subr.new()]),
+            (subr.rising.__name__, [a.id for a in subr.rising()]),
+            (subr.top.__name__, [a.id for a in subr.top()]),
         ])
-        return strip_all(output)
+        return actions.scrape.strip_all(output)

@@ -23,6 +23,7 @@ def fetch(fetchable):
 
 
 def gen_filename(data):
+    """Generate filename for given scrape file."""
     if const.TXT_TYPE in data:
         if data[const.TXT_TYPE].lower() == 'comment' or \
                 data[const.TXT_TYPE].lower() == 'message' or \
@@ -88,7 +89,7 @@ def save_data(data):
     # Assemble filename and path
     fn = gen_filename(data)
     from pathlib import Path
-    pth = Path(const.DATA_DIR) / fn
+    pth = Path(const.SCRAPE_DIR) / fn
 
     # Confirm directories
     from os import makedirs
@@ -120,12 +121,3 @@ def strip_none(dct: dict):
 def strip_underscore(dct: dict):
     """Remove's praw's underscore members from the given dict."""
     return {i: dct[i] for i in dct if i[0] != '_'}
-
-
-def verify_dir(ls: str):
-    """Given a directory name, this function will verify that it exists,
-        and if not, create it."""
-    p = Path(ls)
-    if not p.exists():
-        p.mkdir()
-    return p.exists()

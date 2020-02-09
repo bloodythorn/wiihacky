@@ -1,53 +1,58 @@
 import logging as lg
 
 from praw.models import Message
+from praw import Reddit
 
-from wiihacky.actions import Action
+import wiihacky.actions.scrape.constants as const
+import actions
 
 
-class ScrapeMessage(Action):
+class ScrapeMessage(actions.Action):
     """This action when given a comment will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, msg: Message):
+    TXT_AC = const.TXT_START + ' ' + const.TXT_MESSAGE
+
+    def __init__(self, log: lg.Logger, msg_id: str):
         """Initialize the action."""
-        Action.__init__(self, log)
-        self.msg = msg
-        self.TXT_MESSAGE = self.msg.__class__.__name__
-        from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = TXT_START + ' ' + self.TXT_MESSAGE
-        self.complete = False
+        actions.Action.__init__(self, log)
+        self.msg_id = msg_id
         self.data = {}
 
-    def execute(self):
+    def execute(self, reddit: Reddit):
         """Execute action."""
-        from wiihacky.actions.scrape.constants import (
-            TXT_ERR_EXCEPT, TXT_SAVING)
-
-        # Scrape
         try:
-            self.log.info(self.ac + '.')
-            self.data = self.scrape()
-        except Exception as e:
-            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
-            raise e
+            message = reddit.inbox.message(self.msg_id)
 
-        # Save
-        try:
-            self.log.info(
-                TXT_SAVING.format(self.TXT_MESSAGE.capitalize()))
-            from wiihacky.actions.scrape import save_data
-            save_data(self.data)
-            self.complete = True
+            # Scrape
+            try:
+                self.log.info(self.TXT_AC + '.')
+                self.data = self.scrape(message)
+            except Exception as e:
+                self.log.error(const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                raise e
+
+            # Save
+            try:
+                self.log.info(
+                    const.TXT_SAVING.format(const.TXT_MESSAGE.capitalize()))
+                from wiihacky.actions.scrape import save_data
+                save_data(self.data)
+                self.executed = True
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(
+                        const.TXT_SAVING.format(const.TXT_MESSAGE), e))
+                raise e
         except Exception as e:
-            self.log.error(
-                TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_MESSAGE), e))
+            self.log.error(const.TXT_ERR_EXCEPT.format(
+                const.TXT_FETCHING, self.msg_id))
             raise e
 
         # End of Action
-        from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.complete)
+        actions.action_concluded(self.log, self.TXT_AC, self.executed)
 
-    def scrape(self):
+    @staticmethod
+    def scrape(msg: Message):
         """Scrape a message.
 
         This function will scrape a message and return a data structure
@@ -57,17 +62,13 @@ class ScrapeMessage(Action):
         ------
         a dict with scraped data.
         """
-        from wiihacky.actions.scrape.constants import (
-            TXT_AUTHOR, TXT_DEST, TXT_REPLIES, TXT_SUBREDDIT)
-        from wiihacky.actions.scrape import fetch, prep_dict, strip_all
-
-        fetch(self.msg)
-        output = dict(vars(self.msg))
-        prep_dict(output, self.msg.__class__.__name__)
-        output[TXT_REPLIES] = [a.id for a in output[TXT_REPLIES]]
-        output[TXT_AUTHOR] = output[TXT_AUTHOR].name
-        output[TXT_DEST] = output[TXT_DEST].name
-        if self.msg.subreddit:
-            output[TXT_SUBREDDIT] = \
-                output[TXT_SUBREDDIT].display_name
-        return strip_all(output)
+        actions.scrape.fetch(msg)
+        output = dict(vars(msg))
+        actions.scrape.prep_dict(output, const.TXT_MESSAGE)
+        output[const.TXT_REPLIES] = [a.id for a in output[const.TXT_REPLIES]]
+        output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
+        output[const.TXT_DEST] = output[const.TXT_DEST].name
+        if msg.subreddit:
+            output[const.TXT_SUBREDDIT] = \
+                output[const.TXT_SUBREDDIT].display_name
+        return actions.scrape.strip_all(output)

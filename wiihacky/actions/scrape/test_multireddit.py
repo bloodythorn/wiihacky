@@ -9,9 +9,8 @@ def test_multireddit(wh):
         ]
 
         for a in multis:
-            multi = wh.reddit.multireddit(*a)
-            ac = ScrapeMultireddit(wh.log, multi)
-            ac.execute()
+            ac = ScrapeMultireddit(wh.log, *a)
+            ac.execute(wh.reddit)
     except Exception as e:
         wh.log.error('TEST**** ScrapeMultireddit failed!', e)
         assert False

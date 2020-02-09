@@ -6,8 +6,8 @@ def test_subreddit(wh):
         for a in range(10):
             subreddit = wh.reddit.random_subreddit()
             wh.log.info('-- Target: {} -'.format(subreddit.display_name))
-            ac = ScrapeSubreddit(wh.log, subreddit)
-            ac.execute()
+            ac = ScrapeSubreddit(wh.log, subreddit.display_name)
+            ac.execute(wh.reddit)
     except Exception as e:
         wh.log.error('TEST**** ScrapeSubreddit failed!', e)
         assert False

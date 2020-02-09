@@ -1,54 +1,59 @@
 import logging as lg
 
 from praw.models import Submission
+from praw import Reddit
 
-from wiihacky.actions import Action
+import wiihacky.actions.scrape.constants as const
+import actions
 
 
-class ScrapeSubmission(Action):
+class ScrapeSubmission(actions.Action):
     """This action when given a submission will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, subm: Submission):
+    TXT_AC = const.TXT_START + ' ' + const.TXT_SUBMISSION
+
+    def __init__(self, log: lg.Logger, subm_id: str):
         """Initialize the action."""
-        Action.__init__(self, log)
-        self.subm = subm
-        self.TXT_SUBMISSION = self.subm.__class__.__name__
-        from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = TXT_START + ' ' + self.TXT_SUBMISSION
-        self.complete = False
+        actions.Action.__init__(self, log)
+        self.subm_id = subm_id
         self.data = {}
 
-    def execute(self):
+    def execute(self, reddit: Reddit):
         """Execute Action."""
-        from wiihacky.actions.scrape.constants import (
-            TXT_ERR_EXCEPT, TXT_SAVING)
-
-        # Scrape
         try:
-            self.log.info(self.ac + '.')
-            self.data = self.scrape()
-        except Exception as e:
-            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
-            raise e
+            submission = reddit.submission(self.subm_id)
 
-        # Save
-        try:
-            self.log.info(
-                TXT_SAVING.format(self.TXT_SUBMISSION.capitalize()))
-            from wiihacky.actions.scrape import save_data
-            save_data(self.data)
-            self.complete = True
+            # Scrape
+            try:
+                self.log.info(self.TXT_AC + '.')
+                self.data = self.scrape(submission)
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                raise e
+
+            # Save
+            try:
+                self.log.info(
+                    const.TXT_SAVING.format(const.TXT_SUBMISSION.capitalize()))
+                actions.scrape.save_data(self.data)
+                self.executed = True
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(
+                        const.TXT_SAVING.format(const.TXT_SUBMISSION), e))
+                raise e
         except Exception as e:
-            self.log.error(
-                TXT_ERR_EXCEPT.format(
-                    TXT_SAVING.format(self.TXT_SUBMISSION), e))
+            self.log.error(const.TXT_ERR_EXCEPT.format(
+                const.TXT_FETCHING, self.subm_id))
             raise e
 
         # End of action
         from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.complete)
+        action_concluded(self.log, self.TXT_AC, self.executed)
 
-    def scrape(self):
+    @staticmethod
+    def scrape(subm: Submission):
         """Scrape a submission.
 
         This function will scrape a submission and return a data structure
@@ -59,17 +64,13 @@ class ScrapeSubmission(Action):
         a dict with scraped data.
 
         """
-        from wiihacky.actions.scrape.constants import (
-            TXT_AUTHOR, TXT_COMMENTS, TXT_SUBREDDIT)
-        from wiihacky.actions.scrape import (fetch, prep_dict, strip_all)
-
-        fetch(self.subm)
-        output = dict(vars(self.subm))
-        prep_dict(output, self.subm.__class__.__name__)
-        display_name = output[TXT_SUBREDDIT].display_name
-        output[TXT_SUBREDDIT] = display_name
-        output[TXT_AUTHOR] = output[TXT_AUTHOR].name
-        self.subm.comments.replace_more(limit=0)
-        output[TXT_COMMENTS] = \
-            [a.id for a in self.subm.comments.list()]
-        return strip_all(output)
+        actions.scrape.fetch(subm)
+        output = dict(vars(subm))
+        actions.scrape.prep_dict(output, const.TXT_SUBMISSION)
+        display_name = output[const.TXT_SUBREDDIT].display_name
+        output[const.TXT_SUBREDDIT] = display_name
+        output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
+        subm.comments.replace_more(limit=0)
+        output[const.TXT_COMMENTS] = \
+            [a.id for a in subm.comments.list()]
+        return actions.scrape.strip_all(output)

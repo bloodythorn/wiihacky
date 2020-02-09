@@ -1,7 +1,9 @@
 """Base class for all actions."""
 import logging as lg
+from abc import ABC, abstractmethod
 
 import actions.constants as const
+import wiihacky
 
 
 def action_concluded(log: lg.Logger, ac: str, complete: bool):
@@ -9,26 +11,18 @@ def action_concluded(log: lg.Logger, ac: str, complete: bool):
     log.info(const.ACTION_DONE.format(ac, const.ACTION_OK if complete else ""))
 
 
-class Action:
+class Action(ABC):
     """Base action class."""
 
-    def __init__(self, log: lg.Logger, msg="", priority=10):
+    def __init__(self, log: lg.Logger):
         """Initialization takes a logger, and optional message and
             priority.
         """
+        super().__init__()
         self.executed = False
         self.log = log
-        self.msg = msg
-        self.priority = priority
 
-    def execute(self):
-        """This function should be overwritten by the inherited class's
-            own action routine.
-
-            If the function is not, or if the base class is executed, it will
-            print the log message.
-        """
-        action_name = 'EmptyAction'
-        self.log.info(self.msg)
-        action_concluded(self.log, action_name, const.ACTION_OK)
-        self.executed = True
+    @abstractmethod
+    def execute(self, wh: wiihacky.WiiHacky):
+        """Defines execution of Action."""
+        pass

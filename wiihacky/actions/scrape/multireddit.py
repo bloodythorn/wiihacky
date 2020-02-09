@@ -1,54 +1,57 @@
 import logging as lg
 
 from praw.models import Multireddit
+from praw import Reddit
 
-from wiihacky.actions import Action
+import wiihacky.actions.scrape.constants as const
+import actions
 
 
-class ScrapeMultireddit(Action):
+class ScrapeMultireddit(actions.Action):
     """This action when given a subreddit will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, multi: Multireddit):
+    TXT_AC = const.TXT_START + ' ' + const.TXT_MULTIREDDIT
+
+    def __init__(self, log: lg.Logger, user: str, multi: str):
         """Initialize the action."""
-        Action.__init__(self, log)
-        self.multi = multi
-        self.TXT_MULTIREDDIT = self.multi.__class__.__name__
-        from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = TXT_START + ' ' + self.TXT_MULTIREDDIT
-        self.complete = False
+        actions.Action.__init__(self, log)
+        self.multi = (user, multi)
         self.data = {}
 
-    def execute(self):
+    def execute(self, reddit: Reddit):
         """Execute Action."""
-        from wiihacky.actions.scrape.constants import (
-            TXT_ERR_EXCEPT, TXT_SAVING)
-
-        # Scrape
         try:
-            self.log.info(self.ac + '.')
-            self.data = self.scrape()
-        except Exception as e:
-            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
-            raise e
+            multi = reddit.multireddit(*self.multi)
 
-        # Save
-        try:
-            self.log.info(
-                TXT_SAVING.format(self.TXT_MULTIREDDIT.capitalize()))
-            from wiihacky.actions.scrape import save_data
-            save_data(self.data)
-            self.complete = True
+            # Scrape
+            try:
+                self.log.info(self.TXT_AC + '.')
+                self.data = self.scrape(multi)
+            except Exception as e:
+                self.log.error(const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                raise e
+
+            # Save
+            try:
+                self.log.info(
+                    const.TXT_SAVING.format(const.TXT_MULTIREDDIT.capitalize()))
+                actions.scrape.save_data(self.data)
+                self.executed = True
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(
+                        const.TXT_SAVING.format(const.TXT_MULTIREDDIT), e))
+                raise e
         except Exception as e:
-            self.log.error(
-                TXT_ERR_EXCEPT.format(
-                    TXT_SAVING.format(self.TXT_MULTIREDDIT), e))
+            self.log.error(const.TXT_ERR_EXCEPT.format(
+                const.TXT_FETCHING, self.multi))
             raise e
 
         # End of Action
-        from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.complete)
+        actions.action_concluded(self.log, self.TXT_AC, self.executed)
 
-    def scrape(self):
+    @staticmethod
+    def scrape(multi: Multireddit):
         """Scrape a multi reddit.
 
         This function will scrape the multiredit return a data structure
@@ -59,24 +62,20 @@ class ScrapeMultireddit(Action):
         a dict with scraped data.
 
         """
-        from wiihacky.actions.scrape import (fetch, prep_dict, strip_all)
-        from wiihacky.actions.scrape.constants import (
-            TXT_AUTHOR, TXT_COMMENTS, TXT_PATH, TXT_SUBREDDIT)
-
-        fetch(self.multi)
-        output = dict(vars(self.multi))
-        prep_dict(output, self.multi.__class__.__name__)
-        output[TXT_SUBREDDIT + 's'] = \
-            [a.display_name for a in output[TXT_SUBREDDIT + 's']]
-        output[TXT_PATH] = output[TXT_PATH]
-        output[TXT_AUTHOR] = output['_' + TXT_AUTHOR].name
+        actions.scrape.fetch(multi)
+        output = dict(vars(multi))
+        actions.scrape.prep_dict(output, const.TXT_MULTIREDDIT)
+        output[const.TXT_SUBREDDIT + 's'] = \
+            [a.display_name for a in output[const.TXT_SUBREDDIT + 's']]
+        output[const.TXT_PATH] = output[const.TXT_PATH]
+        output[const.TXT_AUTHOR] = output['_' + const.TXT_AUTHOR].name
         output.update([
-            (TXT_COMMENTS, [a.id for a in self.multi.comments()]),
-            (self.multi.controversial.__name__,
-             [a.id for a in self.multi.controversial()]),
-            (self.multi.hot.__name__, [a.id for a in self.multi.hot()]),
-            (self.multi.new.__name__, [a.id for a in self.multi.new()]),
-            (self.multi.rising.__name__, [a.id for a in self.multi.rising()]),
-            (self.multi.top.__name__, [a.id for a in self.multi.top()]),
+            (const.TXT_COMMENTS, [a.id for a in multi.comments()]),
+            (multi.controversial.__name__,
+             [a.id for a in multi.controversial()]),
+            (multi.hot.__name__, [a.id for a in multi.hot()]),
+            (multi.new.__name__, [a.id for a in multi.new()]),
+            (multi.rising.__name__, [a.id for a in multi.rising()]),
+            (multi.top.__name__, [a.id for a in multi.top()]),
         ])
-        return strip_all(output)
+        return actions.scrape.strip_all(output)

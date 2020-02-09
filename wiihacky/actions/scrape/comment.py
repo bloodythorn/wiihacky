@@ -2,51 +2,59 @@ import logging as lg
 
 from praw.models import Comment
 
-from wiihacky.actions import Action
+import wiihacky.actions.scrape.constants as const
+import wiihacky
 
 
-class ScrapeComment(Action):
-    """This action when given a comment will scrape and save the data."""
+class ScrapeComment(wiihacky.actions.Action):
+    """This action when given a comment id will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, comment: Comment):
+    TXT_AC = const.TXT_START + ' ' + const.TXT_COMMENTS[:-1]
+
+    def __init__(self, log: lg.Logger, comment_id: str):
         """Initialize the action."""
-        Action.__init__(self, log)
-        self.comment = comment
+        super().__init__(log)
+        self.comment_id = comment_id
         self.data = {}
-        self.TXT_COMMENT = self.comment.__class__.__name__
-        from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = TXT_START + ' ' + self.TXT_COMMENT
 
-    def execute(self):
+    def execute(self, wh: wiihacky.WiiHacky):
         """Execute Action."""
-        from wiihacky.actions.scrape.constants import (
-            TXT_ERR_EXCEPT, TXT_SAVING)
-
-        # Scrape
+        # Fetch Comment
+        reddit = wh.reddit
         try:
-            self.log.info(self.ac + '.')
-            self.data = self.scrape()
-        except Exception as e:
-            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
-            raise e
+            comment = reddit.comment(self.comment_id)
 
-        # Save
-        try:
-            self.log.info(
-                TXT_SAVING.format(self.TXT_COMMENT.capitalize()))
-            from wiihacky.actions.scrape import save_data
-            save_data(self.data)
-            self.executed = True
+            # Scrape
+            try:
+                self.log.info(self.TXT_AC + '.')
+                self.data = self.scrape(comment)
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                raise e
+
+            # Save
+            try:
+                self.log.info(
+                    const.TXT_SAVING.format(
+                        const.TXT_COMMENTS[:-1].capitalize()))
+                wiihacky.actions.scrape.save_data(self.data)
+                self.executed = True
+            except Exception as e:
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(
+                        const.TXT_SAVING.format(const.TXT_COMMENTS[:-1]), e))
+                raise e
         except Exception as e:
-            self.log.error(
-                TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_COMMENT), e))
+            self.log.error(const.TXT_ERR_EXCEPT.format(
+                const.TXT_FETCHING, self.comment_id))
             raise e
 
         # End of action
-        from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.executed)
+        wiihacky.actions.action_concluded(self.log, self.TXT_AC, self.executed)
 
-    def scrape(self):
+    @staticmethod
+    def scrape(comment: Comment):
         """Scrape a comment.
 
         This function will scrape the comment return a data structure reflecting
@@ -57,16 +65,12 @@ class ScrapeComment(Action):
         a dict with scraped data.
 
         """
-        from wiihacky.actions.scrape.constants import (
-            TXT_AUTHOR, TXT_REPLIES, TXT_SUBREDDIT, TXT_SUBMISSION)
-        from wiihacky.actions.scrape import (fetch, prep_dict, strip_all)
-
-        fetch(self.comment)
-        output = dict(vars(self.comment))
-        prep_dict(output, self.TXT_COMMENT)
-        output[TXT_AUTHOR] = output[TXT_AUTHOR].name
-        output[TXT_SUBREDDIT] = output[TXT_SUBREDDIT].name
-        output[TXT_SUBMISSION] = output['_' + TXT_SUBMISSION]
-        output[TXT_REPLIES] = \
-            [a.id for a in output['_' + TXT_REPLIES]]
-        return strip_all(output)
+        wiihacky.actions.scrape.fetch(comment)
+        output = dict(vars(comment))
+        wiihacky.actions.scrape.prep_dict(output, const.TXT_COMMENTS[:-1])
+        output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
+        output[const.TXT_SUBREDDIT] = output[const.TXT_SUBREDDIT].name
+        output[const.TXT_SUBMISSION] = output['_' + const.TXT_SUBMISSION]
+        output[const.TXT_REPLIES] = \
+            [a.id for a in output['_' + const.TXT_REPLIES]]
+        return wiihacky.actions.scrape.strip_all(output)

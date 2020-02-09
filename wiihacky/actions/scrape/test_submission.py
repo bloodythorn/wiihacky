@@ -5,8 +5,8 @@ def test_submission(wh):
         for a in range(10):
             submission = wh.reddit.random_subreddit().random()
             wh.log.info('-- Target: {} -'.format(submission.id))
-            ac = ScrapeSubmission(wh.log, submission)
-            ac.execute()
+            ac = ScrapeSubmission(wh.log, submission.id)
+            ac.execute(wh.reddit)
     except Exception as e:
         wh.log.error('TEST**** ScrapeSubmission failed!', e)
         assert False

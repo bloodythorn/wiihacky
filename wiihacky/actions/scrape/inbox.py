@@ -1,53 +1,50 @@
 import logging as lg
 
 from praw.models import Inbox
+from praw import Reddit
 
-from wiihacky.actions import Action
+import wiihacky.actions.scrape.constants as const
+import actions
 
 
-class ScrapeInbox(Action):
+class ScrapeInbox(actions.Action):
     """This action when given the inbox will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, inbx: Inbox):
+    TXT_AC = const.TXT_START + ' ' + const.TXT_INBOX
+
+    def __init__(self, log: lg.Logger):
         """Initialize the action."""
-        Action.__init__(self, log)
-        self.inbox = inbx
-        self.TXT_INBOX = self.inbox.__class__.__name__
-        from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = TXT_START + ' ' + self.TXT_INBOX
+        actions.Action.__init__(self, log)
         self.data = {}
         self.complete = False
 
-    def execute(self):
+    def execute(self, reddit: Reddit):
         """Execute Action."""
-        from wiihacky.actions.scrape.constants import (
-            TXT_ERR_EXCEPT, TXT_SAVING)
-
         # Scrape
         try:
-            self.log.info(self.ac + '.')
-            self.data = self.scrape()
+            self.log.info(self.TXT_AC + '.')
+            self.data = self.scrape(reddit.inbox)
         except Exception as e:
-            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
+            self.log.error(const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
             raise e
 
         # Save
         try:
             self.log.info(
-                TXT_SAVING.format(self.TXT_INBOX.capitalize()))
-            from wiihacky.actions.scrape import save_data
-            save_data(self.data)
+                const.TXT_SAVING.format(const.TXT_INBOX.capitalize()))
+            actions.scrape.save_data(self.data)
             self.complete = True
         except Exception as e:
             self.log.error(
-                TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_INBOX), e))
+                const.TXT_ERR_EXCEPT.format(
+                    const.TXT_SAVING.format(const.TXT_INBOX), e))
             raise e
 
         # End of Action
-        from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.complete)
+        actions.action_concluded(self.log, self.TXT_AC, self.complete)
 
-    def scrape(self):
+    @staticmethod
+    def scrape(inbox: Inbox):
         """Scrape inbox.
 
         This function will scrape the inbox return a data structure reflecting
@@ -58,14 +55,12 @@ class ScrapeInbox(Action):
         a dict with scraped data.
 
         """
-        from wiihacky.actions.scrape import prep_dict, strip_all
-
         output = dict()
-        prep_dict(output, self.inbox.__class__.__name__)
+        actions.scrape.prep_dict(output, const.TXT_INBOX)
         output.update([
-            (self.inbox.all.__name__, [a.id for a in self.inbox.all()]),
-            (self.inbox.mentions.__name__,
-             [a.id for a in self.inbox.mentions()]),
-            (self.inbox.sent.__name__, [a.id for a in self.inbox.sent()]),
-            (self.inbox.unread.__name__, [a.id for a in self.inbox.unread()])])
-        return strip_all(output)
+            (inbox.all.__name__, [a.id for a in inbox.all()]),
+            (inbox.mentions.__name__,
+             [a.id for a in inbox.mentions()]),
+            (inbox.sent.__name__, [a.id for a in inbox.sent()]),
+            (inbox.unread.__name__, [a.id for a in inbox.unread()])])
+        return actions.scrape.strip_all(output)

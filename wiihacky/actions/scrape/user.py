@@ -1,51 +1,47 @@
 import logging as lg
 
 from praw.models import User
+from praw import Reddit
 
-from wiihacky.actions import Action
+import wiihacky.actions.scrape.constants as const
+import actions
 
 
-class ScrapeUser(Action):
+class ScrapeUser(actions.Action):
     """This action when given the user will scrape and save the data."""
 
-    def __init__(self, log: lg.Logger, usr: User):
+    TXT_AC = const.TXT_START + ' ' + const.TXT_USER
+
+    def __init__(self, log: lg.Logger):
         """Only the user is needed."""
-        Action.__init__(self, log)
-        self.user = usr
-        self.TXT_USER = self.user.__class__.__name__
-        from wiihacky.actions.scrape.constants import TXT_START
-        self.ac = TXT_START + ' ' + self.TXT_USER
-        self.complete = False
+        actions.Action.__init__(self, log)
         self.data = {}
 
-    def execute(self):
+    def execute(self, reddit: Reddit):
         """Execute Action."""
-        from wiihacky.actions.scrape.constants import (
-            TXT_ERR_EXCEPT, TXT_SAVING)
-
         # Scrape
         try:
-            self.log.info(self.ac + '.')
-            self.data = self.scrape()
+            self.log.info(self.TXT_AC + '.')
+            self.data = self.scrape(reddit.user)
         except Exception as e:
-            self.log.error(TXT_ERR_EXCEPT.format(self.ac + ':', e))
+            self.log.error(const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
 
         # Save
         try:
             self.log.info(
-                TXT_SAVING.format(self.TXT_USER.capitalize()))
-            from wiihacky.actions.scrape import save_data
-            save_data(self.data)
-            self.complete = True
+                const.TXT_SAVING.format(const.TXT_USER.capitalize()))
+            actions.scrape.save_data(self.data)
+            self.executed = True
         except Exception as e:
             self.log.error(
-                TXT_ERR_EXCEPT.format(TXT_SAVING.format(self.TXT_USER), e))
+                const.TXT_ERR_EXCEPT.format(
+                    const.TXT_SAVING.format(const.TXT_USER), e))
 
         # End of Action
-        from wiihacky.actions import action_concluded
-        action_concluded(self.log, self.ac, self.complete)
+        actions.action_concluded(self.log, self.TXT_AC, self.executed)
 
-    def scrape(self):
+    @staticmethod
+    def scrape(user: User):
         """Scrape user.
 
         This function will scrape the user return a data structure reflecting
@@ -56,26 +52,22 @@ class ScrapeUser(Action):
         a dict with scraped data.
 
         """
-        from wiihacky.actions.scrape.constants import (TXT_KARMA, TXT_NAME)
-        from wiihacky.actions.scrape import (prep_dict, strip_all)
-
         output = dict()
-        prep_dict(output, self.TXT_USER)
-        # noinspection PyProtectedMember
+        actions.scrape.prep_dict(output, const.TXT_USER)
         output.update([
-            (TXT_NAME, self.user._me.name),
-            (TXT_KARMA,
-             dict([(a.display_name, b) for a, b in self.user.karma().items()])),
-            (self.user.preferences.__class__.__name__,
-             dict(self.user.preferences())),
-            (self.user.moderator_subreddits.__name__,
-             [a.display_name for a in self.user.moderator_subreddits()]),
-            (self.user.subreddits.__name__,
-             [a.display_name for a in self.user.subreddits()]),
-            (self.user.blocked.__name__,
-             [a.display_name for a in self.user.blocked()]),
-            (self.user.friends.__name__,
-             [a.display_name for a in self.user.friends()]),
-            (self.user.multireddits.__name__,
-             [a.display_name for a in self.user.multireddits()])])
-        return strip_all(output)
+            (const.TXT_NAME, user._me.name),
+            (const.TXT_KARMA,
+             dict([(a.display_name, b) for a, b in user.karma().items()])),
+            (user.preferences.__class__.__name__,
+             dict(user.preferences())),
+            (user.moderator_subreddits.__name__,
+             [a.display_name for a in user.moderator_subreddits()]),
+            (user.subreddits.__name__,
+             [a.display_name for a in user.subreddits()]),
+            (user.blocked.__name__,
+             [a.display_name for a in user.blocked()]),
+            (user.friends.__name__,
+             [a.display_name for a in user.friends()]),
+            (user.multireddits.__name__,
+             [a.display_name for a in user.multireddits()])])
+        return actions.scrape.strip_all(output)
