@@ -1,34 +1,34 @@
 import logging as lg
 
 from praw.models import Message
-from praw import Reddit
 
 import wiihacky.actions.scrape.constants as const
-import actions
+import wiihacky
 
 
-class ScrapeMessage(actions.Action):
+class ScrapeMessage(wiihacky.actions.Action):
     """This action when given a comment will scrape and save the data."""
-
-    TXT_AC = const.TXT_START + ' ' + const.TXT_MESSAGE
 
     def __init__(self, log: lg.Logger, msg_id: str):
         """Initialize the action."""
-        actions.Action.__init__(self, log)
+        super().__init__(log)
+        self.action_text = const.TXT_START + ' ' + const.TXT_MESSAGE
         self.msg_id = msg_id
         self.data = {}
 
-    def execute(self, reddit: Reddit):
+    def execute(self, wh: wiihacky.WiiHacky):
         """Execute action."""
+        reddit = wh.reddit
         try:
             message = reddit.inbox.message(self.msg_id)
 
             # Scrape
             try:
-                self.log.info(self.TXT_AC + '.')
+                self.log.info(self.action_text + '.')
                 self.data = self.scrape(message)
             except Exception as e:
-                self.log.error(const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                self.log.error(
+                    const.TXT_ERR_EXCEPT.format(self.action_text + ':', e))
                 raise e
 
             # Save
@@ -49,7 +49,7 @@ class ScrapeMessage(actions.Action):
             raise e
 
         # End of Action
-        actions.action_concluded(self.log, self.TXT_AC, self.executed)
+        self.action_concluded()
 
     @staticmethod
     def scrape(msg: Message):
@@ -62,13 +62,13 @@ class ScrapeMessage(actions.Action):
         ------
         a dict with scraped data.
         """
-        actions.scrape.fetch(msg)
+        wiihacky.actions.scrape.fetch(msg)
         output = dict(vars(msg))
-        actions.scrape.prep_dict(output, const.TXT_MESSAGE)
+        wiihacky.actions.scrape.prep_dict(output, const.TXT_MESSAGE)
         output[const.TXT_REPLIES] = [a.id for a in output[const.TXT_REPLIES]]
         output[const.TXT_AUTHOR] = output[const.TXT_AUTHOR].name
         output[const.TXT_DEST] = output[const.TXT_DEST].name
         if msg.subreddit:
             output[const.TXT_SUBREDDIT] = \
                 output[const.TXT_SUBREDDIT].display_name
-        return actions.scrape.strip_all(output)
+        return wiihacky.actions.scrape.strip_all(output)

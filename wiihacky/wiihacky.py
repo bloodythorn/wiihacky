@@ -60,3 +60,4 @@ class WiiHacky:
         CLI-like commands until told to exit.
         """
         # TODO: Two modes single cycle, or interactive.
+        self.log.info("Not Implemented.")
