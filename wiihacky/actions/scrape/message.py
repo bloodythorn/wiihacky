@@ -53,14 +53,14 @@ class ScrapeMessage(wiihacky.actions.Action):
 
     @staticmethod
     def scrape(msg: Message):
-        """Scrape a message.
+        """
+        Scrape a message.
 
         This function will scrape a message and return a data structure
         reflecting its state.
 
-        Return
-        ------
-        a dict with scraped data.
+        :param msg: Message class from PRAW
+        :return: a dict with scraped data.
         """
         wiihacky.actions.scrape.fetch(msg)
         output = dict(vars(msg))
