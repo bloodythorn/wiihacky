@@ -1,3 +1,8 @@
+"""
+Constants required by the wiihacky module.
+"""
+
+
 CMD_DELIM = '.'
 
 SCRAPE_DIR = 'scrape_data'
