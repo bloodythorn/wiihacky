@@ -1,42 +1,41 @@
 import logging as lg
 
 from praw.models import Redditor
-from praw import Reddit
 
 import wiihacky.actions.scrape.constants as const
-import actions
+import wiihacky
 
 
-class ScrapeRedditor(actions.Action):
+class ScrapeRedditor(wiihacky.actions.Action):
     """This action when given a redditor will scrape and save the data."""
-
-    TXT_AC = const.TXT_START + ' ' + const.TXT_REDDITOR
 
     def __init__(self, log: lg.Logger, redditor_name: str):
         """Initialize the action."""
-        actions.Action.__init__(self, log)
+        super().__init__(log)
+        self.action_text = const.TXT_START + ' ' + const.TXT_REDDITOR
         self.redditor_name = redditor_name
         self.data = {}
 
-    def execute(self, reddit: Reddit):
+    def execute(self, wh: wiihacky.WiiHacky):
         """Execute Action."""
+        reddit = wh.reddit
         try:
             redditor = reddit.redditor(self.redditor_name)
 
             # Scrape
             try:
-                self.log.info(self.TXT_AC + '.')
+                self.log.info(self.action_text + '.')
                 self.data = self.scrape(redditor)
             except Exception as e:
                 self.log.error(
-                    const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                    const.TXT_ERR_EXCEPT.format(self.action_text + ':', e))
                 raise e
 
             # Save
             try:
                 self.log.info(
                     const.TXT_SAVING.format(const.TXT_REDDITOR.capitalize()))
-                actions.scrape.save_data(self.data)
+                wiihacky.actions.scrape.save_data(self.data)
                 self.executed = True
             except Exception as e:
                 self.log.error(
@@ -49,23 +48,22 @@ class ScrapeRedditor(actions.Action):
             raise e
 
         # End of Action
-        actions.action_concluded(self.log, self.TXT_AC, self.executed)
+        self.action_concluded()
 
     @staticmethod
     def scrape(redditor: Redditor):
-        """Scrape a redditor.
+        """
+        Scrape a redditor.
 
         This function will scrape a redditor and return a data structure
         reflecting its state.
 
-        Return
-        ------
-        a dict with scraped data.
-
+        :param redditor: Redditor class from PRAW
+        :return: a dict with scraped data.
         """
-        actions.scrape.fetch(redditor)
+        wiihacky.actions.scrape.fetch(redditor)
         output = dict(vars(redditor))
-        actions.scrape.prep_dict(output, const.TXT_REDDITOR)
+        wiihacky.actions.scrape.prep_dict(output, const.TXT_REDDITOR)
         output.update([
             (redditor.trophies.__name__,
              [a.name for a in redditor.trophies()]),
@@ -94,4 +92,4 @@ class ScrapeRedditor(actions.Action):
             (redditor.submissions.top.__name__,
              [a.id for a in redditor.submissions.top()]),
         ])
-        return actions.scrape.strip_all(output)
+        return wiihacky.actions.scrape.strip_all(output)
