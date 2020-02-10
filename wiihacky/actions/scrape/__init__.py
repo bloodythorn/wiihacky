@@ -7,4 +7,9 @@ from .submission import ScrapeSubmission
 from .subreddit import ScrapeSubreddit
 from .user import ScrapeUser
 
-from .scrape import (fetch, prep_dict, save_data, strip_all)
+from .scrape import (
+    fetch,
+    prep_dict,
+    save_data,
+    strip_all
+)

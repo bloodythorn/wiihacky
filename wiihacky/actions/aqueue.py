@@ -1,5 +1,9 @@
 class ActionQueue:
+    """
+    A class that will handle actions.
 
+    TODO: Everything really.
+    """
     def __init__(self):
         self.data = list()
 

@@ -9,11 +9,10 @@ import wiihacky
 class ScrapeComment(wiihacky.actions.Action):
     """This action when given a comment id will scrape and save the data."""
 
-    TXT_AC = const.TXT_START + ' ' + const.TXT_COMMENTS[:-1]
-
     def __init__(self, log: lg.Logger, comment_id: str):
         """Initialize the action."""
         super().__init__(log)
+        self.action_text = const.TXT_START + ' ' + const.TXT_COMMENTS[:-1]
         self.comment_id = comment_id
         self.data = {}
 
@@ -26,11 +25,11 @@ class ScrapeComment(wiihacky.actions.Action):
 
             # Scrape
             try:
-                self.log.info(self.TXT_AC + '.')
+                self.log.info(self.action_text + '.')
                 self.data = self.scrape(comment)
             except Exception as e:
                 self.log.error(
-                    const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+                    const.TXT_ERR_EXCEPT.format(self.action_text + ':', e))
                 raise e
 
             # Save
@@ -51,7 +50,7 @@ class ScrapeComment(wiihacky.actions.Action):
             raise e
 
         # End of action
-        wiihacky.actions.action_concluded(self.log, self.TXT_AC, self.executed)
+        self.action_concluded()
 
     @staticmethod
     def scrape(comment: Comment):
