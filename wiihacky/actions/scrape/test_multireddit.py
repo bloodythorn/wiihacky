@@ -1,4 +1,11 @@
 def test_multireddit(wh):
+    """
+    Scrapes three multireddits, failure on exception.
+
+    :param wh: WiiHacky instance.
+    :return: None
+    """
+
     wh.log.info('-- Multireddit Test -')
     try:
         from wiihacky.actions.scrape import ScrapeMultireddit
@@ -10,7 +17,7 @@ def test_multireddit(wh):
 
         for a in multis:
             ac = ScrapeMultireddit(wh.log, *a)
-            ac.execute(wh.reddit)
+            ac.execute(wh)
     except Exception as e:
         wh.log.error('TEST**** ScrapeMultireddit failed!', e)
         assert False
