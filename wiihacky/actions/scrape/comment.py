@@ -7,7 +7,9 @@ import wiihacky
 
 
 class ScrapeComment(wiihacky.actions.Action):
-    """This action when given a comment id will scrape and save the data."""
+    """
+    This action when given a comment id will scrape and save the data.
+    """
 
     def __init__(self, log: lg.Logger, comment_id: str):
         """Initialize the action."""
@@ -17,7 +19,6 @@ class ScrapeComment(wiihacky.actions.Action):
         self.data = {}
 
     def execute(self, wh: wiihacky.WiiHacky):
-        """Execute Action."""
         # Fetch Comment
         reddit = wh.reddit
         try:
@@ -54,15 +55,14 @@ class ScrapeComment(wiihacky.actions.Action):
 
     @staticmethod
     def scrape(comment: Comment):
-        """Scrape a comment.
+        """
+        Scrape a comment.
 
         This function will scrape the comment return a data structure reflecting
         its state.
 
-        Return
-        ------
-        a dict with scraped data.
-
+        :param comment: Comment class from PRAW
+        :return: dict with scraped data.
         """
         wiihacky.actions.scrape.fetch(comment)
         output = dict(vars(comment))
