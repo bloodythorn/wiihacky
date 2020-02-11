@@ -1,36 +1,36 @@
 import logging as lg
 
 from praw.models import User
-from praw import Reddit
 
 import wiihacky.actions.scrape.constants as const
-import actions
+import wiihacky
 
 
-class ScrapeUser(actions.Action):
+class ScrapeUser(wiihacky.actions.Action):
     """This action when given the user will scrape and save the data."""
-
-    TXT_AC = const.TXT_START + ' ' + const.TXT_USER
 
     def __init__(self, log: lg.Logger):
         """Only the user is needed."""
-        actions.Action.__init__(self, log)
+        super().__init__(log)
+        self.action_text = const.TXT_START + ' ' + const.TXT_USER
         self.data = {}
 
-    def execute(self, reddit: Reddit):
+    def execute(self, wh: wiihacky.WiiHacky):
         """Execute Action."""
         # Scrape
+        reddit = wh.reddit
         try:
-            self.log.info(self.TXT_AC + '.')
+            self.log.info(self.action_text + '.')
             self.data = self.scrape(reddit.user)
         except Exception as e:
-            self.log.error(const.TXT_ERR_EXCEPT.format(self.TXT_AC + ':', e))
+            self.log.error(
+                const.TXT_ERR_EXCEPT.format(self.action_text + ':', e))
 
         # Save
         try:
             self.log.info(
                 const.TXT_SAVING.format(const.TXT_USER.capitalize()))
-            actions.scrape.save_data(self.data)
+            wiihacky.actions.scrape.save_data(self.data)
             self.executed = True
         except Exception as e:
             self.log.error(
@@ -38,7 +38,7 @@ class ScrapeUser(actions.Action):
                     const.TXT_SAVING.format(const.TXT_USER), e))
 
         # End of Action
-        actions.action_concluded(self.log, self.TXT_AC, self.executed)
+        self.action_concluded()
 
     @staticmethod
     def scrape(user: User):
@@ -53,7 +53,8 @@ class ScrapeUser(actions.Action):
 
         """
         output = dict()
-        actions.scrape.prep_dict(output, const.TXT_USER)
+        wiihacky.actions.scrape.prep_dict(output, const.TXT_USER)
+        # noinspection PyProtectedMember,PyTypeChecker
         output.update([
             (const.TXT_NAME, user._me.name),
             (const.TXT_KARMA,
@@ -70,4 +71,4 @@ class ScrapeUser(actions.Action):
              [a.display_name for a in user.friends()]),
             (user.multireddits.__name__,
              [a.display_name for a in user.multireddits()])])
-        return actions.scrape.strip_all(output)
+        return wiihacky.actions.scrape.strip_all(output)
