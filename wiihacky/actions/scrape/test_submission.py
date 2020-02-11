@@ -1,4 +1,10 @@
 def test_submission(wh):
+    """
+    Scrapes 10 random submissions. Failure on exception.
+
+    :param wh: Wiihacky instance
+    :return: None
+    """
     wh.log.info('-- Submission Test -')
     try:
         from wiihacky.actions.scrape import ScrapeSubmission
@@ -6,7 +12,7 @@ def test_submission(wh):
             submission = wh.reddit.random_subreddit().random()
             wh.log.info('-- Target: {} -'.format(submission.id))
             ac = ScrapeSubmission(wh.log, submission.id)
-            ac.execute(wh.reddit)
+            ac.execute(wh)
     except Exception as e:
         wh.log.error('TEST**** ScrapeSubmission failed!', e)
         assert False
