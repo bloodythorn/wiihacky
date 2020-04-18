@@ -5,6 +5,8 @@ import constants
 import discord
 import logging as lg
 
+bloody_id = 574629343142346757
+
 
 def load_config():
     """Get Configuration.
@@ -26,9 +28,6 @@ def load_config():
 class WiiHacky(discord.Client):
     """WiiHacky's direct interface."""
 
-    log_guild = 'WiiHacks'
-    log_chan = 'bot_log'
-
     def __init__(self):
         """Initialize WiiHacky."""
         discord.Client.__init__(self)
@@ -37,18 +36,25 @@ class WiiHacky(discord.Client):
         lg.basicConfig(
             level=lg.INFO, format=constants.LOG_FORMAT_STRING)
         self.log = lg.getLogger(self.__class__.__name__)
-        self.log.setLevel(lg.INFO)
+        self.log.setLevel(lg.DEBUG)
         self.log.info(constants.TXT_LOGGER_SUCC)
 
         # register reddit update routine.
         self.reddit_update_frequency = 5
-        self.loop.create_task(self.update_reddit())
+        self.reddit_comment_index = None
+        self.reddit_submission_index = None
+        self.loop.create_task(self.update_bot_state())
+        # TODO:make this configurable
+        self.bot_cli_channel = ('WiiHacks', 'bot_cli')
+        self.subreddit_relay = 'WiiHacks'
 
         # store configuration
         try:
             self.config = load_config()
         except Exception as e:
-            self.log.critical('failed to load config: {}'.format(e))
+            # TODO : Move to constants
+            log_config_load_failed = 'failed to load config: {}'
+            self.log.critical(log_config_load_failed.format(e))
             exit(-1)
 
         # init reddit instance
@@ -66,10 +72,6 @@ class WiiHacky(discord.Client):
         self.running = False
 
     # Utilities
-
-    @staticmethod
-    def find_in(obj, con):
-        return discord.utils.find(lambda m: m.name == obj, con)
 
     async def on_connect(self):
         """
@@ -93,12 +95,15 @@ class WiiHacky(discord.Client):
 
         Output to both console and discord logs.
         """
+        # TODO: this should be moved to
+        #  wiihacky.actions.wiihacky.version(discord=true)
         output = \
             '{} is ready, version {}. Praw version {}. Discord.py version {}.'
 
-        ch = self.find_in(
-            self.log_chan,
-            self.find_in(self.log_guild, self.guilds).channels)
+        ch = discord.utils.get(
+            self.get_all_channels(),
+            guild__name=self.bot_cli_channel[0],
+            name=self.bot_cli_channel[1])
 
         import praw
         output = output.format(
@@ -159,8 +164,26 @@ class WiiHacky(discord.Client):
 
     async def on_message(self, message: discord.message.Message):
         # Echo Protection
-        if message.channel.name != self.log_chan:
-            self.log.debug('message: {}'.format(message))
+        # Only messages of the bot that the bot would need to respond to.
+        # This probably won't be used for anything but echo protection.
+        if message.author.name == self.user.name:
+            return
+        
+        # There are only three classes of messages we respond to.
+        # Anything in the bot_cli channel.
+        # TODO : Command char should eventually be a property of the aliases.
+        command_char = '!'
+        if message.guild == self.bot_cli_channel[0] and \
+           message.channel == self.bot_cli_channel[1]:
+            self.log.debug('TODO:Respond to CLI Message {}'.format(message))
+        # Anything that is a registered alias.
+        if message.content[0:1] == command_char:
+            self.log.debug('TODO:Respond to Alias {}'.format(message))
+        # andthing with @WiiHacky in it
+        if message.content.find(self.user.id) != -1:
+            self.log.debug('Respond to @Mentions {}'.format(message))
+        # TODO: Good Question? Is it beneficial for the bot to respond to
+        # more than one of these conditions? Make a truth table.
 
     async def on_message_delete(self, message):
         self.log.debug('message_delete: {}'.format(message))
@@ -168,8 +191,10 @@ class WiiHacky(discord.Client):
     async def on_bulk_message_delete(self, messages):
         self.log.debug('bulk_message_delete: {}'.format(messages))
 
-    async def on_message_edit(self, message):
-        self.log.debug('ressage Edit: {}'.format(message))
+    # FIXME
+    # For some reason this function exceptions everytime I sent an embed
+    # async def on_message_edit(self, message):
+    #   pass
 
     # Reactions
 
@@ -211,27 +236,8 @@ class WiiHacky(discord.Client):
     async def on_member_update(self,
                                before: discord.member.Member,
                                after: discord.member.Member):
-        output = 'Member Update->{}'.format(before.name)
-        if after.nick:
-            output += '({})'.format(after.nick)
-        output += ':'
-        if before.status != after.status:
-            output += 'status:>{}->{}'.format(before.status, after.status)
-        elif before.activity != after.activity:
-            output += 'activity:>{}->{}'.format(before.activity, after.activity)
-        elif before.nick != after.nick:
-            output += 'nick:>{}->{}'.format(before.nick, after.nick)
-        elif before.roles != after.roles:
-            output += 'roles:>'.format(before.roles, after.roles)
-        else:
-            output += 'unknown:>{} {}'.format(before, after)
-        self.log.debug(output)
-
-        if self.log.level == lg.DEBUG:
-            ch = self.find_in(
-                self.log_chan,
-                self.find_in(self.log_guild, self.guilds).channels)
-            await ch.send('DEBUG:' + output)
+        self.log.debug('TODO: React to Member Update{}->{}'.format(
+            before, after))
 
     async def on_member_ban(self, guild, user):
         self.log.debug('member_ban: {} {}'.format(guild, user))
@@ -285,12 +291,12 @@ class WiiHacky(discord.Client):
     async def on_guild_unavailable(self, guild):
         self.log.debug('guild_unavailable: {} {}'.format(guild, self.guilds))
 
-    async def update_reddit(self):
+    async def update_bot_state(self):
         await self.wait_until_ready()
 
         while not self.is_closed():
             try:
-                # self.log.debug('updating reddit...')
+                # TODO; Period tasks/classes go here.
                 await asyncio.sleep(self.reddit_update_frequency)
             except Exception as e:
                 self.log.error(e)

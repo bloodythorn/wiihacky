@@ -2,7 +2,6 @@ import logging as lg
 from abc import ABC, abstractmethod
 
 import actions.constants as const
-import wiihacky
 
 
 class Action(ABC):
@@ -49,7 +48,7 @@ class Action(ABC):
         del self._ACTION_TEXT
 
     @abstractmethod
-    def execute(self, wh: wiihacky.WiiHacky):
+    def execute(self, wh):
         """
         Abstract Method defining the execution method for the action. This
         will perform whatever action is intended, and leave the action in

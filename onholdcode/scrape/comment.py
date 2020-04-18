@@ -3,10 +3,10 @@ import logging as lg
 from praw.models import Comment
 
 import wiihacky.actions.scrape.constants as const
-import wiihacky
+from ..action import Action
 
 
-class ScrapeComment(wiihacky.actions.Action):
+class ScrapeComment(Action):
     """
     This action when given a comment id will scrape and save the data.
     """
@@ -18,7 +18,7 @@ class ScrapeComment(wiihacky.actions.Action):
         self.comment_id = comment_id
         self.data = {}
 
-    def execute(self, wh: wiihacky.WiiHacky):
+    def execute(self, wh):
         # Fetch Comment
         reddit = wh.reddit
         try:
