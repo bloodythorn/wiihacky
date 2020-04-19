@@ -1,13 +1,24 @@
 """WiiHacky Module."""
 
+import actions
 import asyncio
 import constants
 import discord
 import logging as lg
 
+# TODO: Uhhh, this. These are 'defaults' and should be in .config
 bloody_id = 574629343142346757
+def_log_level_all = lg.INFO
+def_log_level_wh = lg.DEBUG
+def_discord_out_level = lg.INFO
+def_reddit_out_level = lg.CRITICAL
+log_config_load_failed = 'failed to load config: {}'
+bot_cli_channel = ('WiiHacks', 'bot_cli')
+subreddit_relay = 'WiiHacks'
+reddit_update_frequency = 5
 
 
+# TODO: This function should also be moved to .config.
 def load_config():
     """Get Configuration.
 
@@ -28,36 +39,49 @@ def load_config():
 class WiiHacky(discord.Client):
     """WiiHacky's direct interface."""
 
-    def __init__(self):
-        """Initialize WiiHacky."""
-        discord.Client.__init__(self)
+    def _init_config(self):
+        """
+        Initializes WiiHacky's Config
 
-        # init logger
-        lg.basicConfig(
-            level=lg.INFO, format=constants.LOG_FORMAT_STRING)
-        self.log = lg.getLogger(self.__class__.__name__)
-        self.log.setLevel(lg.DEBUG)
-        self.log.info(constants.TXT_LOGGER_SUCC)
+        This function initializes and attaches the module that regulates the
+        configuration of wiihacky.
 
-        # register reddit update routine.
-        self.reddit_update_frequency = 5
-        self.reddit_comment_index = None
-        self.reddit_submission_index = None
-        self.loop.create_task(self.update_bot_state())
-        # TODO:make this configurable
-        self.bot_cli_channel = ('WiiHacks', 'bot_cli')
-        self.subreddit_relay = 'WiiHacks'
-
-        # store configuration
+        :return: None
+        """
+        # TODO: Replace with config module.
+        self.config = None
         try:
             self.config = load_config()
         except Exception as e:
-            # TODO : Move to constants
-            log_config_load_failed = 'failed to load config: {}'
             self.log.critical(log_config_load_failed.format(e))
             exit(-1)
+        # from .config import Config
+        # self.config = Config()
 
-        # init reddit instance
+    def _init_logger(self, lvl_all=lg.INFO, lvl_wh=lg.INFO):
+        """
+        Attaches logging facilities and sets levels.
+
+        :param lvl_all: This sets the global level. Discord.py and praw will be
+            effected.
+        :param lvl_wh:  This sets the logging level for WiiHacky only.
+        :return: None
+        """
+        # FIXME: Instead of passing this(lvl),
+        #  it should draw from default config
+        lg.basicConfig(level=lvl_all, format=constants.LOG_FORMAT_STRING)
+        self.log = lg.getLogger(self.__class__.__name__)
+        self.log.level = lvl_wh
+
+    def _init_reddit(self):
+        """
+        Initializes Reddit.
+
+        This function attaches the reddit submodule, and logs it in as the
+        configured user.
+
+        :return: None
+        """
         import praw as pr
         self.reddit = pr.Reddit(
             user_agent=self.config['reddit']['user_agent'],
@@ -65,13 +89,95 @@ class WiiHacky(discord.Client):
             client_secret=self.config['reddit']['client_secret'],
             username=self.config['reddit']['username'],
             password=self.config['reddit']['password'])
+
+    def _init_discord(self):
+        """
+        Initialize Discord.py
+
+        This function initializes discord.py as well as registering reddit
+        update functions since I haven't learned the nuances of discord.py's
+        interactive loop, I will just utilize custom loops for anything I need
+        done periodically.
+
+        :return: None
+        """
+        # register reddit update routine.
+        self.loop.create_task(self.update_bot_state())
+
+    async def send_txt_to_discord_channel(self, guild, channel, text):
+        ch = discord.utils.get(
+            self.get_all_channels(),
+            guild__name=guild,
+            name=channel)
+        await ch.send(text)
+
+    async def send_to_log(self, msg: str, lvl=lg.DEBUG):
+        """
+        Outputs a log message.
+
+        Sends to the logging facilities to be printed in all manners
+        demanded. The default level is debug, for quicker coding.
+
+        Sending to logging is determined by the log level.
+        Sending to discord has to be checked against a setting.
+        Sending to reddit also has to be checked against a setting but should
+            never be set beyond critical, as you don't want to spam reddit
+            log messages.
+
+        :param msg: The message to be output.
+        :param lvl: The log level the message is intended for.
+        :return: None
+        """
+        self.log.log(lvl, msg)
+        # Check for discord output
+        if lvl >= def_discord_out_level:
+            await self.send_txt_to_discord_channel(
+                bot_cli_channel[0],
+                bot_cli_channel[1],
+                msg)
+        if lvl >= def_reddit_out_level:
+            self.log.debug("TODO: Implement me.")
+
+    def __init__(self):
+        """
+        Initialize WiiHacky
+
+        Any initialization routine that fails will be a critical error as
+        the bot cannot run without all of them.
+        """
+        # super init
+        super().__init__()
+
+        # init logger
+        # FIXME: I currently have this first as everything else uses it.
+        #   I really want what it is initially set to rely on the config
+        #   so it should go first. Figger it oot.
+        self._init_logger(def_log_level_all, def_log_level_wh)
+        self.log.info(constants.TXT_LOGGER_SUCC)
+
+        # init config
+        self._init_config()
+        self.log.info(constants.TXT_CONFIG_LOADED)
+
+        # init reddit
+        self._init_reddit()
         self.log.info(constants.TXT_REDDIT_SUCC)
         self.log.info(constants.TXT_LOGGED_IN, self.reddit.user.me())
+
+        # init discord
+        self._init_discord()
+        self.log.info(constants.TXT_DISCORD_INIT)
+
+        # Init the action factory.
+        from actions import ActionFactory
+        self.actions = ActionFactory(self.log)
 
         # set interactive
         self.running = False
 
-    # Utilities
+    # Discord.py over-rides.
+
+    # General Overrides
 
     async def on_connect(self):
         """
@@ -97,39 +203,26 @@ class WiiHacky(discord.Client):
         """
         # TODO: this should be moved to
         #  wiihacky.actions.wiihacky.version(discord=true)
-        output = \
+        output1 = \
             '{} is ready, version {}. Praw version {}. Discord.py version {}.'
-
-        ch = discord.utils.get(
-            self.get_all_channels(),
-            guild__name=self.bot_cli_channel[0],
-            name=self.bot_cli_channel[1])
-
+        output2 = \
+            'Discord User: {} | Reddit User: {}'
         import praw
-        output = output.format(
+        output1 = output1.format(
             self.user,
             constants.__version__,
             praw.__version__,
             discord.__version__)
-        self.log.info(output)
-        await ch.send(output)
+        output2 = output2.format(
+            self.user.name + '#' + self.user.discriminator,
+            'u/' + self.reddit.user.me().name)
+        await self.send_to_log(output1, lg.INFO)
+        await self.send_to_log(output2, lg.INFO)
 
-    async def on_error(self, event, *args, **kwargs):
-        """
-        Error handler.
-
-        When an error message occurs, this function formats it and outputs it.
-        """
-        self.log.error('on_error: {} {} {}'.format(event, args, kwargs))
+    # FIXME: The default error handler was better than the one I wrote.
+    # async def on_error(self, event, *args, **kwargs):
 
     async def on_typing(self, channel, user, when):
-        """
-        On Typing reaction.
-        :param channel:
-        :param user:
-        :param when:
-        :return: None
-        """
         self.log.debug('typing: {} {} {}'.format(channel, user, when))
 
     async def on_webhooks_update(self, channel):
@@ -166,24 +259,42 @@ class WiiHacky(discord.Client):
         # Echo Protection
         # Only messages of the bot that the bot would need to respond to.
         # This probably won't be used for anything but echo protection.
-        if message.author.name == self.user.name:
+        if message.author == self.user:
             return
-        
+
+        # TODO: These conditions and even the echo protection above should be
+        #   moved to their respective classes/modules.
         # There are only three classes of messages we respond to.
-        # Anything in the bot_cli channel.
+        # Anything with @WiiHacky in it, first priority
+        # if message.content.find(str(self.user.id)) != -1 and \
+        #   message.author.id == bloody_id:
+        #    self.log.debug('Respond to @Mentions {}'.format(message))
+        #    # By then end of this if, there should be nothing left to do.
+        #    return
+
+        # Anything that is a registered alias, second priority
         # TODO : Command char should eventually be a property of the aliases.
-        command_char = '!'
-        if message.guild == self.bot_cli_channel[0] and \
-           message.channel == self.bot_cli_channel[1]:
+        # temp_command_char = '!'
+        # if message.content[0:1] == temp_command_char and \
+        #   message.author.id == bloody_id:
+        #    self.log.debug('TODO:Respond to Alias {}'.format(message))
+        #    # By then end of this if, there should be nothing left to do.
+        #    return
+
+        # Anything in the bot_cli channel, last priority.
+        if message.guild.name == bot_cli_channel[0] and \
+           message.channel.name == bot_cli_channel[1] and \
+           message.author.id == bloody_id:
             self.log.debug('TODO:Respond to CLI Message {}'.format(message))
-        # Anything that is a registered alias.
-        if message.content[0:1] == command_char:
-            self.log.debug('TODO:Respond to Alias {}'.format(message))
-        # andthing with @WiiHacky in it
-        if message.content.find(self.user.id) != -1:
-            self.log.debug('Respond to @Mentions {}'.format(message))
-        # TODO: Good Question? Is it beneficial for the bot to respond to
-        # more than one of these conditions? Make a truth table.
+            try:
+                ac: actions.Action = self.actions.parse_action(message.content)
+                ac.execute()
+            except Exception as e:
+                self.log.error(e)
+            # By then end of this if, there should be nothing left to do.
+            return
+
+        self.log.debug("on_message unhandled: {}".format(message))
 
     async def on_message_delete(self, message):
         self.log.debug('message_delete: {}'.format(message))
@@ -233,10 +344,8 @@ class WiiHacky(discord.Client):
     async def on_member_remove(self, member):
         self.log.debug('member_remove: {}'.format(member))
 
-    async def on_member_update(self,
-                               before: discord.member.Member,
-                               after: discord.member.Member):
-        self.log.debug('TODO: React to Member Update{}->{}'.format(
+    async def on_member_update(self, before, after):
+        self.log.debug('TODO: React to Member Update: {}->{}'.format(
             before, after))
 
     async def on_member_ban(self, guild, user):
@@ -297,10 +406,9 @@ class WiiHacky(discord.Client):
         while not self.is_closed():
             try:
                 # TODO; Period tasks/classes go here.
-                await asyncio.sleep(self.reddit_update_frequency)
+                await asyncio.sleep(reddit_update_frequency)
             except Exception as e:
                 self.log.error(e)
-                await asyncio.sleep(self.reddit_update_frequency)
 
     def start_daemon(self):
         self.log.info('Starting WiiHacky Daemon...')

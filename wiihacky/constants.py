@@ -8,6 +8,8 @@ TXT_REDDIT_SUCC = 'successfully initialized reddit instance.'
 TXT_LOGGED_IN = 'logged in to reddit as %s.'
 TXT_INTERRUPT = 'ctrl-c interrupt detected.'
 TXT_START_BOT = 'starting bot. press ctrl-c to interrupt.'
+TXT_CONFIG_LOADED = 'Configuration loaded.'
+TXT_DISCORD_INIT = 'Discord has been successfully initialized.'
 
 # Version
 __version__ = 'v0.0.2'

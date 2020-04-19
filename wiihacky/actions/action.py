@@ -9,7 +9,7 @@ class Action(ABC):
     Base class for all actions.
     """
 
-    def __init__(self, log: lg.Logger):
+    def __init__(self, log: lg.Logger, *args, **kwargs):
         """Initialization takes a logger, and optional message and
             priority.
         """
@@ -48,7 +48,7 @@ class Action(ABC):
         del self._ACTION_TEXT
 
     @abstractmethod
-    def execute(self, wh):
+    def execute(self, *args, **kwargs):
         """
         Abstract Method defining the execution method for the action. This
         will perform whatever action is intended, and leave the action in

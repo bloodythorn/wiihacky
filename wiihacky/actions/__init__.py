@@ -1,3 +1,2 @@
-import wiihacky.actions.discord
-
 from .action import Action
+from .action_factory import ActionFactory
