@@ -10,6 +10,11 @@ TXT_INTERRUPT = 'ctrl-c interrupt detected.'
 TXT_START_BOT = 'starting bot. press ctrl-c to interrupt.'
 TXT_CONFIG_LOADED = 'Configuration loaded.'
 TXT_DISCORD_INIT = 'Discord has been successfully initialized.'
+TXT_DISCORD_SEND_FAILED = 'Failed to send to discord! {}->{}->{}'
+TXT_DISCORD_DISCON = '{} disconnected from Discord.'
+TXT_BOT_READY = \
+    '{} is ready, version {}. Praw version {}. Discord.py version {}.'
+TXT_BOT_USERS = 'Discord User: {} | Reddit User: {}'
 
 # Version
 __version__ = 'v0.0.2'

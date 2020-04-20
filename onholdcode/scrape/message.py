@@ -20,7 +20,7 @@ class ScrapeMessage(wiihacky.actions.Action):
         """Execute action."""
         reddit = wh.reddit
         try:
-            message = reddit.inbox.message(self.msg_id)
+            message = reddit.inbox.text(self.msg_id)
 
             # Scrape
             try:

@@ -105,13 +105,23 @@ class WiiHacky(discord.Client):
         self.loop.create_task(self.update_bot_state())
 
     async def send_txt_to_discord_channel(self, guild, channel, text):
+        # TODO: This function needs to be moved to the action.
+        #   Also it should exception as a failure result with a proper error.
+        #   The function handling it can to the exception checking.
+        #   Also this should print out the log level.
+        #   Maybe change the name of this function to designated it as the
+        #   default logging function.
         ch = discord.utils.get(
             self.get_all_channels(),
             guild__name=guild,
             name=channel)
-        await ch.send(text)
+        if ch:
+            await ch.send(text)
+        else:
+            self.log.error(
+                constants.TXT_DISCORD_SEND_FAILED.format(guild, channel, text))
 
-    async def send_to_log(self, msg: str, lvl=lg.DEBUG):
+    async def send_to_log(self, text: str, lvl=lg.DEBUG):
         """
         Outputs a log message.
 
@@ -124,18 +134,20 @@ class WiiHacky(discord.Client):
             never be set beyond critical, as you don't want to spam reddit
             log messages.
 
-        :param msg: The message to be output.
+        :param text: The message to be output.
         :param lvl: The log level the message is intended for.
         :return: None
         """
-        self.log.log(lvl, msg)
+        self.log.log(lvl, text)
         # Check for discord output
         if lvl >= def_discord_out_level:
+            import logging
             await self.send_txt_to_discord_channel(
                 bot_cli_channel[0],
                 bot_cli_channel[1],
-                msg)
+                logging.getLevelName(lvl) + ":" + text)
         if lvl >= def_reddit_out_level:
+            # TODO: Implement this.
             self.log.debug("TODO: Implement me.")
 
     def __init__(self):
@@ -183,7 +195,7 @@ class WiiHacky(discord.Client):
         """
         Connect Message.
 
-        Output to log only.
+        Output to log only, due to lack of discord connectivity.
         """
         self.log.info('{} connected to Discord.'.format(self.user))
 
@@ -191,9 +203,9 @@ class WiiHacky(discord.Client):
         """
         Disconnect Message.
 
-        Outputs to log only
+        Output to log only, due to lack of discord connectivity.
         """
-        self.log.info('{} disconnected from Discord.'.format(self.user))
+        self.log.info(constants.TXT_DISCORD_DISCON.format(self.user))
 
     async def on_ready(self):
         """
@@ -201,57 +213,74 @@ class WiiHacky(discord.Client):
 
         Output to both console and discord logs.
         """
-        # TODO: this should be moved to
-        #  wiihacky.actions.wiihacky.version(discord=true)
-        output1 = \
-            '{} is ready, version {}. Praw version {}. Discord.py version {}.'
-        output2 = \
-            'Discord User: {} | Reddit User: {}'
+
         import praw
-        output1 = output1.format(
-            self.user,
-            constants.__version__,
-            praw.__version__,
-            discord.__version__)
-        output2 = output2.format(
-            self.user.name + '#' + self.user.discriminator,
-            'u/' + self.reddit.user.me().name)
-        await self.send_to_log(output1, lg.INFO)
-        await self.send_to_log(output2, lg.INFO)
+        await self.send_to_log(
+            constants.TXT_BOT_READY.format(
+                self.user,
+                constants.__version__,
+                praw.__version__,
+                discord.__version__),
+            lg.INFO)
+        await self.send_to_log(
+            constants.TXT_BOT_USERS.format(
+                self.user.name + '#' + self.user.discriminator,
+                'u/' + self.reddit.user.me().name),
+            lg.INFO)
 
     # FIXME: The default error handler was better than the one I wrote.
     # async def on_error(self, event, *args, **kwargs):
 
     async def on_typing(self, channel, user, when):
-        self.log.debug('typing: {} {} {}'.format(channel, user, when))
+        await self.send_to_log(
+            'React To Typing: {} {} {}'.format(channel, user, when),
+            lg.DEBUG)
 
     async def on_webhooks_update(self, channel):
-        self.log.debug('webhooks_update: {}'.format(channel))
+        await self.send_to_log(
+            'webhooks_update: {}'.format(channel),
+            lg.DEBUG)
 
     async def on_user_update(self, before, after):
-        self.log.debug('user_update: {} {}'.format(before, after))
+        await self.send_to_log(
+            'user_update: {} {}'.format(before, after),
+            lg.DEBUG)
 
     async def on_voice_state_update(self, member, before, after):
-        self.log.debug('voice_state_update: {} {} {}'.format(
-            member, before, after))
+        await self.send_to_log(
+            'voice_state_update: {} {} {}'.format(
+                member, before, after),
+            lg.DEBUG)
 
     async def on_invite_create(self, invite):
-        self.log.debug('invite_create: {}'.format(invite))
+        await self.send_to_log(
+            'invite_create: {}'.format(invite),
+            lg.DEBUG)
 
     async def on_invite_delete(self, invite):
-        self.log.debug('invite_delete: {}'.format(invite))
+        await self.send_to_log(
+            'invite_delete: {}'.format(invite),
+            lg.DEBUG)
 
     async def on_group_join(self, channel, user):
-        self.log.debug('group_join: {} {}'.format(channel, user))
+        await self.send_to_log(
+            'group_join: {} {}'.format(channel, user),
+            lg.DEBUG)
 
     async def on_group_remove(self, channel, user):
-        self.log.debug('group_remove: {} {}'.format(channel, user))
+        await self.send_to_log(
+            'group_remove: {} {}'.format(channel, user),
+            lg.DEBUG)
 
     async def on_relationship_add(self, relationship):
-        self.log.debug('relationship_add: {}'.format(relationship))
+        await self.send_to_log(
+            'relationship_add: {}'.format(relationship),
+            lg.DEBUG)
 
     async def on_relationship_update(self, before, after):
-        self.log.debug('relationship_update: {} {}'.format(before, after))
+        await self.send_to_log(
+            'relationship_update: {} {}'.format(before, after),
+            lg.DEBUG)
 
     # Messaging
 
@@ -297,10 +326,14 @@ class WiiHacky(discord.Client):
         self.log.debug("on_message unhandled: {}".format(message))
 
     async def on_message_delete(self, message):
-        self.log.debug('message_delete: {}'.format(message))
+        await self.send_to_log(
+            'message_delete: {}'.format(message),
+            lg.DEBUG)
 
     async def on_bulk_message_delete(self, messages):
-        self.log.debug('bulk_message_delete: {}'.format(messages))
+        await self.send_to_log(
+            'bulk_message_delete: {}'.format(messages),
+            lg.DEBUG)
 
     # FIXME
     # For some reason this function exceptions everytime I sent an embed
@@ -310,99 +343,149 @@ class WiiHacky(discord.Client):
     # Reactions
 
     async def on_reaction_add(self, reaction, user):
-        self.log.debug('reaction add: {} {}'.format(reaction, user))
+        await self.send_to_log(
+            'reaction add: {} {}'.format(reaction, user),
+            lg.DEBUG)
 
     async def on_reaction_remove(self, reaction, user):
-        self.log.debug('reaction remove: {} {}'.format(reaction, user))
+        await self.send_to_log(
+            'reaction remove: {} {}'.format(reaction, user),
+            lg.DEBUG)
 
     async def on_reaction_clear(self, reaction, user):
-        self.log.debug('reaction clear: {} {}'.format(reaction, user))
+        await self.send_to_log(
+            'reaction clear: {} {}'.format(reaction, user),
+            lg.DEBUG)
 
     async def on_reaction_clear_emoji(self, reaction):
-        self.log.debug('reaction clear emoji: {}'.format(reaction))
+        await self.send_to_log(
+            'reaction clear emoji: {}'.format(reaction),
+            lg.DEBUG)
 
     # Private Channels
 
     async def on_private_channel_delete(self, channel):
-        self.log.debug('private channel delete: {}'.format(channel))
+        await self.send_to_log(
+            'private channel delete: {}'.format(channel),
+            lg.DEBUG)
 
     async def on_private_channel_create(self, channel):
-        self.log.debug('private channel create: {}'.format(channel))
+        await self.send_to_log(
+            'private channel create: {}'.format(channel),
+            lg.DEBUG)
 
     async def on_private_channel_update(self, before, after):
-        self.log.debug('private channel update: {} {}'.format(before, after))
+        await self.send_to_log(
+            'private channel update: {} {}'.format(before, after),
+            lg.DEBUG)
 
     async def on_private_channel_pins_update(self, channel, last_pin):
-        self.log.debug('private channel pins update: {} {}'.format(
-            channel, last_pin))
+        await self.send_to_log(
+            'private channel pins update: {} {}'.format(channel, last_pin),
+            lg.DEBUG)
 
     # Member
 
     async def on_member_join(self, member):
-        self.log.debug('member_join: {}'.format(member))
+        await self.send_to_log(
+            'member_join: {}'.format(member),
+            lg.DEBUG)
 
     async def on_member_remove(self, member):
-        self.log.debug('member_remove: {}'.format(member))
+        await self.send_to_log(
+            'member_remove: {}'.format(member),
+            lg.DEBUG)
 
     async def on_member_update(self, before, after):
-        self.log.debug('TODO: React to Member Update: {}->{}'.format(
-            before, after))
+        await self.send_to_log(
+            'React to Member Update: {}->{}'.format(
+                before, after),
+            lg.DEBUG)
 
     async def on_member_ban(self, guild, user):
-        self.log.debug('member_ban: {} {}'.format(guild, user))
+        await self.send_to_log(
+            'member_ban: {} {}'.format(guild, user),
+            lg.DEBUG)
 
     async def on_member_unban(self, guild, user):
-        self.log.debug('member_unban: {} {}'.format(guild, user))
+        await self.send_to_log(
+            'member_unban: {} {}'.format(guild, user),
+            lg.DEBUG)
 
     # Guild
 
     async def on_guild_channel_delete(self, channel):
-        self.log.debug('guild_channel_delete: {}'.format(channel))
+        await self.send_to_log(
+            'guild_channel_delete: {}'.format(channel),
+            lg.DEBUG)
 
     async def on_guild_channel_create(self, channel):
-        self.log.debug('guild_channel_create: {}'.format(channel))
+        await self.send_to_log(
+            'guild_channel_create: {}'.format(channel),
+            lg.DEBUG)
 
     async def on_guild_channel_update(self, before, after):
-        self.log.debug('guild_channel_update: {} {}'.format(before, after))
+        await self.send_to_log(
+            'guild_channel_update: {} {}'.format(before, after),
+            lg.DEBUG)
 
     async def on_guild_channel_pins_update(self, channel, last_pin):
-        self.log.debug('guild_channel_pins_update: {} {}'.format(
-            channel, last_pin))
+        await self.send_to_log(
+            'guild_channel_pins_update: {} {}'.format(channel, last_pin),
+            lg.DEBUG)
 
     async def on_guild_integrations_update(self, guild):
-        self.log.debug('guild_integrations_update: {}'.format(guild))
+        await self.send_to_log(
+            'guild_integrations_update: {}'.format(guild),
+            lg.DEBUG)
 
     async def on_guild_join(self, guild):
-        self.log.debug('guild_join: {}'.format(guild))
+        await self.send_to_log(
+            'guild_join: {}'.format(guild),
+            lg.DEBUG)
 
     async def on_guild_remove(self, guild):
-        self.log.debug('guild_remove: {}'.format(guild))
+        await self.send_to_log(
+            'guild_remove: {}'.format(guild),
+            lg.DEBUG)
 
     async def on_guild_update(self, before, after):
-        self.log.debug('guild_update: {} {}'.format(before, after))
+        await self.send_to_log(
+            'guild_update: {} {}'.format(before, after),
+            lg.DEBUG)
 
     async def on_guild_role_create(self, role):
-        self.log.debug('guild_role_create: {}'.format(role))
+        await self.send_to_log(
+            'guild_role_create: {}'.format(role),
+            lg.DEBUG)
 
     async def on_guild_role_delete(self, role):
-        self.log.debug('guild_role_delete: {}'.format(role))
+        await self.send_to_log(
+            'guild_role_delete: {}'.format(role),
+            lg.DEBUG)
 
     async def on_guild_role_update(self, before, after):
-        self.log.debug('guild_role_update: {} {}'.format(before, after))
+        await self.send_to_log(
+            'guild_role_update: {} {}'.format(before, after),
+            lg.DEBUG)
 
     async def on_guild_emojis_update(self, guild, before, after):
-        self.log.debug('on_guild_emojis_update: {} {} {}'.format(
-            guild, before, after))
+        await self.send_to_log(
+            'on_guild_emojis_update: {} {} {}'.format(guild, before, after),
+            lg.DEBUG)
 
     async def on_guild_available(self, guild):
-        self.log.debug('guild_available: {} {}'.format(guild, self.guilds))
+        await self.send_to_log(
+            'guild_available: {} {}'.format(guild, self.guilds),
+            lg.DEBUG)
 
     async def on_guild_unavailable(self, guild):
-        self.log.debug('guild_unavailable: {} {}'.format(guild, self.guilds))
+        await self.send_to_log(
+            'guild_unavailable: {} {}'.format(guild, self.guilds),
+            lg.DEBUG)
 
     async def update_bot_state(self):
         await self.wait_until_ready()
-
         while not self.is_closed():
             try:
                 # TODO; Period tasks/classes go here.

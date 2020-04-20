@@ -8,16 +8,16 @@ class SendMessage(Action):
         super().__init__(log)
         self.guild = kwargs['guild']
         self.channel = kwargs['channel']
-        self.message = kwargs['message']
+        self.text = kwargs['message']
 
-    def execute(self, *args, **kwargs):
+    async def execute(self, *args, **kwargs):
         import discord
         txtch: discord.TextChannel = wh.discord.utils.get(
             wh.get_all_channels(),
             guild__name=self.guild,
             name=self.channel)
 
-        await txtch.send(self.message)
+        await txtch.send(self.text)
         #log = 'Message sent: {} -> {} -> {}'.format(
         #    self.guild,
         #    self.channel,
