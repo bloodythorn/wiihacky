@@ -1,0 +1,93 @@
+discord:
+
+Any other subsystem that triggers on messages will need to be *AFTER* this 
+module in parsing order
+
+on startup:
+  Not much to do.
+  1. Is cli channel enabled?
+    1. Yes, check to make sure it is configured. (no idea)
+    ----
+    1. No, create the channel
+
+1. user types message:
+2. Is this an alias? (an alias begins with a command character and like
+  mentions can be executed anywhere)
+3. is this a command?
+  1. Yes, parse command (Commands are either prefixed with the mention of the 
+    bot anywhere, or in a designated cli channel.)
+  2. execute command
+  3. exit
+  ------------
+  1.No, ignore.
+
+So what do we need for CLI handling? Can this all be handled by the 
+action factory?
+
+It must:
+  * expand aliases/macros and allow them to be defined and manipulated.
+  * it must recognize a set of commands and generate executable objects
+    based on the command.
+
+
+
+.this.is.the.command(arg1=structure,arg2=Iam,arg3=going,arg4=with)
+
+
+^([a-z]{3,8})(.[a-z]{3,8})?(.[a-z]{3,8})?(\(\))?$
+
+([0-9]+(?:\.[0-9]+)?|\.[0-9]+)
+
+
+()
+[0-9]{0,32}
+
+
+arguments are
+
+integers
+decimals
+single word strings not in quotes
+multi-word strings in quotes
+
+
+url?  string  source url of thumbnail (only supports http(s) and attachments)
+
+find the wiihacks icon url and use it
+
+I need a list of permissions for roles
+
+Then I need to shore up all the roles I want on the discord
+
+bot access will be determined by role and eventually a key/security system.
+
+'agree'
+'agreed'
+'affirmative'
+'amen'
+'fine'
+good
+okay
+true
+yea
+all right
+aye
+beyond a doubt
+by all means
+certainly
+definitely
+even so
+exactly
+gladly
+good enough
+granted
+indubitably
+just so
+most assuredly
+naturally
+of course
+positively
+precisely
+sure thing
+surely
+undoubtedly

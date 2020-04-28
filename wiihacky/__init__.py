@@ -1,1 +1,1 @@
-from .wiihacky import WiiHacky
+from .wiihacky import Wiihacky
