@@ -1,3 +1,5 @@
+import discord.ext.commands as dec
+
 txt_positive = [
     'affirmative', 'agree', 'agreed', 'all right', 'amen', 'aye',
     'beyond a doubt', 'by all means', 'certainly', 'definitely', 'even so',
@@ -18,3 +20,6 @@ txt_ambiguous_answer = [
     """Like I really have nothing better to do than listen to you babble...""",
     """..."""]
 
+
+class Persona(dec.Cog):
+    pass

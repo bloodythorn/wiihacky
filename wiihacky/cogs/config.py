@@ -74,7 +74,7 @@ class Config(dec.Cog):
 
         self.log.info(txt_wiz_start)
         txt = None
-        from .personality import \
+        from .persona import \
             txt_positive, txt_negative, txt_ambiguous_answer
         while not txt or \
                 (txt.lower() not in txt_positive and

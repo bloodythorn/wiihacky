@@ -61,33 +61,42 @@ Then I need to shore up all the roles I want on the discord
 
 bot access will be determined by role and eventually a key/security system.
 
-'agree'
-'agreed'
-'affirmative'
-'amen'
-'fine'
-good
-okay
-true
-yea
-all right
-aye
-beyond a doubt
-by all means
-certainly
-definitely
-even so
-exactly
-gladly
-good enough
-granted
-indubitably
-just so
-most assuredly
-naturally
-of course
-positively
-precisely
-sure thing
-surely
-undoubtedly
+USE mysql;
+SELECT User, Host, plugin FROM mysql.user;
+
+
+CREATE USER 'user'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON *.* TO 'user'@'localhost';
+UPDATE user SET plugin='auth_socket' WHERE User='user';
+FLUSH PRIVILEGES;
+exit;
+
+show variables like 'validate_password%';
+SET GLOBAL validate_password.check_user_name=OFF;
+SET GLOBAL validate_password.length=1;
+SET GLOBAL validate_password.policy=LOW;
+SET GLOBAL validate_password.mixed_case_count=0;
+SET GLOBAL validate_password.number_count=0;
+SET GLOBAL validate_password.special_char_count=0;
+
+
+1. set root user to mysql_native_password
+
+$ sudo mysql -u root -p # I had to use "sudo" since is new installation
+
+mysql:~ USE mysql;
+SELECT User, Host, plugin FROM mysql.user;
+mysql:~ UPDATE user SET plugin='mysql_native_password' WHERE User='root';
+mysql:~ FLUSH PRIVILEGES;
+mysql:~ exit;
+
+$ service mysql restart 
+
+Mysql change user password using the following method:
+
+    Open the bash shell and connect to the server as root user
+    mysql -u root -h localhost -p
+    Run command:
+    ALTER USER 'user'@'localhost' IDENTIFIED BY 'password';
+
+    
