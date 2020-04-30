@@ -22,4 +22,7 @@ txt_ambiguous_answer = [
 
 
 class Persona(dec.Cog):
-    pass
+
+    def __init__(self, bot: dec.Bot):
+        super().__init__()
+        self.bot = bot

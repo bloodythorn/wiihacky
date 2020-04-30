@@ -4,9 +4,7 @@ import os
 import random as rd
 import yaml as yl
 
-# TODO: These should be in personality.
-# TODO: or maybe default config for personality
-
+file_name_default_config = 'config.yml'
 default_config = {'discord': {'token': 'put_your_bot_token_here'}}
 
 
@@ -20,16 +18,11 @@ class Config(dec.Cog):
     Anything that is 'memory' should be stored in persistent memory cog.
     """
 
-    def __init__(self, bot):
+    def __init__(self, bot: dec.Bot, file_name: str = None):
         super().__init__()
         self.bot = bot
-        level_default = lg.DEBUG
-
-        # Prep Log
-        # TODO: move default
-        self.log = lg.getLogger(self.__class__.__name__)
-        self.log.setLevel(level_default)
-        self.file_name = None
+        self.file_name = \
+            file_name_default_config if file_name is None else file_name
         self.data = None
 
     # TODO: Async Versions of these functions.
@@ -72,7 +65,8 @@ class Config(dec.Cog):
             """But I can't really run without one...."""]
         txt_wiz_start = """***-> Starting config wizard..."""
 
-        self.log.info(txt_wiz_start)
+        log = lg.getLogger('ConfigWizard')
+        log.info(txt_wiz_start)
         txt = None
         from .persona import \
             txt_positive, txt_negative, txt_ambiguous_answer
@@ -89,15 +83,15 @@ class Config(dec.Cog):
                 try:
                     self._save_config(self.file_name, default_config)
                 except Exception as e:
-                    self.log.critical(txt_save_fail.format(e.args))
+                    log.critical(txt_save_fail.format(e.args))
                     return False
-                self.log.info(txt_save_created.format(self.file_name))
+                log.info(txt_save_created.format(self.file_name))
             elif txt.lower() in txt_negative:
                 for retort in txt_save_sarcasm:
-                    self.log.critical(retort)
+                    log.critical(retort)
                 return False
             else:
-                self.log.warning(rd.choice(txt_ambiguous_answer))
+                log.warning(rd.choice(txt_ambiguous_answer))
 
         return True
 

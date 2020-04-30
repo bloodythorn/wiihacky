@@ -16,9 +16,9 @@ class System(dec.Cog):
     This bot carries all commands, listeners, etc, that tend to the bot itself.
 ```"""
 
-    def __init__(self):
+    def __init__(self, bot: dec.Bot):
         super().__init__()
-        self.log = lg.getLogger(self.__class__.__name__)
+        self.bot = bot
 
     @dec.command()
     @dec.is_owner()

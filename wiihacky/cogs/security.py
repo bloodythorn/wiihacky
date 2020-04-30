@@ -2,4 +2,7 @@ import discord.ext.commands as dec
 
 
 class Security(dec.Cog):
-    pass
+
+    def __init__(self, bot: dec.Bot):
+        super().__init__()
+        self.bot = bot
