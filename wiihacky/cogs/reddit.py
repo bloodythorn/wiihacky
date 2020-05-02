@@ -1,5 +1,5 @@
 import discord.ext.commands as dec
-import praw as pr
+# import praw as prw
 
 
 class Reddit(dec.Cog):

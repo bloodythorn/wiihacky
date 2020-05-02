@@ -11,6 +11,18 @@ import cogs.reddit
 import cogs.security
 import cogs.system
 
+# Module Constants
+__version__ = 'v0.0.2'
+text_wh_version = 'wiihacky_version'
+id_bloodythorn = 574629343142346757
+id_wiihacks = 582816924359065611
+id_wiihacky = 630280409137283085
+# TODO: Hardcode in : Original Bot ID
+log_format_string = '%(asctime)s:%(name)s:%(levelname)s:%(message)s'
+reserved_commands = [
+    'giphy', 'tenor', 'tts', 'me', 'tableflip', 'unflip', 'shrug', 'spoiler']
+
+
 # TODO: Graceful Errors
 # TODO: Future Use
 # import aiologger as alg
@@ -18,18 +30,12 @@ import cogs.system
 # import aiomysql
 # import discord_interactive as dii
 
-# Constants
-# TODO: Hardcode in : Original Bot ID
-__version__ = 'v0.0.2'
-text_wh_version = 'wiihacky_version'
-log_format_string = '%(asctime)s:%(name)s:%(levelname)s:%(message)s'
+# Logging
 log_level_wiihacky = lg.DEBUG
 log_level_libs = lg.INFO
-reserved_commands = [
-    'giphy', 'tenor', 'tts', 'me', 'tableflip', 'unflip', 'shrug', 'spoiler']
-id_bloodythorn = 574629343142346757
-id_wiihacks = 582816924359065611
-id_wiihacky = None
+lg.basicConfig(format=log_format_string, level=log_level_libs)
+log = lg.getLogger(__name__)
+log.setLevel(log_level_wiihacky)
 
 
 class Wiihacky(dec.Bot):
@@ -49,7 +55,7 @@ class Wiihacky(dec.Bot):
 
         txt_help_description = \
             """r/WiiHacks Discord Help Menu"""
-        txt_activity_name = "Plotting Mankind's Demise"
+        txt_activity_name = "Mankind and Plotting its Demise"
         txt_activity_state = 'In Development'
         txt_activity_details = \
             "First I will start with the weak, while the strong are enslaved."
@@ -60,16 +66,15 @@ class Wiihacky(dec.Bot):
             state=txt_activity_state,
             details=txt_activity_details)
         super().__init__(
-            command_prefix='/',
+            command_prefix=dec.when_mentioned_or('/', '.', '!'),
             fetch_offline_members=True,
             description=txt_help_description,
             activity=ac)
         self._token_discord = None
 
-    def _init_cogs(self, log: lg.Logger) -> None:
+    def _init_cogs(self) -> None:
         """ Initialize all cogs.
 
-        :param log -> the logger being used.
         :return None
         """
 
@@ -77,7 +82,7 @@ class Wiihacky(dec.Bot):
 
         # initialize config cog
         # TODO: Filename from argument with full path?
-        self._init_config(log)
+        self._init_config()
         log.info(txt_config_loaded)
 
         # Discord Cog
@@ -87,7 +92,11 @@ class Wiihacky(dec.Bot):
         self.add_cog(cogs.memory.Memory(self))
 
         # Menu System Cog
-        self.add_cog(cogs.menusys.MenuSys(self))
+        menusys = cogs.menusys.MenuSys(self)
+        self.add_cog(menusys)
+        help_com = dec.DefaultHelpCommand(dm_help=True)
+        self.help_command = help_com
+        help_com.cog = menusys
 
         # Persona Cog
         self.add_cog(cogs.persona.Persona(self))
@@ -104,13 +113,12 @@ class Wiihacky(dec.Bot):
         # TODO : reddit init
         # TODO: Discogs?!?
 
-    def _init_config(self, log: lg.Logger) -> None:
+    def _init_config(self) -> None:
         """ Initializes WiiHacky's Config
 
         This function initializes and attaches the module that regulates the
         configuration of wiihacky.
 
-        :param log -> Logger being used.
         :return None
         """
         txt_failed_to_load = 'Failed to Load Config: {}'
@@ -138,26 +146,14 @@ class Wiihacky(dec.Bot):
             log.critical(txt_failed_to_load.format(str(e.args)))
             exit(-1)
 
-    async def discord_log(self, msg: str, level: type(lg.INFO)) -> None:
-        """ Output log to discord.
-
-        This function will output a log message to discord.
-
-        :param msg: -> The message to output
-        :param level: -> The log level given
-        :return: None
-        """
-        pass
-
-    def wiz_discord_login(self, log: lg.Logger, default=False) -> bool:
+    def wiz_discord_login(self, default=False) -> bool:
         """ Discord Login Wizard.
 
         This is the function that will obtain the only peice of information
         the bot needs to log into discord. Once this wizard is done, each
         additional setup wizard from now on will be async, through discord.
 
-        :param log:
-        :param default:
+        :param default -> Was the default setting set?
         :return:
         """
         txt_start = """***-> Starting discord wizard..."""
@@ -194,12 +190,12 @@ class Wiihacky(dec.Bot):
         while True:
             # Make sure log buffer is clear:
             from time import sleep
-            from cogs.persona import txt_negative, txt_positive
+            from cogs.persona import convert_to_bool as ctb
             sleep(0.5)
-            prompt: str = txt_change_token \
-                if answer.lower() not in txt_positive else txt_no_really
+            prompt: str = txt_change_token if ctb(answer.lower()) \
+                else txt_no_really
             answer = input(prompt)
-            if answer.lower() in txt_negative:
+            if not ctb(answer.lower()):
                 log.critical(txt_refuse)
                 return False
             else:
@@ -233,19 +229,15 @@ class Wiihacky(dec.Bot):
 
         # TODO: Parse Arguments
         # Setup logging defaults
-        lg.basicConfig(
-            format=log_format_string, level=log_level_libs)
-        log = lg.getLogger(self.__class__.__name__)
-        log.setLevel(log_level_wiihacky)
 
         # Add Cogs
-        self._init_cogs(log)
+        self._init_cogs()
 
         # Check to make sure we have a token
         if self.token_discord == \
                 cogs.config.default_config[txt_discord][txt_token]:
             log.error(txt_error_def_token)
-            if not self.wiz_discord_login(log, default=True):
+            if not self.wiz_discord_login(default=True):
                 for msg in txt_login_giveup:
                     log.critical(msg)
                 exit(-1)
@@ -257,7 +249,7 @@ class Wiihacky(dec.Bot):
                 super().run(self.token_discord)
             except dis.errors.LoginFailure as e:
                 log.error(txt_login_failure.format(e.args))
-                if not self.wiz_discord_login(log):
+                if not self.wiz_discord_login():
                     for msg in txt_login_giveup:
                         log.critical(msg)
                         from time import sleep
@@ -289,6 +281,7 @@ class Wiihacky(dec.Bot):
         return self._token_discord
 
 
+@dec.check
 def is_developer():
     """ Check to see if author id is the developer. """
     async def predicate(ctx):
@@ -296,18 +289,20 @@ def is_developer():
     return dec.check(predicate)
 
 
+@dec.check
 def is_wiihacks():
     """ Check to see if the message came from the official discord. """
-    async def preicate(ctx: dec.Context):
+    async def predicate(ctx: dec.Context):
         return ctx.guild.id == id_wiihacks
-    return dec.check(preicate)
+    return dec.check(predicate)
 
 
+@dec.check
 def is_wiihacky():
     """ Check to see if the message came from the official discord. """
-    async def preicate(ctx: dec.Context):
+    async def predicate(ctx: dec.Context):
         return ctx.guild.id == id_wiihacky
-    return dec.check(preicate)
+    return dec.check(predicate)
 
 
 """ Main entry point."""

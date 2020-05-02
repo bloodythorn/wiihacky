@@ -18,11 +18,10 @@ class Config(dec.Cog):
     Anything that is 'memory' should be stored in persistent memory cog.
     """
 
-    def __init__(self, bot: dec.Bot, file_name: str = None):
+    def __init__(self, bot: dec.Bot, **attrs):
         super().__init__()
+        self.file_name = attrs.pop('file_name', file_name_default_config)
         self.bot = bot
-        self.file_name = \
-            file_name_default_config if file_name is None else file_name
         self.data = None
 
     # TODO: Async Versions of these functions.

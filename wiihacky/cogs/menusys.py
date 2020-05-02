@@ -1,6 +1,8 @@
 import discord.ext.commands as dec
 import discord_interactive as dii
 
+# TODO: Command not found handler
+
 
 class MenuSys(dec.Cog):
 
@@ -8,7 +10,6 @@ class MenuSys(dec.Cog):
         super().__init__()
         self.bot = bot
 
-    # TODO: MOve to menusys
     @dec.command()
     async def mmenu(self, ctx: dec.Context) -> None:
         """Invoke Main Menu.
