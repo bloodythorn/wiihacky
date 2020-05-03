@@ -1,8 +1,8 @@
-import discord.ext.commands as dec
+import discord.ext.commands as disext
 
 
-class Security(dec.Cog):
+class Security(disext.Cog):
 
-    def __init__(self, bot: dec.Bot):
+    def __init__(self, bot: disext.Bot):
         super().__init__()
         self.bot = bot

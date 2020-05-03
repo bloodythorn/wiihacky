@@ -1,4 +1,4 @@
-import discord.ext.commands as dec
+import discord.ext.commands as disext
 import logging as lg
 import os
 import random as rd
@@ -8,7 +8,7 @@ file_name_default_config = 'config.yml'
 default_config = {'discord': {'token': 'put_your_bot_token_here'}}
 
 
-class Config(dec.Cog):
+class Config(disext.Cog):
     """ Configuration handler for the bot.
 
     This class will initialize and dole out any configuration option needed
@@ -18,7 +18,7 @@ class Config(dec.Cog):
     Anything that is 'memory' should be stored in persistent memory cog.
     """
 
-    def __init__(self, bot: dec.Bot, **attrs):
+    def __init__(self, bot: disext.Bot, **attrs):
         super().__init__()
         self.file_name = attrs.pop('file_name', file_name_default_config)
         self.bot = bot

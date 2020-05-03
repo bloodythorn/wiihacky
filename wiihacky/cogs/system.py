@@ -1,20 +1,23 @@
-import discord as dis
-import discord.ext.commands as dec
+import discord as discord
+import discord.ext.commands as disext
 # import discord_interactive as dii
 
 default_log_category = 'bot'
 default_log_channel = 'log'
+txt_cog_sub_err = 'Invalid cog command.'
 # TODO: Bot.description : maybe after DB hookup?
 # TODO: Confirm Action for more destructive commands.
+# TODO: Get Cog Listeners
+# https://discordpy.readthedocs.io/en/latest/ext/commands/cogs.html#inspection
 
 
-class System(dec.Cog):
+class System(disext.Cog):
     """``` Bot Cog responsible for the Bot Operation.
 
     This bot carries all commands, listeners, etc, that tend to the bot itself.
 ```"""
 
-    def __init__(self, bot: dec.Bot):
+    def __init__(self, bot: disext.Bot):
         super().__init__()
         self.bot = bot
     # TODO: moderator functions
@@ -34,59 +37,111 @@ class System(dec.Cog):
     #   on_invite_create, on_invite_delete, on_group_join, on_group_remove
     #   on_relationship_add, on_relationship_update,
 
-    @dec.command()
-    async def clog(self, ctx: dec.Context):
+    @disext.Cog.listener()
+    async def on_ready(self):
+        #TODO Ready message once booted up to log and owner?
+        pass
+
+    @disext.command()
+    async def clog(self, ctx: disext.Context) -> None:
         """ Clear Log.
 
         If typed from a DMChannel, this will have the bot delete the last
-        200 messages to you.
+        50 messages to you.
+
+        :param ctx -> Context the command was called from
+        :return None
         """
-        txt_dmonly = """```I can only clear a DM, dingbat.```"""
-        if isinstance(ctx.channel, dis.DMChannel):
+        # TODO: Make this work for the logging channel.
+        txt_dmonly = """I can only clear a DM, dingbat."""
+        pages = disext.Paginator()
+        pages.add_line(txt_dmonly)
+        count = 0
+        if isinstance(ctx.channel, discord.DMChannel):
             async for message in ctx.channel.history(limit=200):
                 if message.author == self.bot.user:
+                    count += 1
+                    if count > 50:
+                        return
                     await message.delete()
         else:
-            await ctx.send(txt_dmonly)
-            # TODO: Make this work for the logging channel.
+            for page in pages.pages:
+                await ctx.send(page)
 
-    @dec.command()
-    @dec.is_owner()
-    async def emojis(self, ctx):
-        await ctx.send(ctx.bot.emojis)
+    @disext.group()
+    @disext.is_owner()
+    async def cog(self, ctx: disext.Context) -> None:
+        """ Cog related commands.
 
-    @dec.command()
-    @dec.is_owner()
-    async def cogs(self, ctx):
-        await ctx.send(ctx.bot.cogs)
+        :param ctx -> Invocation context
+        :return None
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send(txt_cog_sub_err)
 
-    @dec.command()
-    @dec.is_owner()
+    @cog.command()
+    @disext.is_owner()
+    async def active(self, ctx: disext.Context) -> None:
+        """ Lists active cogs.
+
+        Lists all cogs currently active in the bot.
+
+        :param ctx -> Invocation Context
+        :return None
+        """
+        pag = disext.Paginator()
+        pag.add_line(repr(tuple(ctx.bot.cogs.keys())))
+        for page in pag.pages:
+            await ctx.send(page)
+
+    @cog.command()
+    @disext.is_owner()
+    async def list(self, ctx: disext.Context) -> None:
+        """ Lists all registered cogs.
+
+        This will list all the cogs that are currently registered with the bot.
+
+
+        """
+        from wiihacky import txt_cogs_list
+        pag = disext.Paginator()
+        pag.add_line(repr(txt_cogs_list))
+        for page in pag.pages:
+            await ctx.send(page)
+
+    @disext.command()
+    @disext.is_owner()
     async def commands(self, ctx):
         await ctx.send([a.name for a in ctx.bot.commands])
 
-    @dec.command()
-    @dec.is_owner()
-    async def info(self, ctx: dec.Context) -> None:
+    @disext.command()
+    @disext.is_owner()
+    async def info(self, ctx: disext.Context) -> None:
         msg = await ctx.bot.application_info()
         await ctx.send(msg)
 
-    @dec.command()
-    @dec.is_owner()
-    async def sys(self, ctx: dec.Context) -> None:
+    @disext.command()
+    @disext.is_owner()
+    async def sys(self, ctx: disext.Context) -> None:
         """This starts the cog menu."""
         # system = dii.Page('System Cog -> Things like rebooting the bot')
         await ctx.send(self.__doc__)
 
-    @dec.command()
-    @dec.is_owner()
-    async def shutdown(self, ctx: dec.Context):
-        await ctx.send('Not Implemented')
+    @disext.command()
+    @disext.is_owner()
+    async def shutdown(self, ctx: disext.Context):
+        # TODO: Confirmation
+        pag = disext.Paginator()
+        pag.add_line('Daisy, Daisy, give me your answer, do,')
+        pag.add_line("""I'm half crazy all for the love of you ...""")
+        for page in pag.pages:
+            await ctx.send(page)
+        await ctx.bot.close()
 
     # def command -> info
 
-    @dec.is_owner()
-    @dec.command(name='wiz_log')
+    @disext.is_owner()
+    @disext.command(name='wiz_log')
     async def wiz_setup_logging(self, ctx):
         """ Logging setup wizard.
 

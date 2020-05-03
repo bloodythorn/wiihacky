@@ -1,5 +1,5 @@
-import discord as dis
-import discord.ext.commands as dec
+import discord as discord
+import discord.ext.commands as disext
 import logging as lg
 # Bot Modules
 import cogs.config
@@ -11,6 +11,15 @@ import cogs.reddit
 import cogs.security
 import cogs.system
 
+txt_cogs_list = (
+    cogs.config.Config.qualified_name,
+    cogs.discord.Discord.qualified_name,
+    cogs.memory.Memory.qualified_name,
+    cogs.menusys.MenuSys.qualified_name,
+    cogs.persona.Persona.qualified_name,
+    cogs.reddit.Reddit.qualified_name,
+    cogs.security.Security.qualified_name,)
+
 # Module Constants
 __version__ = 'v0.0.2'
 text_wh_version = 'wiihacky_version'
@@ -20,15 +29,10 @@ id_wiihacky = 630280409137283085
 # TODO: Hardcode in : Original Bot ID
 log_format_string = '%(asctime)s:%(name)s:%(levelname)s:%(message)s'
 reserved_commands = [
-    'giphy', 'tenor', 'tts', 'me', 'tableflip', 'unflip', 'shrug', 'spoiler']
-
-
-# TODO: Graceful Errors
-# TODO: Future Use
-# import aiologger as alg
-# import aiofiles
-# import aiomysql
-# import discord_interactive as dii
+    'giphy', 'tenor', 'tts', 'me', 'tableflip',
+    'unflip', 'shrug', 'spoiler']
+command_chars = ('/', '!', '?')
+message_cache = 1000 * 2
 
 # Logging
 log_level_wiihacky = lg.DEBUG
@@ -38,7 +42,7 @@ log = lg.getLogger(__name__)
 log.setLevel(log_level_wiihacky)
 
 
-class Wiihacky(dec.Bot):
+class Wiihacky(disext.Bot):
     """ The core of the bot.
 
     This is the main body of the bot. All coordination as well as
@@ -60,13 +64,14 @@ class Wiihacky(dec.Bot):
         txt_activity_details = \
             "First I will start with the weak, while the strong are enslaved."
 
-        ac: dis.Activity = dis.Activity(
+        ac: discord.Activity = discord.Activity(
             name=txt_activity_name,
-            type=dis.ActivityType.watching,
+            type=discord.ActivityType.watching,
             state=txt_activity_state,
             details=txt_activity_details)
         super().__init__(
-            command_prefix=dec.when_mentioned_or('/', '.', '!'),
+            max_messages=message_cache,
+            command_prefix=disext.when_mentioned_or(*command_chars),
             fetch_offline_members=True,
             description=txt_help_description,
             activity=ac)
@@ -94,7 +99,7 @@ class Wiihacky(dec.Bot):
         # Menu System Cog
         menusys = cogs.menusys.MenuSys(self)
         self.add_cog(menusys)
-        help_com = dec.DefaultHelpCommand(dm_help=True)
+        help_com = cogs.menusys.CustomHelpCommand()
         self.help_command = help_com
         help_com.cog = menusys
 
@@ -247,7 +252,7 @@ class Wiihacky(dec.Bot):
         while True:
             try:
                 super().run(self.token_discord)
-            except dis.errors.LoginFailure as e:
+            except discord.errors.LoginFailure as e:
                 log.error(txt_login_failure.format(e.args))
                 if not self.wiz_discord_login():
                     for msg in txt_login_giveup:
@@ -281,28 +286,49 @@ class Wiihacky(dec.Bot):
         return self._token_discord
 
 
-@dec.check
-def is_developer():
+@disext.check
+async def is_developer():
     """ Check to see if author id is the developer. """
     async def predicate(ctx):
         return ctx.author.id == id_bloodythorn
-    return dec.check(predicate)
+    return disext.check(predicate)
 
 
-@dec.check
-def is_wiihacks():
+@disext.check
+async def is_wiihacks():
     """ Check to see if the message came from the official discord. """
-    async def predicate(ctx: dec.Context):
+    async def predicate(ctx: disext.Context):
         return ctx.guild.id == id_wiihacks
-    return dec.check(predicate)
+    return disext.check(predicate)
 
 
-@dec.check
-def is_wiihacky():
-    """ Check to see if the message came from the official discord. """
-    async def predicate(ctx: dec.Context):
+@disext.check
+async def is_wiihacky():
+    """ Check to see if the message came from the official bot. """
+    async def predicate(ctx: disext.Context):
         return ctx.guild.id == id_wiihacky
-    return dec.check(predicate)
+    return disext.check(predicate)
+
+
+async def paginate(
+        message: str,
+        pag: disext.Paginator = disext.Paginator()
+        ) -> disext.Paginator:
+    """ Helper to use the Paginator.
+
+    TODO: Document
+    """
+    pag.add_line(message)
+    return pag
+
+
+async def send_paginator(ctx: disext.Context, pag: disext.Paginator):
+    """ Helper to send a paginator.
+
+    # TODO: Document
+    """
+    for page in pag.pages:
+        await ctx.send(page)
 
 
 """ Main entry point."""

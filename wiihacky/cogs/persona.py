@@ -1,4 +1,4 @@
-import discord.ext.commands as dec
+import discord.ext.commands as disext
 
 txt_positive = [
     '1', 'affirmative', 'agree', 'agreed', 'all right', 'amen', 'aye',
@@ -31,8 +31,8 @@ def convert_to_bool(phrase: str):
         return None
 
 
-class Persona(dec.Cog):
+class Persona(disext.Cog):
 
-    def __init__(self, bot: dec.Bot):
+    def __init__(self, bot: disext.Bot):
         super().__init__()
         self.bot = bot

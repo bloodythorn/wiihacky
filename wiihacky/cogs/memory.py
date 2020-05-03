@@ -1,14 +1,13 @@
-# import discord as dis
-import discord.ext.commands as dec
+import discord.ext.commands as disext
 
 
-class Memory(dec.Cog):
+class Memory(disext.Cog):
     """ Bot Memory
 
     This module handles DB connections. Currently only mysql is supported.
     """
 
-    def __init__(self, bot: dec.Bot):
+    def __init__(self, bot: disext.Bot):
         super().__init__()
         self.bot = bot
         self.host_name = None
@@ -22,7 +21,7 @@ class Memory(dec.Cog):
         # so the second we are online, we need to check to make sure the db is
         # 100%, or we message the owner with the wiz command.
 
-    @dec.Cog.listener()
+    @disext.Cog.listener()
     async def on_ready(self):
         # Check to see if DB is setup
         # no?
@@ -32,14 +31,14 @@ class Memory(dec.Cog):
         cog_dis: Discord = self.bot.get_cog('Discord')
         # await cog_dis.message_developer("Implement your DB Wizard!")
 
-    @dec.command()
-    @dec.is_owner()
-    async def sql(self, ctx: dec.Context, *, arg: str) -> None:
+    @disext.command()
+    @disext.is_owner()
+    async def sql(self, ctx: disext.Context, *, arg: str) -> None:
         await ctx.send(f'{ctx.guild}:{ctx.channel}:{ctx.author} -> {arg}')
 
-    @dec.command(name='wiz_db')
-    @dec.is_owner()
-    async def wiz_db_setup(self, ctx: dec.Context) -> None:
+    @disext.command(name='wiz_db')
+    @disext.is_owner()
+    async def wiz_db_setup(self, ctx: disext.Context) -> None:
         """ DB Setup Wizard.
 
         This will walk you through setting up your DB connection.

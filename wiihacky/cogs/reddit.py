@@ -1,10 +1,10 @@
-import discord.ext.commands as dec
+import discord.ext.commands as disext
 # import praw as prw
 
 
-class Reddit(dec.Cog):
+class Reddit(disext.Cog):
 
-    def __init__(self, bot: dec.Bot):
+    def __init__(self, bot: disext.Bot):
         super().__init__()
         self.bot = bot
 
