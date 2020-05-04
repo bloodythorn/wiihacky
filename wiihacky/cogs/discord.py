@@ -74,82 +74,165 @@ class Discord(disextc.Cog):
 
     @disextc.group()
     @disextc.is_owner()
-    async def dis(self, ctx: disextc.Context):
-        """ Discord Subgroup. """
-        # TODO: This should pull up subgroup help., Document
+    async def dis(self, ctx: disextc.Context) -> None:
+        """ Discord Subgroup.
+
+        This is the main subgroup for the Discord Cog.
+        """
+        # TODO: This should pull up subgroup help.
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
     @dis.command()
     @disextc.is_owner()
-    async def act(self, ctx: disextc.Context) -> None:
-        """ Bot Activity.
+    async def activity(self, ctx: disextc.Context) -> None:
+        """ Read Bot Activity.
 
         This currently only retrieves and prints the bot activity.
+
         :param ctx -> Invocation context
-        :return
+        :return None
         """
         # TODO: Expand this to a group and add more control.
-        pass
+        me = discord.utils.get(self.bot.get_all_members(), id=self.bot.user.id)
+        await self.send_paginator(ctx, await self.paginate(repr(me.activities)))
 
     @dis.command()
     @disextc.is_owner()
     async def id(self, ctx: disextc.Context, what: typ.Union[
                      discord.Member,
                      discord.TextChannel,
+                     discord.VoiceChannel,
                      discord.User,
                      discord.Message,
                      discord.Guild,
                      ]) -> None:
-        """ ID member, txtchannel, user, message, guild.
+        """ ID member, txt/voicechannel, user, message, guild.
 
-        This function will take a string and see if it is a member, txtchannel,
-        user, message, guild, in that order.
+        This function will take a string and see if it is a member,
+        txt/voicechannel, user, message, guild, in that order.
+
+        :param ctx -> Invocation Context
+        :param what -> What do you need IDed?
+        :return None
         """
-        out = disextc.Paginator()
-        out.add_line(repr(what))
-        for page in out.pages:
-            await ctx.send(page)
+        await self.send_paginator(ctx, await self.paginate(repr(what)))
 
-    # TODO: Status
     @dis.command()
     @disextc.is_owner()
-    async def stat(self, ctx: disextc) -> None:
-        """ Status of the Bot. """
-        await ctx.send("TODO")
+    async def guilds(self, ctx: disextc.Context) -> None:
+        """ Guild list.
+
+        :param ctx -> Invocation Context
+        """
+        await self.send_paginator(
+            ctx, await self.paginate(
+                repr([a.name for a in list(self.bot.guilds)])))
+
+    @dis.command()
+    @disextc.is_owner()
+    async def latency(self, ctx: disextc.Context) -> None:
+        """ Reads client latency.
+
+        This returns the latency the client is currently under.
+
+        :param ctx -> Invocation context.
+        :return None
+        """
+        await self.send_paginator(
+            ctx, await self.paginate(repr(self.bot.latency)))
+
+    @dis.command()
+    @disextc.is_owner()
+    async def status(self, ctx: disextc.Context) -> None:
+        """ Status of the Bot.
+
+        This will read out the current status of the bot.
+
+        :param ctx -> Invocation context.
+        :return None
+        """
+        me = discord.utils.get(self.bot.get_all_members(), id=self.bot.user.id)
+        await self.send_paginator(ctx, await self.paginate(repr(me.status)))
+
+    @dis.command()
+    @disextc.is_owner()
+    async def version(self, ctx: disextc.Context) -> None:
+        """ Return discord.py version.
+
+        :param ctx -> Invocation Context
+        :return None
+        """
+        await self.send_paginator(
+            ctx, await self.paginate(repr(discord.version_info)))
+
+    # Channel Group
 
     @dis.group()
     @disextc.is_owner()
-    async def msg(self, ctx: disextc.Context):
-        """ Discord Messaging related commands.
+    async def chn(self, ctx: disextc.Context):
+        """ Channel Subgroup. """
+        if ctx.invoked_subcommand is None:
+            await ctx.send(txt_cog_sub_err)
 
-        :param ctx -> Invocation context
-        :return None
-        """
+    @chn.command()
+    @disextc.is_owner()
+    async def pos(self, ctx: disextc.Context,
+                  channel: typ.Union[discord.TextChannel,
+                                     discord.VoiceChannel]
+                  ) -> None:
+        """ Channel Position in List. """
+        # TODO: Getter/setter by adding another arg that's an integer.
+        #   Also a requirement is that the channel is refered to by ID
+        #   if the set command is used.
+        await self.send_paginator(
+            ctx, await self.paginate(repr(channel.position)))
+
+    @chn.command()
+    @disextc.is_owner()
+    async def private(self, ctx: disextc.Context):
+        """ List private channels. """
+        # TODO: Channel functions -> Close, create, delete, permissions
+        await self.send_paginator(
+            ctx, await self.paginate(repr(self.bot.private_channels)))
+
+    @chn.command()
+    @disextc.is_owner()
+    async def voice(self, ctx: disextc.Context):
+        """ Voice connections. """
+        await self.send_paginator(
+            ctx, await self.paginate(self.bot.voice_clients))
+
+    # Discord/Message Group
+
+    @dis.group()
+    @disextc.is_owner()
+    async def msg(self, ctx: disextc.Context) -> None:
+        """ Discord Messaging related commands. """
         # TODO: Invoke help
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
     @msg.command()
     @disextc.is_owner()
-    async def chn(self, ctx: disextc.Context,
-                     chan: discord.TextChannel, *, mesg: str) -> None:
+    async def channel(self, ctx: disextc.Context,
+                      channel: discord.TextChannel, *, message: str) -> None:
         """ Message to Channel.
 
         Given an identifiable channel name and string it will send the string
         to the channel as the bot.
 
         :param ctx -> Context
-        :param chan -> Channel to send to.
-        :param mesg -> String to send to channel.
+        :param channel -> Channel to send to.
+        :param message -> String to send to channel.
         """
         # TODO: use ctx in log output
-        await chan.send(mesg)
+        await channel.send(message)
 
     @msg.command()
     @disextc.is_owner()
-    async def mem(self, ctx: disextc.Context,
-                  member: discord.Member, *, mesg: str) -> None:
+    async def member(self, ctx: disextc.Context,
+                     member: discord.Member, *, message: str) -> None:
         """ Message Member.
 
         Given an identifiable member name and string it will send the string
@@ -157,50 +240,55 @@ class Discord(disextc.Cog):
 
         :param ctx -> Context command was sent from.
         :param member -> Member to send message to.
-        :param mesg -> String to sent to member.
+        :param message -> String to sent to member.
         :return None
         """
-        await member.send(mesg)
+        await member.send(message)
 
     @msg.command()
     @disextc.is_owner()
-    async def delete(self, ctx: disextc.Context, mesg: discord.Message) -> None:
+    async def delete(self, ctx: disextc.Context,
+                     message: discord.Message) -> None:
         """ Deletes given message.
 
         Given a message this function will remove it.
 
         :param ctx -> Context required by command
-        :param mesg -> Message to be deleted
+        :param message -> Message to be deleted
         :return None
         """
-        await mesg.delete()
+        await message.delete()
 
     @msg.command()
     @disextc.is_owner()
-    async def dev(self, ctx: disextc.Context, *, mesg: str):
+    async def developer(self, ctx: disextc.Context, *, message: str) -> None:
         """ Message the developer.
 
         Messages the hardcoded developer ID. If the ID is not found it will
         throw a badargument exception.
 
         :param ctx Context the message was invoked in
-        :param mesg The text message to send.
+        :param message The text message to send.
         """
+        message_format = 'From:{}|Where:{}|:-> {}'
+        dev_not_found = 'Developer could not be found on discord!'
         from wiihacky import id_bloodythorn
         dev: discord.User = self.bot.get_user(id_bloodythorn)
-        snd = f'From:{ctx.author}|Where:{ctx.channel}|:-> {mesg}'
         if dev is not None:
+            snd = message_format.format(ctx.author, ctx.channel, message)
             await dev.send(snd)
         else:
-            raise disextc.BadArgument(
-                'Developer could not be found on discord!')
+            raise disextc.BadArgument(dev_not_found)
 
-    @disextc.command()
+    @dis.command()
     @disextc.is_owner()
-    async def emj(self, ctx: disextc.Context):
-        """ Lists custom emojis. """
-        pages = disextc.Paginator()
-        pages.add_line(repr(ctx.bot.emojis))
-        for page in pages.pages:
-            await ctx.send(page)
+    async def emoji(self, ctx: disextc.Context) -> None:
+        """ Lists custom emojis.
 
+        This function will return all data on custom emojis.
+
+        :param ctx -> Invocation Context
+        :return None
+        """
+        await self.send_paginator(
+            ctx, await self.paginate(repr(ctx.bot.emojis)))

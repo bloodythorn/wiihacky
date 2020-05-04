@@ -1,6 +1,22 @@
 import discord as discord
 import discord.ext.commands as disext
-# import discord_interactive as dii
+
+# TODO: on_ready, on_connect, on_disconnect, on_resumed, on_typing,
+#   on_message, on_message_delete, on_message_edit, on_reaction_add,
+#   on_reaction_remove, on_reaction_clear, on_reaction_clear_emoji,
+#   on_private_channel_delete, on_private_channel_create,
+#   on_private_channel_update, on_private_channel_pins_update,
+#   on_guild_channel_delete, on_guild_channel_create,
+#   on_guild_channel_update, on_guild_channel_pins_update
+#   on_guild_integrations_update, on_webhooks_update
+#   on_member_join, on_member_remove, on_member_update
+#   on_user_update, on_guild_join, on_guild_remove, on_guild_update,
+#   on_guild_role_create, on_guild_role_delete, on_guild_role_update
+#   on_guild_emojis_update, on_guild_available, on_guild_unavailable
+#   on_voice_state_update, on_member_ban, on_member_unban,
+#   on_invite_create, on_invite_delete, on_group_join, on_group_remove
+#   on_relationship_add, on_relationship_update,
+
 
 default_log_category = 'bot'
 default_log_channel = 'log'
@@ -20,22 +36,9 @@ class System(disext.Cog):
     def __init__(self, bot: disext.Bot):
         super().__init__()
         self.bot = bot
-    # TODO: moderator functions
-    # TODO: on_ready, on_connect, on_disconnect, on_resumed, on_typing,
-    #   on_message, on_message_delete, on_message_edit, on_reaction_add,
-    #   on_reaction_remove, on_reaction_clear, on_reaction_clear_emoji,
-    #   on_private_channel_delete, on_private_channel_create,
-    #   on_private_channel_update, on_private_channel_pins_update,
-    #   on_guild_channel_delete, on_guild_channel_create,
-    #   on_guild_channel_update, on_guild_channel_pins_update
-    #   on_guild_integrations_update, on_webhooks_update
-    #   on_member_join, on_member_remove, on_member_update
-    #   on_user_update, on_guild_join, on_guild_remove, on_guild_update,
-    #   on_guild_role_create, on_guild_role_delete, on_guild_role_update
-    #   on_guild_emojis_update, on_guild_available, on_guild_unavailable
-    #   on_voice_state_update, on_member_ban, on_member_unban,
-    #   on_invite_create, on_invite_delete, on_group_join, on_group_remove
-    #   on_relationship_add, on_relationship_update,
+        from wiihacky import paginate, send_paginator
+        self.paginate = paginate
+        self.send_paginator = send_paginator
 
     @disext.Cog.listener()
     async def on_ready(self):
