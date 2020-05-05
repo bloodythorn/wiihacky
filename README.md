@@ -42,3 +42,5 @@ stored locally.
 3. The bot should ask for everything else you should need.
 Eventually it will tell you how to obtain what you need, but
 for now it just asks you for it.
+
+[![Run on Repl.it](https://repl.it/badge/github/bloodythorn/wiihacky)](https://repl.it/github/bloodythorn/wiihacky)
