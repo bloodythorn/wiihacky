@@ -29,7 +29,9 @@ reqs:
 ## Instructions
 
 1. Get this repo onto the place you want to run it from.
-2. Run the main script: `python3 ./wiihacky.py`
+2. Set your discord token in your environment variables:
+`DISCORD_BOT_TOKEN=put_your_token_here`
+3. Run the main script: `python3 ./wiihacky`
 Though it would most likely be better to create a data
 directory and run it from there...
     ```
@@ -38,9 +40,6 @@ directory and run it from there...
     ```
     ie; make sure you're in a directory you won't mind the bot
 writing stuff in. All logon credentials and tokens are
-stored locally.
-3. The bot should ask for everything else you should need.
-Eventually it will tell you how to obtain what you need, but
-for now it just asks you for it.
+obtained from env variables.
 
 [![Run on Repl.it](https://repl.it/badge/github/bloodythorn/wiihacky)](https://repl.it/github/bloodythorn/wiihacky)

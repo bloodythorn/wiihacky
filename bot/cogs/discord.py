@@ -4,34 +4,27 @@ import typing as typ
 
 txt_cog_sub_err = 'Invalid discord command.'
 
-# TODO: Client Stuff:
+# TODO: moderator functions
 # TODO: Add logging to functions
-# TODO: discord.version_info __version__
-# TODO: User
-# TODO: Activity
-# TODO: Status
-# TODO: latency
-# TODO: Guilds
+#   Logging will need a state of a list of tuples storing guild/channel
+# TODO: To prevent botspam, the main help engine might only want to invoke
+#   in a single channel instead of other channels, then ping the user....
+#   sooo a CLI and a log channel? Log private? CLI Public?
 # TODO: cache_messages
-# TODO: private channels
-# TODO: voice clients
-# TODO: Fix emj
+#   This might require a 'reader'
 # TODO: Allowed mentions
-# TODO: Users
 # Some of the following might already be implemented in id.
 # TODO: get channel, guild, user, emoji, all_channels, all_members,
 # TODO: Yes/no confirmation prompt with reactions, that should belong here.
 # TODO: Change presence
 # TODO: Fetch Guilds -> Might need to make a bot-testing guild.
 # TODO: Pins -> Identify and cache files, especially syschecks.
-# TODO: Create Guild
+# TODO: Create Guild ?
 # TODO: Invites
 # TODO: Widgets?
-# TODO: Application info
 # TODO: Webhooks
 # TODO: Teams
-# TODO: Voice?
-
+# TODO: Create Group Chat.
 
 
 class Discord(disextc.Cog):
@@ -39,6 +32,9 @@ class Discord(disextc.Cog):
     def __init__(self, bot: disextc.Bot):
         super().__init__()
         self.bot = bot
+        from constants import paginate, send_paginator
+        self.paginate = paginate
+        self.send_paginator = send_paginator
 
     # Discord Cog Listeners
 
@@ -59,7 +55,7 @@ class Discord(disextc.Cog):
         # TODO: FINISH THIS/FIX THIS
         emoji_anger = '💢'
         emoji_axe = '🪓'
-        from wiihacky import id_bloodythorn
+        from constants import id_bloodythorn
         if reaction.emoji == emoji_axe or reaction.emoji == emoji_anger:
             if isinstance(reaction.message.channel, discord.DMChannel) and \
                reaction.message.author == self.bot.user:
@@ -272,7 +268,7 @@ class Discord(disextc.Cog):
         """
         message_format = 'From:{}|Where:{}|:-> {}'
         dev_not_found = 'Developer could not be found on discord!'
-        from wiihacky import id_bloodythorn
+        from constants import id_bloodythorn
         dev: discord.User = self.bot.get_user(id_bloodythorn)
         if dev is not None:
             snd = message_format.format(ctx.author, ctx.channel, message)
@@ -292,3 +288,8 @@ class Discord(disextc.Cog):
         """
         await self.send_paginator(
             ctx, await self.paginate(repr(ctx.bot.emojis)))
+
+
+def setup(bot: disextc.Bot) -> None:
+    """ Loads discord cog. """
+    bot.add_cog(Discord(bot))

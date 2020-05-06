@@ -1,5 +1,5 @@
 import discord as discord
-import discord.ext.commands as disext
+import discord.ext.commands as disextc
 import discord_interactive as disint
 
 # TODO: Move to personality
@@ -7,23 +7,23 @@ txt_errors = [
     'error', 'jive turkey', 'wrong', 'try again', 'psych', 'no can do']
 
 
-class MenuSys(disext.Cog):
+class MenuSys(disextc.Cog):
 
-    def __init__(self, bot: disext.Bot):
+    def __init__(self, bot: disextc.Bot):
         super().__init__()
         self.bot = bot
 
-    @disext.Cog.listener(name='on_command_error')
-    async def command_error(self, ctx: disext.Context, error):
-        pages = disext.Paginator()
+    @disextc.Cog.listener(name='on_command_error')
+    async def command_error(self, ctx: disextc.Context, error):
+        pages = disextc.Paginator()
         from random import choice
         pages.add_line(
             f'{choice(txt_errors)}: {ctx.message.content} -> {error}')
         for page in pages.pages:
             await ctx.send(page)
 
-    @disext.command()
-    async def mmenu(self, ctx: disext.Context) -> None:
+    @disextc.command()
+    async def mmenu(self, ctx: disextc.Context) -> None:
         """Invoke Main Menu.
 
         This currently holds a menu mock up that will eventually evolve into
@@ -74,7 +74,7 @@ class MenuSys(disext.Cog):
         await help_menu.display(ctx.author)
 
 
-class CustomHelpCommand(disext.HelpCommand):
+class CustomHelpCommand(disextc.HelpCommand):
     def __init__(self, **options):
         self.width = options.pop('width', 80)
         self.indent = options.pop('indent', 0)
@@ -86,7 +86,7 @@ class CustomHelpCommand(disext.HelpCommand):
         self.paginator = options.pop('paginator', None)
 
         if self.paginator is None:
-            self.paginator = disext.Paginator()
+            self.paginator = disextc.Paginator()
 
         super().__init__(**options)
 
@@ -254,3 +254,8 @@ class CustomHelpCommand(disext.HelpCommand):
             self.paginator.add_line(note)
 
         await self.send_pages()
+
+
+def setup(bot: disextc.Bot) -> None:
+    """ Loads menusys cog. """
+    bot.add_cog(MenuSys(bot))

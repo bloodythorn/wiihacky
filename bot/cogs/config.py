@@ -1,14 +1,14 @@
-import discord.ext.commands as disext
+import discord.ext.commands as disextc
 import logging as lg
 import os
 import random as rd
 import yaml as yl
 
 file_name_default_config = 'config.yml'
-default_config = {'discord': {'token': 'put_your_bot_token_here'}}
+# TODO: Load/check Config, create file on confirmation
 
 
-class Config(disext.Cog):
+class Config(disextc.Cog):
     """ Configuration handler for the bot.
 
     This class will initialize and dole out any configuration option needed
@@ -18,7 +18,7 @@ class Config(disext.Cog):
     Anything that is 'memory' should be stored in persistent memory cog.
     """
 
-    def __init__(self, bot: disext.Bot, **attrs):
+    def __init__(self, bot: disextc.Bot, **attrs):
         super().__init__()
         self.file_name = attrs.pop('file_name', file_name_default_config)
         self.bot = bot
@@ -80,7 +80,7 @@ class Config(disext.Cog):
 
             if txt.lower() in txt_positive:
                 try:
-                    self._save_config(self.file_name, default_config)
+                    self._save_config(self.file_name, {})
                 except Exception as e:
                     log.critical(txt_save_fail.format(e.args))
                     return False
@@ -103,3 +103,8 @@ class Config(disext.Cog):
         """ Wrapper for _save_config.
         """
         self._save_config(self.file_name, self.data)
+
+
+def setup(bot: disextc.Bot) -> None:
+    """ Loads config cog. """
+    bot.add_cog(Config(bot))
