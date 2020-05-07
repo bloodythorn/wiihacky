@@ -3,6 +3,7 @@ import discord.ext.commands as disextc
 
 
 # TODO: def command -> info
+# TODO: Collective logger -> This might be a discord cog thing
 # TODO: on_ready, on_connect, on_disconnect, on_resumed, on_typing,
 #   on_message, on_message_delete, on_message_edit, on_reaction_add,
 #   on_reaction_remove, on_reaction_clear, on_reaction_clear_emoji,
@@ -18,52 +19,6 @@ import discord.ext.commands as disextc
 #   on_voice_state_update, on_member_ban, on_member_unban,
 #   on_invite_create, on_invite_delete, on_group_join, on_group_remove
 #   on_relationship_add, on_relationship_update,
-
-def run(self) -> None:
-    """Start the bot daemon.
-
-    This will start the bot daemon and run the underlying bot
-    async loop. If it cannot connect to discord, it will execute the
-    discord connection wizard until the operator can connect, or
-    gives up.
-
-    :return: None
-    """
-    txt_error_def_token = \
-        """You still haven't changed the default discord token..."""
-    txt_login_failure = "I couldn't log into discord... : {}"
-    txt_login_giveup = [
-        """Okay, gonna give up trying to login to discord.""",
-        """But that means I'll have to shut it down..."""]
-    txt_main_loop_term = 'The main loop has been terminated : {}'
-
-    # TODO: Parse Arguments
-    # Setup logging defaults
-
-    # Add Cogs
-    self._init_cogs()
-
-    # Attempt to loin to discord
-    while True:
-        try:
-            # Check to make sure we have a token
-            import os
-            txt_token_key = 'DISCORD_BOT_TOKEN'
-            discord_token = os.environ[txt_token_key]
-            if discord_token is None:
-                log.critical(
-                    f'Token not found under env key: {txt_token_key}')
-                log.critical(
-                    f'Please ensure token is set in your environment.')
-                exit(-1)
-            super().run(self.discord_token)
-        except discord.errors.LoginFailure as e:
-            log.error(txt_login_failure.format(e.args))
-            exit(-1)
-        except RuntimeError as e:
-            log.info(txt_main_loop_term.format(e.args))
-            exit(0)
-
 
 default_log_category = 'bot'
 default_log_channel = 'log'
@@ -166,7 +121,7 @@ class System(disextc.Cog):
 
 
         """
-        from constants import installed_cogs
+        from wiihacky import installed_cogs
         pag = disextc.Paginator()
         pag.add_line(repr(installed_cogs))
         for page in pag.pages:

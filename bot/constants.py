@@ -1,3 +1,4 @@
+import discord
 import discord.ext.commands as disextc
 
 
@@ -38,20 +39,28 @@ async def is_wiihacky():
 
 async def paginate(
         message: str,
-        pag: disextc.Paginator = disextc.Paginator()
+        pag: disextc.Paginator = None
         ) -> disextc.Paginator:
     """ Helper to use the Paginator.
 
-    TODO: Document
+    Given a line of text it will format it and return the paginator to add
+    more lines.
+
+    :param message -> str type with message to send
+    :param pag -> Pagenator to add to, or none to create a new.
+    :return -> Paginator containing line of text.
     """
+    if pag is None:
+        pag = disextc.Paginator()
     pag.add_line(message)
     return pag
 
 
-async def send_paginator(ctx: disextc.Context, pag: disextc.Paginator):
+async def send_paginator(to: discord.abc.Messageable, pag: disextc.Paginator):
     """ Helper to send a paginator.
 
     # TODO: Document
     """
+
     for page in pag.pages:
-        await ctx.send(page)
+        await to.send(page)

@@ -1,10 +1,7 @@
 import discord as discord
 import discord.ext.commands as disextc
 import discord_interactive as disint
-
-# TODO: Move to personality
-txt_errors = [
-    'error', 'jive turkey', 'wrong', 'try again', 'psych', 'no can do']
+from constants import paginate, send_paginator
 
 
 class MenuSys(disextc.Cog):
@@ -15,23 +12,23 @@ class MenuSys(disextc.Cog):
 
     @disextc.Cog.listener(name='on_command_error')
     async def command_error(self, ctx: disextc.Context, error):
-        pages = disextc.Paginator()
-        from random import choice
-        pages.add_line(
-            f'{choice(txt_errors)}: {ctx.message.content} -> {error}')
-        for page in pages.pages:
-            await ctx.send(page)
+        """ Error Handler for commands. """
+        import cogs.persona
+        persona: cogs.persona.Persona = self.bot.get_cog('Persona')
+        if persona is not None:
+            pag = await paginate(
+                f'{await persona.random_error}: {ctx.message.content} -> {error}')
+            await send_paginator(ctx, pag)
 
     @disextc.command()
     async def mmenu(self, ctx: disextc.Context) -> None:
-        """Invoke Main Menu.
+        """ Invoke Main Menu.
 
         This currently holds a menu mock up that will eventually evolve into
         a real menu-ing system.
         """
         back = '⬅️'
         up = '⬆️'
-        # TODO: Logging
         root_menu = disint.Page('Welcome to the r/WiiHacks Interactive Menu')
         wiihelp = disint.Page('Here is where the interactive help will be')
         reddit = disint.Page('Here you can do reddit searches or browse feeds')

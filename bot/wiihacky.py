@@ -29,15 +29,9 @@ log = lg.getLogger()
 class Wiihacky(disext.Bot):
     """ The core of the bot.
 
-    This is the main body of the bot. All coordination as well as
-    initialization and shutdown take place here. If the bot is not setup,
-    all discord setup is done through console via prompts and input.
-
-    Once discord is setup, the rest of the setup is interactive, through
-    discord.
+    This is the main body of the bot.
 
     """
-
     def __init__(self):
         """ Initialize the bot. """
 

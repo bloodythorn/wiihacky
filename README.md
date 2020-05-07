@@ -20,7 +20,6 @@ reqs:
     * PyYaml
     * SQLAlchemy
     * aiofiles, aiofiles-ext
-    * aiologger
     * aiohttp (required by discord.py)
     * aiomysql
     

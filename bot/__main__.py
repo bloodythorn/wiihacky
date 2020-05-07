@@ -25,11 +25,13 @@ stream_handler.setFormatter(log_format)
 log = lg.getLogger()
 log.setLevel(log_level)
 log.addHandler(file_handler)
+# TODO: Make this settable with a command line param
 log.addHandler(stream_handler)
 
 lg.getLogger('discord').setLevel(lg.WARNING)
 lg.getLogger('websockets').setLevel(lg.WARNING)
 lg.getLogger('asyncio').setLevel(lg.WARNING)
+lg.getLogger('urllib3.connectionpool').setLevel(lg.WARNING)
 log.info('Logger is setup.')
 
 wh = Wiihacky()
