@@ -1,6 +1,7 @@
 import discord
 import discord.ext.commands as disextc
 
+# Constants
 
 reserved_commands = [
     'giphy', 'tenor', 'tts', 'me', 'tableflip',
@@ -12,6 +13,7 @@ id_bloodythorn = 574629343142346757
 id_wiihacks = 582816924359065611
 id_wiihacky = 630280409137283085
 
+# Checks
 
 @disextc.check
 async def is_developer():
@@ -37,6 +39,8 @@ async def is_wiihacky():
     return disextc.check(predicate)
 
 
+# Helpers
+
 async def paginate(
         message: str,
         pag: disextc.Paginator = None
@@ -56,11 +60,17 @@ async def paginate(
     return pag
 
 
-async def send_paginator(to: discord.abc.Messageable, pag: disextc.Paginator):
+async def send_paginator(
+        to: discord.abc.Messageable,
+        pag: disextc.Paginator) -> None:
     """ Helper to send a paginator.
 
-    # TODO: Document
-    """
+    Given a messageable and a paginator, this function will send the
+    paginator the target.
 
+    :param to -> Messageable recipient.
+    :param pag -> Pagenator to send.
+    :return None
+    """
     for page in pag.pages:
         await to.send(page)

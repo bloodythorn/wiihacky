@@ -41,4 +41,10 @@ directory and run it from there...
 writing stuff in. All logon credentials and tokens are
 obtained from env variables.
 
-[![Run on Repl.it](https://repl.it/badge/github/bloodythorn/wiihacky)](https://repl.it/github/bloodythorn/wiihacky)
+Extra: You can also put in DB creds for a mysql db, as well as reddit bot
+credentials all in env so the bot will connect to those platforms. Information on how to do this is in the Memory, and Reddit cog docstrings.
+
+We're licensed under MIT, and would also like to give credit to the Python
+ Discord Bot : https://github.com/python-discord/bot
+ 
+ Where some of the code for this bot was both inspired by and copied from.

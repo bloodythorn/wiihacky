@@ -1,14 +1,20 @@
 import discord as discord
 import discord.ext.commands as disextc
 import discord_interactive as disint
+import praw
 from constants import paginate, send_paginator
+
+# TODO: Help System... needs to be more than default.
 
 
 class MenuSys(disextc.Cog):
+    """ This cog handles the interactive menuing system. """
 
     def __init__(self, bot: disextc.Bot):
         super().__init__()
         self.bot = bot
+
+    # Listeners
 
     @disextc.Cog.listener(name='on_command_error')
     async def command_error(self, ctx: disextc.Context, error):
@@ -17,10 +23,49 @@ class MenuSys(disextc.Cog):
         persona: cogs.persona.Persona = self.bot.get_cog('Persona')
         if persona is not None:
             pag = await paginate(
-                f'{await persona.random_error}: {ctx.message.content} -> {error}')
+                f'{await persona.random_error}: ' +
+                f'{ctx.message.content} -> {error}')
             await send_paginator(ctx, pag)
 
-    @disextc.command()
+    # MenuSys Group Commands
+
+    @disextc.group(name='men')
+    @disextc.is_owner()
+    async def menusys_grouping(self, ctx: disextc.Context):
+        """ The Menusys cog grouping. """
+        # TODO: Make this more graceful
+        if ctx.invoked_subcommand is None:
+            await ctx.send(f'No menusys subcommand given.')
+
+    @menusys_grouping.command()
+    @disextc.is_owner()
+    async def test_pag(self, ctx: disextc.Context):
+        """ Test the pagination Command ."""
+        from pagination import LinePaginator
+        reddit: praw.Reddit = self.bot.get_cog('Reddit').reddit
+        sub: praw.reddit.Submission = reddit.submission(id='ggifma')
+        embed = discord.Embed()
+        embed.set_author(
+            name=sub.title, url=sub.url)
+        lines = []
+        for line in sub.selftext.split('\n'):
+            if line.strip() != '':
+                max_size = 950
+
+                def split_dis(a: str):
+                    if len(a) < max_size:
+                        return a, ''
+                    else:
+                        return a[max_size+1:], a[0:max_size]
+                while len(line) > max_size:
+                    line, split = split_dis(line)
+                    lines.append(split.strip())
+                lines.append(line.strip())
+        await LinePaginator.paginate(
+            lines, ctx, embed, max_size=1000, restrict_to_user=ctx.author)
+
+    @menusys_grouping.command()
+    @disextc.is_owner()
     async def mmenu(self, ctx: disextc.Context) -> None:
         """ Invoke Main Menu.
 
@@ -71,6 +116,8 @@ class MenuSys(disextc.Cog):
         await help_menu.display(ctx.author)
 
 
+# TODO: This will eventually need to be split off into its own module.
+#   Currently it's not being used at all.
 class CustomHelpCommand(disextc.HelpCommand):
     def __init__(self, **options):
         self.width = options.pop('width', 80)

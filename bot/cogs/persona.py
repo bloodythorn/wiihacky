@@ -1,6 +1,7 @@
 import discord.ext.commands as disextc
 from random import choice
 
+# TODO: Move these eventually to their own module.
 txt_positive = [
     '1', 'affirmative', 'agree', 'agreed', 'all right', 'amen', 'aye',
     'beyond a doubt', 'by all means', 'certainly', 'definitely', 'even so',
@@ -15,9 +16,19 @@ txt_negative = [
     'reject', 'rejection']
 txt_errors = [
     'error', 'jive turkey', 'wrong', 'try again', 'psych', 'no can do',
-    'Clarify?', 'Wut da hell?:', '...:', 'Hmm?', """Beg'pardon?:""",
-    'Like I really have nothing better to do than listen to you babble...:',
-    """User don't know what they want:"""]
+    'Clarify?', 'Wut da hell?', '...:', 'Hmm?', """Beg'pardon?""",
+    'Like I really have nothing better to do than listen to you babble...',
+    """User don't know what they want""", 'got bad event:', 'Figure it out.']
+# TODO: Flesh out insults.
+txt_insults = [
+    """You're spare parts, bub.""",
+    """I bet you write Taylor Swift lyrics inside greeting cards.""",
+    """What’s up with your body hair, Big Shots?""" +
+    """ You look like a 12 year old Dutch girl.""",
+    """Buddy, you couldn’t wheel a tire down a hill.""",
+    "I bet you know exactly how many days there are until Christmas.",
+    "You need to take about 20% of the top there, bub.",
+]
 
 
 def convert_to_bool(phrase: str):
@@ -51,7 +62,7 @@ class Persona(disextc.Cog):
         super().__init__()
         self.bot = bot
 
-    # Helpers
+    # Properties
 
     @property
     async def random_error(self) -> str:
@@ -60,6 +71,14 @@ class Persona(disextc.Cog):
         :return str containing random error.
         """
         return choice(txt_errors)
+
+    @property
+    async def random_insult(self) -> str:
+        """ This property returns a random insult.
+
+        :return str containing random insult.
+        """
+        return choice(txt_insults)
 
     @property
     async def random_confirmation(self) -> str:
@@ -77,7 +96,7 @@ class Persona(disextc.Cog):
         """
         return choice(txt_negative)
 
-    # Groups
+    # Persona Group Commands
 
     @disextc.group(name='per')
     @disextc.is_owner()
@@ -87,13 +106,17 @@ class Persona(disextc.Cog):
             # TODO : Collectively pull this from menusys (in all cogs)
             await ctx.send(f'persona subcommand not found.')
 
-    # Commands
-
     @persona_group.command(name='randerr', is_hidden=True)
     @disextc.is_owner()
     async def get_random_error(self, ctx: disextc.Context):
         """ Access to the random error getter. """
         await ctx.send(await self.random_error)
+
+    @persona_group.command(name='randins', is_hidden=True)
+    @disextc.is_owner()
+    async def get_random_insult(self, ctx: disextc.Context):
+        """ Access to the random insult getter. """
+        await ctx.send(await self.random_insult)
 
     @persona_group.command(name='randyes', is_hidden=True)
     @disextc.is_owner()

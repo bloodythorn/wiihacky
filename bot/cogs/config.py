@@ -1,108 +1,62 @@
+import aiofiles
 import discord.ext.commands as disextc
 import logging as lg
 import os
 import random as rd
 import yaml as yl
 
-file_name_default_config = 'config.yml'
-# TODO: Load/check Config, create file on confirmation
+config_default_file_name = 'config.yml'
+# TODO: Since the DB has went on line and creds are now stored in env, this
+#   is essentially unused. I changed it to async but it still needs to be
+#   tested.
 
 
 class Config(disextc.Cog):
     """ Configuration handler for the bot.
 
-    This class will initialize and dole out any configuration option needed
-    by a cog or the main module. However remember that this file should only
-    contain secure things like tokens and db creds.
+    This is a yml file representation. Each configuration stored should be
+    under its own key:
+
+    discord:
+        exampledata1
+        exampledata2
+    reddit:
+        exampledata
+
+    Between the database and env vars for credentials, this should only be
+    used for things that would be beneficial to change at runtime.
+
+    This file should most optimally be 'read' before used, and 'saved' after
+    being altered. The defaults should be stored in each cog that utilizes
+    them.
 
     Anything that is 'memory' should be stored in persistent memory cog.
+
+    Attributes:
+    -------------------------------------------
+
+        bot -> The bot that was initialized with the cog.
+        data -> a dictionary representation of the config file
+
     """
 
     def __init__(self, bot: disextc.Bot, **attrs):
         super().__init__()
-        self.file_name = attrs.pop('file_name', file_name_default_config)
+        self.file_name = attrs.pop('file_name', config_default_file_name)
         self.bot = bot
         self.data = None
 
     # TODO: Async Versions of these functions.
-    @staticmethod
-    def _load_config(file_name) -> dict:
-        """ Get Configuration from disk.
 
-        This function will retrieve the configuration dict from yaml file.
+    async def load_config(self):
+        file_np = os.getcwd() + '/' + self.file_name
+        with aiofiles.open(file_np, 'r')as f:
+            self.data = yl.safe_load(f)
 
-        :return None
-        """
-        file_np = os.getcwd() + '/' + file_name
-        with open(file_np, 'r') as config_file:
-            return yl.safe_load(config_file)
-
-    @staticmethod
-    def _save_config(file_name: str, data: dict):
-        """ Commit Configuration to disk.
-        """
-        file_np = os.getcwd() + '/' + file_name
-        with open(file_np, 'w') as config_file:
-            config_file.write(yl.safe_dump(data))
-
-    def wiz_create_config(self) -> bool:
-        """ A wizard for config creation.
-
-        This function when run will save a blank dict into configured file_name.
-
-        :return: bool with results
-        """
-        # TODO: Also if there are any config 'defaults' they might want to be
-        #   put here.
-        # TODO: text constants probably need a unified local.
-        txt_query = 'Would you like to create a config.yml file? '
-        txt_save_fail = 'Could not save file: {}'
-        txt_save_created = 'Save file {} created.'
-        txt_save_sarcasm = [
-            """Shutting it down. The user doesn't want a config...""",
-            """Not really sure why not...""",
-            """But I can't really run without one...."""]
-        txt_wiz_start = """***-> Starting config wizard..."""
-
-        log = lg.getLogger('ConfigWizard')
-        log.info(txt_wiz_start)
-        txt = None
-        from .persona import \
-            txt_positive, txt_negative, txt_ambiguous_answer
-        while not txt or \
-                (txt.lower() not in txt_positive and
-                 txt.lower() not in txt_negative):
-            # Make sure the log buffer is clean.
-            from time import sleep
-            sleep(0.5)
-            # Get user response.
-            txt = input(txt_query)
-
-            if txt.lower() in txt_positive:
-                try:
-                    self._save_config(self.file_name, {})
-                except Exception as e:
-                    log.critical(txt_save_fail.format(e.args))
-                    return False
-                log.info(txt_save_created.format(self.file_name))
-            elif txt.lower() in txt_negative:
-                for retort in txt_save_sarcasm:
-                    log.critical(retort)
-                return False
-            else:
-                log.warning(rd.choice(txt_ambiguous_answer))
-
-        return True
-
-    def load(self):
-        """ Wrapper for _load_config.
-        """
-        self.data = self._load_config(self.file_name)
-
-    def save(self):
-        """ Wrapper for _save_config.
-        """
-        self._save_config(self.file_name, self.data)
+    async def save_config(self):
+        file_np = os.getcwd() + '/' + self.file_name
+        with aiofiles.open(file_np, 'w') as f:
+            f.write(yl.safe_dump(self.data))
 
 
 def setup(bot: disextc.Bot) -> None:

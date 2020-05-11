@@ -1,5 +1,10 @@
 import discord.ext.commands as disextc
 
+# TODO: Still unsure what this is going to do.
+#   things like spam and antimalware.
+#   The checks for role can be here or constants.
+#   maybe move current checks here?
+
 
 class Security(disextc.Cog):
 

@@ -1,6 +1,7 @@
 import discord as discord
 import discord.ext.commands as disextc
 
+from constants import paginate, send_paginator
 
 # TODO: def command -> info
 # TODO: Collective logger -> This might be a discord cog thing
@@ -38,17 +39,63 @@ class System(disextc.Cog):
     def __init__(self, bot: disextc.Bot):
         super().__init__()
         self.bot = bot
-        from constants import paginate, send_paginator
-        self.paginate = paginate
-        self.send_paginator = send_paginator
+
+    # Listeners
 
     @disextc.Cog.listener()
     async def on_ready(self):
-        #TODO Ready message once booted up to log and owner?
+        # TODO Ready message once booted up to log and owner?
         pass
+
+    # Cog Group Commands
+
+    @disextc.group(name='cog')
+    @disextc.is_owner()
+    async def cogs_group(self, ctx: disextc.Context) -> None:
+        """ Cog related commands.
+
+        :param ctx -> Invocation context
+        :return None
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send(txt_cog_sub_err)
+
+    @cogs_group.command()
+    @disextc.is_owner()
+    async def active(self, ctx: disextc.Context) -> None:
+        """ Lists active cogs.
+
+        Lists all cogs currently active in the bot.
+
+        :param ctx -> Invocation Context
+        :return None
+        """
+        pag = disextc.Paginator()
+        pag.add_line(repr(tuple(ctx.bot.cogs.keys())))
+        for page in pag.pages:
+            await ctx.send(page)
+
+    @cogs_group.command()
+    @disextc.is_owner()
+    async def list(self, ctx: disextc.Context) -> None:
+        """ Lists all registered cogs.
+
+        This will list all the cogs that are currently registered with the bot.
+
+
+        """
+        from __main__ import installed_cogs
+        pag = disextc.Paginator()
+        pag.add_line(repr(installed_cogs))
+        for page in pag.pages:
+            await ctx.send(page)
+
+    # Uncategorized
 
     @disextc.command()
     async def clog(self, ctx: disextc.Context) -> None:
+        # TODO: This needs a better place. Clear the bot's DMs to you is all it
+        #   really does and should be transitioned accordingly.
         """ Clear Log.
 
         If typed from a DMChannel, this will have the bot delete the last
@@ -57,7 +104,6 @@ class System(disextc.Cog):
         :param ctx -> Context the command was called from
         :return None
         """
-        # TODO: Make this work for the logging channel.
         txt_dmonly = """I can only clear a DM, dingbat."""
         pages = disextc.Paginator()
         pages.add_line(txt_dmonly)
@@ -73,32 +119,6 @@ class System(disextc.Cog):
             for page in pages.pages:
                 await ctx.send(page)
 
-    @disextc.group()
-    @disextc.is_owner()
-    async def cog(self, ctx: disextc.Context) -> None:
-        """ Cog related commands.
-
-        :param ctx -> Invocation context
-        :return None
-        """
-        if ctx.invoked_subcommand is None:
-            await ctx.send(txt_cog_sub_err)
-
-    @cog.command()
-    @disextc.is_owner()
-    async def active(self, ctx: disextc.Context) -> None:
-        """ Lists active cogs.
-
-        Lists all cogs currently active in the bot.
-
-        :param ctx -> Invocation Context
-        :return None
-        """
-        pag = disextc.Paginator()
-        pag.add_line(repr(tuple(ctx.bot.cogs.keys())))
-        for page in pag.pages:
-            await ctx.send(page)
-
     @disextc.command()
     @disextc.is_owner()
     async def app_info(self, ctx: disextc.Context) -> None:
@@ -109,23 +129,8 @@ class System(disextc.Cog):
         :param ctx -> Invocation Context
         :return None
         """
-        await self.send_paginator(
-            ctx, await self.paginate(repr(await self.bot.application_info())))
-
-    @cog.command()
-    @disextc.is_owner()
-    async def list(self, ctx: disextc.Context) -> None:
-        """ Lists all registered cogs.
-
-        This will list all the cogs that are currently registered with the bot.
-
-
-        """
-        from wiihacky import installed_cogs
-        pag = disextc.Paginator()
-        pag.add_line(repr(installed_cogs))
-        for page in pag.pages:
-            await ctx.send(page)
+        await send_paginator(
+            ctx, await paginate(repr(await self.bot.application_info())))
 
     @disextc.command()
     @disextc.is_owner()
@@ -158,16 +163,6 @@ class System(disextc.Cog):
         for page in pag.pages:
             await ctx.send(page)
         await ctx.bot.close()
-
-    @disextc.command(name='wiz_log')
-    @disextc.is_owner()
-    async def wiz_setup_logging(self, ctx):
-        """ Logging setup wizard.
-
-        This function when invoked will cause the bot to open a DM with the
-        invokee and display the main default bot menu.
-        """
-        await ctx.send('Not Implemented')
 
 
 def setup(bot: disextc.Bot) -> None:

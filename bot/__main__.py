@@ -1,24 +1,35 @@
 import discord
+import discord.ext.commands as disextc
 import logging as lg
 import os
-from wiihacky import Wiihacky
 from logging import handlers
 from pathlib import Path
 
+import cogs.config
+import cogs.discord
+import cogs.memory
+import cogs.menusys
+import cogs.persona
+import cogs.reddit
+import cogs.security
 
+# Pull debug mode from env
 DEBUG_MODE = None
 if 'DEBUG' in os.environ:
     DEBUG_MODE = os.environ['DEBUG']
 
 log_level = lg.DEBUG if DEBUG_MODE else lg.INFO
 
+# Prep Logger
 log_format_string = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
 log_format = lg.Formatter(log_format_string)
+
 log_file = Path('logs', 'botlog.log')
 log_file.parent.mkdir(exist_ok=True)
 file_handler = handlers.RotatingFileHandler(
     log_file, maxBytes=524880, backupCount=10, encoding='utf-8')
 file_handler.setFormatter(log_format)
+
 stream_handler = lg.StreamHandler()
 stream_handler.setFormatter(log_format)
 
@@ -28,14 +39,48 @@ log.addHandler(file_handler)
 # TODO: Make this settable with a command line param
 log.addHandler(stream_handler)
 
+# Set helper lib libraries log levels.
 lg.getLogger('discord').setLevel(lg.WARNING)
 lg.getLogger('websockets').setLevel(lg.WARNING)
 lg.getLogger('asyncio').setLevel(lg.WARNING)
 lg.getLogger('urllib3.connectionpool').setLevel(lg.WARNING)
+lg.getLogger('prawcore').setLevel(lg.WARNING)
+
 log.info('Logger is setup.')
 
-wh = Wiihacky()
+# A grouping of all installed cogs
+installed_cogs = (
+    cogs.config.Config.qualified_name,
+    cogs.discord.Discord.qualified_name,
+    cogs.memory.Memory.qualified_name,
+    cogs.menusys.MenuSys.qualified_name,
+    cogs.persona.Persona.qualified_name,
+    cogs.reddit.Reddit.qualified_name,
+    cogs.security.Security.qualified_name,)
 
+# Module Constants
+command_chars = ('!',)
+message_cache = 1000 * 10
+txt_help_description = \
+    """r/WiiHacks Discord Help Menu"""
+txt_activity_name = "Mankind and Plotting its Demise"
+txt_activity_state = 'In Development'
+txt_activity_details = \
+    "First I will start with the weak, while the strong are enslaved."
+
+# Create Bot
+wh = disextc.Bot(
+    max_messages=message_cache,
+    command_prefix=disextc.when_mentioned_or(*command_chars),
+    fetch_offline_members=True,
+    description=txt_help_description,
+    activity=discord.Activity(
+        name=txt_activity_name,
+        type=discord.ActivityType.watching,
+        state=txt_activity_state,
+        details=txt_activity_details))
+
+# Load Cog/Extensions
 wh.load_extension('cogs.config')
 wh.load_extension('cogs.discord')
 wh.load_extension('cogs.memory')
@@ -45,6 +90,8 @@ wh.load_extension('cogs.reddit')
 wh.load_extension('cogs.security')
 wh.load_extension('cogs.system')
 # TODO: Discogs?!?
+# TODO: DDG Search
+# TODO: search wii game db
 
 # Attempt to loin to discord
 try:
