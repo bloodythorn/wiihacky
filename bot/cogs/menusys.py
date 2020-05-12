@@ -29,7 +29,7 @@ class MenuSys(disextc.Cog):
 
     # MenuSys Group Commands
 
-    @disextc.group(name='men')
+    @disextc.group(name='men', hidden=True)
     @disextc.is_owner()
     async def menusys_grouping(self, ctx: disextc.Context):
         """ The Menusys cog grouping. """
@@ -37,7 +37,7 @@ class MenuSys(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(f'No menusys subcommand given.')
 
-    @menusys_grouping.command()
+    @menusys_grouping.command(hidden=True)
     @disextc.is_owner()
     async def test_pag(self, ctx: disextc.Context):
         """ Test the pagination Command ."""
@@ -64,7 +64,7 @@ class MenuSys(disextc.Cog):
         await LinePaginator.paginate(
             lines, ctx, embed, max_size=1000, restrict_to_user=ctx.author)
 
-    @menusys_grouping.command()
+    @menusys_grouping.command(hidden=True)
     @disextc.is_owner()
     async def mmenu(self, ctx: disextc.Context) -> None:
         """ Invoke Main Menu.

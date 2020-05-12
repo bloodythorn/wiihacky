@@ -1,6 +1,8 @@
 import discord.ext.commands as disextc
 from random import choice
 
+# TODO: Wait/one moment question
+
 # TODO: Move these eventually to their own module.
 txt_positive = [
     '1', 'affirmative', 'agree', 'agreed', 'all right', 'amen', 'aye',
@@ -98,7 +100,7 @@ class Persona(disextc.Cog):
 
     # Persona Group Commands
 
-    @disextc.group(name='per')
+    @disextc.group(name='per', hidden=True)
     @disextc.is_owner()
     async def persona_group(self, ctx: disextc.Context):
         """ The grouping for all persona commands. """
@@ -106,25 +108,25 @@ class Persona(disextc.Cog):
             # TODO : Collectively pull this from menusys (in all cogs)
             await ctx.send(f'persona subcommand not found.')
 
-    @persona_group.command(name='randerr', is_hidden=True)
+    @persona_group.command(name='randerr', hidden=True)
     @disextc.is_owner()
     async def get_random_error(self, ctx: disextc.Context):
         """ Access to the random error getter. """
         await ctx.send(await self.random_error)
 
-    @persona_group.command(name='randins', is_hidden=True)
+    @persona_group.command(name='randins', hidden=True)
     @disextc.is_owner()
     async def get_random_insult(self, ctx: disextc.Context):
         """ Access to the random insult getter. """
         await ctx.send(await self.random_insult)
 
-    @persona_group.command(name='randyes', is_hidden=True)
+    @persona_group.command(name='randyes', hidden=True)
     @disextc.is_owner()
     async def get_random_yes(self, ctx: disextc.Context):
         """ Access to the random confirmation getter. """
         await ctx.send(await self.random_confirmation)
 
-    @persona_group.command(name='randno', is_hidden=True)
+    @persona_group.command(name='randno', hidden=True)
     @disextc.is_owner()
     async def get_random_no(self, ctx: disextc.Context):
         """ Access to the random rejection getter. """

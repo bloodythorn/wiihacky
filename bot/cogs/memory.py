@@ -115,7 +115,7 @@ class Memory(disextc.Cog):
 
     # Memory Group Commands
 
-    @disextc.group(name='mem')
+    @disextc.group(name='mem', hidden=True)
     @disextc.is_owner()
     async def memory(self, ctx: disextc.Context) -> None:
         """ Memory command grouping. """
@@ -123,7 +123,7 @@ class Memory(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send('no subcommand given for memory group.')
 
-    @memory.command()
+    @memory.command(hidden=True)
     @disextc.is_owner()
     async def sql(self, ctx: disextc.Context, *, arg: str) -> None:
         """ Execute SQL """

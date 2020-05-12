@@ -1,8 +1,8 @@
 import aiofiles
+import discord
 import discord.ext.commands as disextc
 import logging as lg
 import os
-import random as rd
 import yaml as yl
 
 config_default_file_name = 'config.yml'
@@ -44,9 +44,25 @@ class Config(disextc.Cog):
         super().__init__()
         self.file_name = attrs.pop('file_name', config_default_file_name)
         self.bot = bot
-        self.data = None
+        self.data = {}
 
-    # TODO: Async Versions of these functions.
+    # Listeners
+
+    @disextc.Cog.listener()
+    async def on_ready(self):
+        """ Initialize the config cog. """
+        txt_config_on_ready = "on_ready config cog fired."
+        lg.getLogger().debug(txt_config_on_ready)
+        await self.bot.wait_until_ready()
+
+        # Grab the owner
+        appinfo: discord.AppInfo = await self.bot.application_info()
+        owner: discord.User = appinfo.owner
+        # Check for a config in the cwd.
+        # No config? Create one
+        # Config? Load it.
+
+    # Helpers
 
     async def load_config(self):
         file_np = os.getcwd() + '/' + self.file_name

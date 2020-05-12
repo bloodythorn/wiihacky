@@ -531,3 +531,7 @@ class ImagePaginator(Paginator):
         log.debug("Ending pagination and clearing reactions.")
         with suppress(discord.NotFound):
             await message.clear_reactions()
+
+
+class BooleanPaginator(Paginator):
+    pass

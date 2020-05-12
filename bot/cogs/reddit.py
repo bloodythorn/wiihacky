@@ -7,10 +7,14 @@ import os
 import praw as prw
 import typing as typ
 
+# from constants import paginate, send_paginator
+
+
 # TODO : Comment Scroll Setup and Continue
 # TODO : Submission Scroll ^
 
-
+# praw uses tons of protected members we need access to.
+# noinspection PyProtectedMember
 class Reddit(disextc.Cog):
     """ Reddit Connection.
 
@@ -34,7 +38,6 @@ class Reddit(disextc.Cog):
         self.reddit = None
         # Start daemon.
         self.reddit_processes.start()
-        self.setup_asked = False
 
     # Listeners
 
@@ -45,12 +48,16 @@ class Reddit(disextc.Cog):
         await self.bot.wait_until_ready()
         if self.reddit is None:
             await self.reddit_init()
+        if not await self.feed_check():
+            self.reddit_processes.stop()
 
     # Processes
 
-    @disextt.loop(seconds=5.0)
+    @disextt.loop(seconds=10.0)
     async def reddit_processes(self) -> None:
         """ Reddit's Automated Processes. """
+        # lg.getLogger().debug(
+        #    f'Reddit Tick: {repr(self.reddit_processes.loop)}')
         pass
 
     # Helpers
@@ -103,9 +110,13 @@ class Reddit(disextc.Cog):
         # Success!
         lg.getLogger().info(txt_logged_in)
 
+    async def feed_check(self) -> bool:
+        """ This checks to see if feeds are configured. """
+        return False
+
     # Reddit Group Commands
 
-    @disextc.group(name='red')
+    @disextc.group(name='red', hidden=True)
     @disextc.is_owner()
     async def reddit_group(self, ctx: disextc.Context):
         """ Grouping for the reddit cog commands. """
@@ -114,9 +125,9 @@ class Reddit(disextc.Cog):
 
     # TODO: Toggle doesn't turn it off, or it doesn't read that display that it
     #   it is off.
-    @reddit_group.command(name='daemon')
+    @reddit_group.command(name='daemon', hidden=True)
     @disextc.is_owner()
-    async def toggle_daemon(
+    async def daemon_toggle_command(
             self, ctx: disextc.Context, on: typ.Optional[bool]) -> None:
         """ Toggle Process Status.
 
@@ -128,18 +139,31 @@ class Reddit(disextc.Cog):
         :return None
         """
         if on is None:
-            running_status = 'The reddit daemon is currenty {}running'.format(
-                    ('' if self.reddit_processes.loop.is_running() else 'not '))
+            running_status = 'The reddit daemon is currenty '
+            if self.reddit_processes.is_being_cancelled():
+                running_status += 'is being canceled.'
+            else:
+                running_status += \
+                    f'running. Next in' + \
+                    f' :{self.reddit_processes.next_iteration}' \
+                    if self.reddit_processes.next_iteration is not None \
+                    else 'stopped.'
             pag = await constants.paginate(running_status)
             await constants.send_paginator(ctx, pag)
-        elif on:
-            await ctx.send('Toggling reddit daemon on.')
         else:
-            await ctx.send('Toggling reddit daemon off.')
+            if self.reddit_processes.is_being_cancelled():
+                await ctx.send('Currently cancelling...')
+            elif self.reddit_processes.loop.is_running():
+                if on:
+                    await ctx.send(f'Reddit processes starting.')
+                    self.reddit_processes.start()
+                else:
+                    await ctx.send(f'Reddit processes stopping.')
+                    self.reddit_processes.stop()
 
-    @reddit_group.command(name='id')
+    @reddit_group.command(name='id', hidden=True)
     @disextc.is_owner()
-    async def get_profile_info(self, ctx: disextc.Context, redditor: str):
+    async def get_profile_command(self, ctx: disextc.Context, redditor: str):
         """ This retrieves a redditor's profile. """
         result: prw.reddit.models.Redditor = self.reddit.redditor(redditor)
         if result is None:
@@ -147,7 +171,112 @@ class Reddit(disextc.Cog):
         else:
             await constants.send_paginator(
                 ctx, await constants.paginate(
-                    f'{repr(result)} created:{result.created_utc} link Karma: {result.link_karma} post karma: {result.comment_karma}'))
+                    f'{repr(result)} created:{result.created_utc} ' +
+                    f'link karma: {result.link_karma} ' +
+                    f'post karma: {result.comment_karma}'))
+
+    # Moderator Group Commands
+
+    @reddit_group.group(name='mod', hidden=True)
+    @disextc.is_owner()
+    async def moderator_group(self, ctx: disextc.Context):
+        """Grouping for moderator commands."""
+        # TODO: Handle error more gracefully
+        if ctx.invoked_subcommand is None:
+            await ctx.send(f'reddit moderator subcommand not given')
+
+    @moderator_group.command(name='stats', hidden=True)
+    @disextc.is_owner()
+    async def moderator_statistics(
+            self, ctx: disextc.Context, over: int = 500):
+        """ Retrieve the stats for mod actions. """
+
+        # TODO: Turn this into a check
+        # No reddit, no execute.
+        if self.reddit is None:
+            lg.getLogger().debug('Reddit function used without reddit init.')
+            return
+
+        # Warn user for delay
+        # TODO: Move this to personality.
+        await ctx.send('This may take a moment...')
+
+        # fetch subreddit and moderators, and define the actions we care about.
+        wh = self.reddit.subreddit('WiiHacks')
+        mods = tuple(sorted([mod.name for mod in list(wh.moderator())]))
+        metered_actions = {
+            'approvecomment': 'app_com',
+            'approvelink': 'app_lnk',
+            'distinguish': 'dst',
+            'ignorereports': 'ign_rep',
+            'lock': 'lck',
+            'removecomment': 'rem_com',
+            'removelink': 'rem_lnk',
+            'spamcomment': 'spam_com',
+            'spamlink': 'spm_lnk',
+            'sticky': 'stky'}
+        # Raw data
+        data = {}
+        oldest = None
+        headers = ['name']
+
+        # Populate dictionary with results, as well as pull actions and actors
+        for log in wh.mod.log(limit=over):
+
+            # Filter
+            # TODO: Make this variable/configurable?
+            if log._mod not in mods or log.action not in metered_actions.keys():
+                continue
+
+            # save Oldest
+            if oldest is None:
+                oldest = log.created_utc
+            elif log.created_utc < oldest:
+                oldest = log.created_utc
+
+            # If mod isn't present, record them.
+            if log._mod not in data:
+                data[log._mod] = {}
+
+            # New action for mod.
+            if log.action not in data[log._mod]:
+                data[log._mod][log.action] = 1
+
+            # Increment (If you've reached here we have both mod + action)
+            data[log._mod][log.action] += 1
+
+        # Pull detected actors and actions
+        actors = tuple(sorted([a for a in data]))
+        actions = []
+        for actor in actors:
+            actions += list(data[actor].keys())
+        actions = tuple(sorted(list(dict.fromkeys(actions))))
+        for action in actions:
+            headers.append(metered_actions[action])
+
+        # Flatten the data
+        # TODO: Mods that don't have stats don't show up
+        flats = []
+        for mod in mods:
+            temp = [mod]
+            for action in actions:
+                if action in metered_actions.keys():
+                    if mod in data and action in data[mod]:
+                        temp.append(int(data[mod][action]))
+                    else:
+                        temp.append(0)
+            flats.append(tuple(temp))
+
+        # Output Stats
+        import datetime
+        import prettytable
+        table = prettytable.PrettyTable(headers)
+        for row in flats:
+            table.add_row(row)
+        await ctx.send(f"""```
+{table}
+Oldest Log Entry: {str(datetime.datetime.fromtimestamp(oldest))}
+```""")
 
 
 def setup(bot: disextc.Bot) -> None:

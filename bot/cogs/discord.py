@@ -4,6 +4,11 @@ import typing as typ
 
 txt_cog_sub_err = 'Invalid discord command.'
 
+
+# TODO: Top TODOs
+#   Flesh out commands.
+#   make a defaults system
+
 # TODO: moderator functions
 # TODO: Add logging to functions
 #   Logging will need a state of a list of tuples storing guild/channel
@@ -68,7 +73,7 @@ class Discord(disextc.Cog):
 
     # Discord Group Commands
 
-    @disextc.group(name='dis')
+    @disextc.group(name='dis', hidden=True)
     @disextc.is_owner()
     async def discord_group(self, ctx: disextc.Context) -> None:
         """ Discord Subgroup.
@@ -79,7 +84,7 @@ class Discord(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @discord_group.command()
+    @discord_group.command(hidden=True)
     @disextc.is_owner()
     async def activity(self, ctx: disextc.Context) -> None:
         """ Read Bot Activity.
@@ -94,7 +99,7 @@ class Discord(disextc.Cog):
         me = discord.utils.get(self.bot.get_all_members(), id=self.bot.user.id)
         await self.send_paginator(ctx, await self.paginate(repr(me.activities)))
 
-    @discord_group.command()
+    @discord_group.command(hidden=True)
     @disextc.is_owner()
     async def id(self, ctx: disextc.Context, what: typ.Union[
                      discord.Member,
@@ -116,7 +121,7 @@ class Discord(disextc.Cog):
         # TODO: Paginate results.
         await self.send_paginator(ctx, await self.paginate(repr(what)))
 
-    @discord_group.command()
+    @discord_group.command(hidden=True)
     @disextc.is_owner()
     async def guilds(self, ctx: disextc.Context) -> None:
         """ Guild list.
@@ -128,7 +133,7 @@ class Discord(disextc.Cog):
             ctx, await self.paginate(
                 repr([a.name for a in list(self.bot.guilds)])))
 
-    @discord_group.command()
+    @discord_group.command(hidden=True)
     @disextc.is_owner()
     async def latency(self, ctx: disextc.Context) -> None:
         """ Reads client latency.
@@ -142,7 +147,7 @@ class Discord(disextc.Cog):
         await self.send_paginator(
             ctx, await self.paginate(repr(self.bot.latency)))
 
-    @discord_group.command()
+    @discord_group.command(hidden=True)
     @disextc.is_owner()
     async def status(self, ctx: disextc.Context) -> None:
         """ Status of the Bot.
@@ -155,7 +160,7 @@ class Discord(disextc.Cog):
         me = discord.utils.get(self.bot.get_all_members(), id=self.bot.user.id)
         await self.send_paginator(ctx, await self.paginate(repr(me.status)))
 
-    @discord_group.command()
+    @discord_group.command(hidden=True)
     @disextc.is_owner()
     async def version(self, ctx: disextc.Context) -> None:
         """ Return discord.py version.
@@ -170,7 +175,7 @@ class Discord(disextc.Cog):
 
     # Channel Group Commands
 
-    @discord_group.group(name='chn')
+    @discord_group.group(name='chn', hidden=True)
     @disextc.is_owner()
     async def channel_group(self, ctx: disextc.Context):
         """ Channel Subgroup. """
@@ -178,7 +183,7 @@ class Discord(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @channel_group.command()
+    @channel_group.command(hidden=True)
     @disextc.is_owner()
     async def pos(self, ctx: disextc.Context,
                   channel: typ.Union[discord.TextChannel,
@@ -191,7 +196,7 @@ class Discord(disextc.Cog):
         await self.send_paginator(
             ctx, await self.paginate(repr(channel.position)))
 
-    @channel_group.command()
+    @channel_group.command(hidden=True)
     @disextc.is_owner()
     async def private(self, ctx: disextc.Context):
         """ List private channels. """
@@ -199,7 +204,7 @@ class Discord(disextc.Cog):
         await self.send_paginator(
             ctx, await self.paginate(repr(self.bot.private_channels)))
 
-    @channel_group.command()
+    @channel_group.command(hidden=True)
     @disextc.is_owner()
     async def voice(self, ctx: disextc.Context):
         """ Voice connections. """
@@ -208,7 +213,7 @@ class Discord(disextc.Cog):
 
     # Message Group Commands
 
-    @discord_group.group(name='msg')
+    @discord_group.group(name='msg', hidden=True)
     @disextc.is_owner()
     async def message_group(self, ctx: disextc.Context) -> None:
         """ Discord Messaging related commands. """
@@ -216,7 +221,7 @@ class Discord(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @message_group.command()
+    @message_group.command(hidden=True)
     @disextc.is_owner()
     async def channel(self, ctx: disextc.Context,
                       channel: discord.TextChannel, *, message: str) -> None:
@@ -232,7 +237,7 @@ class Discord(disextc.Cog):
         # TODO: use ctx in log output
         await channel.send(message)
 
-    @message_group.command()
+    @message_group.command(hidden=True)
     @disextc.is_owner()
     async def member(self, ctx: disextc.Context,
                      member: discord.Member, *, message: str) -> None:
@@ -248,7 +253,7 @@ class Discord(disextc.Cog):
         """
         await member.send(message)
 
-    @message_group.command()
+    @message_group.command(hidden=True)
     @disextc.is_owner()
     async def delete(self, ctx: disextc.Context,
                      message: discord.Message) -> None:
@@ -262,7 +267,7 @@ class Discord(disextc.Cog):
         """
         await message.delete()
 
-    @message_group.command()
+    @message_group.command(hidden=True)
     @disextc.is_owner()
     async def developer(self, ctx: disextc.Context, *, message: str) -> None:
         """ Message the developer.
@@ -287,7 +292,7 @@ class Discord(disextc.Cog):
 
     # TODO Emoji group?
 
-    @message_group.command()
+    @message_group.command(hidden=True)
     @disextc.is_owner()
     async def emoji(self, ctx: disextc.Context) -> None:
         """ Lists custom emojis.

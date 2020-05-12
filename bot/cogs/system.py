@@ -1,7 +1,19 @@
 import discord as discord
 import discord.ext.commands as disextc
+import logging as lg
 
 from constants import paginate, send_paginator
+
+system_defaults = {
+    'bot_category': 'bot',
+    'log_channel': 'log',
+    'commands_channel': 'commands',
+}
+
+
+# TODO:
+#   Create a place for a log
+#   create a place for bot commands
 
 # TODO: def command -> info
 # TODO: Collective logger -> This might be a discord cog thing
@@ -21,8 +33,6 @@ from constants import paginate, send_paginator
 #   on_invite_create, on_invite_delete, on_group_join, on_group_remove
 #   on_relationship_add, on_relationship_update,
 
-default_log_category = 'bot'
-default_log_channel = 'log'
 txt_cog_sub_err = 'Invalid cog command.'
 # TODO: Bot.description : maybe after DB hookup?
 # TODO: Confirm Action for more destructive commands.
@@ -44,12 +54,26 @@ class System(disextc.Cog):
 
     @disextc.Cog.listener()
     async def on_ready(self):
-        # TODO Ready message once booted up to log and owner?
-        pass
+        """ Start up checks.
+
+        Checks that the bot needs at the start will fire here. If there are
+        any issues, the owner will be notified and told how to correct them.
+        """
+        txt_system_on_ready = "on_ready system cog fired."
+        lg.getLogger().debug(txt_system_on_ready)
+        await self.bot.wait_until_ready()
+
+        # Grab the owner
+        appinfo: discord.AppInfo = await self.bot.application_info()
+        owner: discord.User = appinfo.owner
+
+        # Check Config
+
+        # Check Channels
 
     # Cog Group Commands
 
-    @disextc.group(name='cog')
+    @disextc.group(name='cog', hidden=True)
     @disextc.is_owner()
     async def cogs_group(self, ctx: disextc.Context) -> None:
         """ Cog related commands.
@@ -60,7 +84,7 @@ class System(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @cogs_group.command()
+    @cogs_group.command(hidden=True)
     @disextc.is_owner()
     async def active(self, ctx: disextc.Context) -> None:
         """ Lists active cogs.
@@ -75,7 +99,7 @@ class System(disextc.Cog):
         for page in pag.pages:
             await ctx.send(page)
 
-    @cogs_group.command()
+    @cogs_group.command(hidden=True)
     @disextc.is_owner()
     async def list(self, ctx: disextc.Context) -> None:
         """ Lists all registered cogs.
@@ -92,7 +116,7 @@ class System(disextc.Cog):
 
     # Uncategorized
 
-    @disextc.command()
+    @disextc.command(hidden=True)
     async def clog(self, ctx: disextc.Context) -> None:
         # TODO: This needs a better place. Clear the bot's DMs to you is all it
         #   really does and should be transitioned accordingly.
@@ -119,7 +143,7 @@ class System(disextc.Cog):
             for page in pages.pages:
                 await ctx.send(page)
 
-    @disextc.command()
+    @disextc.command(hidden=True)
     @disextc.is_owner()
     async def app_info(self, ctx: disextc.Context) -> None:
         """ Bot's application info.
@@ -132,25 +156,25 @@ class System(disextc.Cog):
         await send_paginator(
             ctx, await paginate(repr(await self.bot.application_info())))
 
-    @disextc.command()
+    @disextc.command(hidden=True)
     @disextc.is_owner()
     async def commands(self, ctx):
         await ctx.send([a.name for a in ctx.bot.commands])
 
-    @disextc.command()
+    @disextc.command(hidden=True)
     @disextc.is_owner()
     async def info(self, ctx: disextc.Context) -> None:
         msg = await ctx.bot.application_info()
         await ctx.send(msg)
 
-    @disextc.command()
+    @disextc.command(hidden=True)
     @disextc.is_owner()
     async def sys(self, ctx: disextc.Context) -> None:
         """This starts the cog menu."""
         # system = dii.Page('System Cog -> Things like rebooting the bot')
         await ctx.send(self.__doc__)
 
-    @disextc.command()
+    @disextc.command(hidden=True)
     @disextc.is_owner()
     async def shutdown(self, ctx: disextc.Context):
         # TODO: Confirmation
