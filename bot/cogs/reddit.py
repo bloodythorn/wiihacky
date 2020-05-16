@@ -36,8 +36,7 @@ class Reddit(disextc.Cog):
         super().__init__()
         self.bot = bot
         self.reddit = None
-        # Start daemon.
-        self.reddit_processes.start()
+        self.feeds = {}
 
     # Listeners
 
@@ -48,10 +47,13 @@ class Reddit(disextc.Cog):
         await self.bot.wait_until_ready()
         if self.reddit is None:
             await self.reddit_init()
-        if not await self.feed_check():
-            self.reddit_processes.stop()
 
     # Processes
+
+    @disextt.loop(seconds=1.0)
+    async def feed_processing(self) -> None:
+        """This processes all configured feeds."""
+        pass
 
     @disextt.loop(seconds=10.0)
     async def reddit_processes(self) -> None:
@@ -110,10 +112,6 @@ class Reddit(disextc.Cog):
         # Success!
         lg.getLogger().info(txt_logged_in)
 
-    async def feed_check(self) -> bool:
-        """ This checks to see if feeds are configured. """
-        return False
-
     # Reddit Group Commands
 
     @disextc.group(name='red', hidden=True)
@@ -123,8 +121,6 @@ class Reddit(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send('No subcommand given.')
 
-    # TODO: Toggle doesn't turn it off, or it doesn't read that display that it
-    #   it is off.
     @reddit_group.command(name='daemon', hidden=True)
     @disextc.is_owner()
     async def daemon_toggle_command(
@@ -174,6 +170,13 @@ class Reddit(disextc.Cog):
                     f'{repr(result)} created:{result.created_utc} ' +
                     f'link karma: {result.link_karma} ' +
                     f'post karma: {result.comment_karma}'))
+
+    # Feed Group Commands
+
+    @reddit_group.group()
+    @disextc.is_owner()
+    async def feed_group(self, ctx: disextc.Context):
+        """Grouping for reddit feed related commands. """
 
     # Moderator Group Commands
 

@@ -37,20 +37,27 @@ class MenuSys(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(f'No menusys subcommand given.')
 
+    # TODO:
+    #   gj4d4z -> Picture Post
+    #   gkh43r -> Self Post
+    #   gjmvt8 -> Video Post
     @menusys_grouping.command(hidden=True)
     @disextc.is_owner()
     async def test_pag(self, ctx: disextc.Context):
         """ Test the pagination Command ."""
         from pagination import LinePaginator
         reddit: praw.Reddit = self.bot.get_cog('Reddit').reddit
-        sub: praw.reddit.Submission = reddit.submission(id='ggifma')
+        sub: praw.reddit.Submission = reddit.submission(id='gkh43r')
         embed = discord.Embed()
+        embed.title = sub.title
+        embed.url = sub.url
         embed.set_author(
-            name=sub.title, url=sub.url)
+            name=sub.author.name,
+            url=f'https://www.reddit.com/u/{sub.author.name}')
         lines = []
         for line in sub.selftext.split('\n'):
             if line.strip() != '':
-                max_size = 950
+                max_size = 80
 
                 def split_dis(a: str):
                     if len(a) < max_size:
@@ -62,7 +69,11 @@ class MenuSys(disextc.Cog):
                     lines.append(split.strip())
                 lines.append(line.strip())
         await LinePaginator.paginate(
-            lines, ctx, embed, max_size=1000, restrict_to_user=ctx.author)
+            lines, ctx, embed,
+            max_size=1000,
+            max_lines=20,
+            restrict_to_user=ctx.author,
+            footer_text='/r/WiiHacks/')
 
     @menusys_grouping.command(hidden=True)
     @disextc.is_owner()

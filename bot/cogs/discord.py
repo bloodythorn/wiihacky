@@ -5,6 +5,7 @@ import typing as typ
 txt_cog_sub_err = 'Invalid discord command.'
 
 
+# TODO: Welcomer
 # TODO: Top TODOs
 #   Flesh out commands.
 #   make a defaults system
@@ -40,6 +41,12 @@ class Discord(disextc.Cog):
         from constants import paginate, send_paginator
         self.paginate = paginate
         self.send_paginator = send_paginator
+
+    # Helpers
+    async def get_owner(self) -> discord.User:
+        await self.bot.wait_until_ready()
+        appinfo: discord.AppInfo = await self.bot.application_info()
+        return appinfo.owner
 
     # Discord Cog Listeners
 
@@ -209,7 +216,7 @@ class Discord(disextc.Cog):
     async def voice(self, ctx: disextc.Context):
         """ Voice connections. """
         await self.send_paginator(
-            ctx, await self.paginate(self.bot.voice_clients))
+            ctx, await self.paginate(repr(self.bot.voice_clients)))
 
     # Message Group Commands
 

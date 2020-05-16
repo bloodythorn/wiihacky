@@ -63,3 +63,62 @@ System:
     TO group->Channel (Just sends, no reads, access to all)
   a bot CLI
     Everyone at least past redditor should have access
+
+We're going to need paginators for:
+
+CodeBlock pag
+Reddit Submissions -> All types
+Reddit Comments
+
+Instead of making the page controls or yes/no prompt to be part of the paginator, it should be a separate class.
+
+OR page controls should only be put on if there is more than one page of information.
+Then I can make a separate class for the y/n prompt that will take any message and attach a y/n to itself.
+
+# feed:
+#   save
+#   load
+# ----
+#   add
+#   list
+#   remove
+#   modify
+#       subreddit: Key: (subreddit) data: Channel ID,
+#       multireddit: Key: (user, multi) data: Channel ID,
+# load feeds
+# save feeds
+# feed process
+# add feed
+# list feed
+# remove feed
+# feed subgroup?
+
+class Feed:
+  def __init__(self, name: str):
+
+
+Feed->
+  Name:
+  SubReddit->
+    Name:
+    channel id:
+    type:
+  MultiReddit->
+    user:
+    name:
+    type
+Feed Types:
+  new -> Constant feed of new submissions
+    nodata
+  comments -> Constant feed of new comments
+    nodata
+  hot -> Periodic feed of hot posts
+    period:
+  rising -> Periodic feed of rising posts
+    period:
+  controversial -> Periodic feed of contr within a Timeframe
+    period:
+    timeframe:
+  top -> Periodic feed of top within a Timeframe
+    period:
+    timeframe:

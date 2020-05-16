@@ -10,16 +10,12 @@ system_defaults = {
     'commands_channel': 'commands',
 }
 
-
 # TODO:
-#   Create a place for a log
 #   create a place for bot commands
 
-# TODO: def command -> info
-# TODO: Collective logger -> This might be a discord cog thing
-# TODO: on_ready, on_connect, on_disconnect, on_resumed, on_typing,
-#   on_message, on_message_delete, on_message_edit, on_reaction_add,
-#   on_reaction_remove, on_reaction_clear, on_reaction_clear_emoji,
+# TODO:
+#   on_message_delete, on_message_edit, on_reaction_clear,
+#   on_reaction_clear_emoji,
 #   on_private_channel_delete, on_private_channel_create,
 #   on_private_channel_update, on_private_channel_pins_update,
 #   on_guild_channel_delete, on_guild_channel_create,
@@ -46,9 +42,60 @@ class System(disextc.Cog):
     This bot carries all commands, listeners, etc, that tend to the bot itself.
     """
 
-    def __init__(self, bot: disextc.Bot):
+    def __init__(self, bot: disextc.Bot) -> None:
         super().__init__()
         self.bot = bot
+        self.log_channel = None
+
+    # Helpers
+
+    async def init_log(self) -> None:
+        """This discovers the ID of the log channel."""
+        # TODO: There should be an option for saving/loading this to/from
+        #  the config.
+        # Fetch Owner (WE shouldn't have to worry about waiting for the bot)
+        appinfo: discord.AppInfo = await self.bot.application_info()
+        owner = appinfo.owner
+
+        # See if we can find the designated log channel
+        log_chan: discord.TextChannel = discord.utils.find(
+            lambda m: m.name == system_defaults['log_channel'],
+            self.bot.get_all_channels())
+        # No?
+        if log_chan is None:
+            await owner.send(
+                'No logging channel configured for {}->{}'.format(
+                    system_defaults['bot_category'],
+                    system_defaults['log_channel']))
+            return
+        # Not in the right category?
+        elif log_chan.category.name != system_defaults['bot_category']:
+            await owner.send('Log channel found but not in category {}'.format(
+                        system_defaults['bot_category']))
+            return
+
+        # This is it!
+        self.log_channel = log_chan.id
+        log_chan = self.bot.get_channel(self.log_channel)
+
+        # This shouldn't happen
+        if log_chan is None:
+            await owner.send("Unknown error finding logging channel.")
+
+        # TODO: More information in the bootup? Cog Statuses?
+        boot_txt = """Discord.py Version: {} Praw Version: {}"""
+        import praw
+        await log_chan.send(boot_txt.format(
+            discord.__version__, praw.__version__))
+        await log_chan.send('Log channel initialized, bot has booted.')
+
+    async def send_to_log(self, message: str):
+        """Sends a messaged to the designated, connected log channel. """
+        # It's not setup...
+        if self.log_channel is None:
+            return
+        log_chan = self.bot.get_channel(self.log_channel)
+        await log_chan.send(message)
 
     # Listeners
 
@@ -63,61 +110,26 @@ class System(disextc.Cog):
         lg.getLogger().debug(txt_system_on_ready)
         await self.bot.wait_until_ready()
 
-        # Grab the owner
-        appinfo: discord.AppInfo = await self.bot.application_info()
-        owner: discord.User = appinfo.owner
+        # TODO: Check Config
+        # TODO: Check Channels
 
-        # Check Config
+        if self.log_channel is None:
+            await self.init_log()
 
-        # Check Channels
+    # System Group
 
-    # Cog Group Commands
-
-    @disextc.group(name='cog', hidden=True)
+    @disextc.group(name='sys', hidden=True)
     @disextc.is_owner()
-    async def cogs_group(self, ctx: disextc.Context) -> None:
-        """ Cog related commands.
-
-        :param ctx -> Invocation context
-        :return None
-        """
+    async def system_group(self, ctx: disextc.Context):
+        """ Grouping for system commands. """
+        # TODO: Resolve this gracefully
         if ctx.invoked_subcommand is None:
-            await ctx.send(txt_cog_sub_err)
+            await ctx.send(f'No system subcommand given.')
 
-    @cogs_group.command(hidden=True)
+    @system_group.command(name='cdm', hidden=True)
     @disextc.is_owner()
-    async def active(self, ctx: disextc.Context) -> None:
-        """ Lists active cogs.
-
-        Lists all cogs currently active in the bot.
-
-        :param ctx -> Invocation Context
-        :return None
-        """
-        pag = disextc.Paginator()
-        pag.add_line(repr(tuple(ctx.bot.cogs.keys())))
-        for page in pag.pages:
-            await ctx.send(page)
-
-    @cogs_group.command(hidden=True)
-    @disextc.is_owner()
-    async def list(self, ctx: disextc.Context) -> None:
-        """ Lists all registered cogs.
-
-        This will list all the cogs that are currently registered with the bot.
-
-
-        """
-        from __main__ import installed_cogs
-        pag = disextc.Paginator()
-        pag.add_line(repr(installed_cogs))
-        for page in pag.pages:
-            await ctx.send(page)
-
-    # Uncategorized
-
-    @disextc.command(hidden=True)
-    async def clog(self, ctx: disextc.Context) -> None:
+    async def clear_direct_messages_command(
+            self, ctx: disextc.Context) -> None:
         # TODO: This needs a better place. Clear the bot's DMs to you is all it
         #   really does and should be transitioned accordingly.
         """ Clear Log.
@@ -143,9 +155,9 @@ class System(disextc.Cog):
             for page in pages.pages:
                 await ctx.send(page)
 
-    @disextc.command(hidden=True)
+    @system_group.command(name='sysinfo', hidden=True)
     @disextc.is_owner()
-    async def app_info(self, ctx: disextc.Context) -> None:
+    async def application_info_command(self, ctx: disextc.Context) -> None:
         """ Bot's application info.
 
         This will retrieve the bot's application info from discord.
@@ -156,27 +168,20 @@ class System(disextc.Cog):
         await send_paginator(
             ctx, await paginate(repr(await self.bot.application_info())))
 
-    @disextc.command(hidden=True)
+    @system_group.command(name='commands', hidden=True)
     @disextc.is_owner()
-    async def commands(self, ctx):
+    async def list_commands_command(self, ctx):
         await ctx.send([a.name for a in ctx.bot.commands])
 
-    @disextc.command(hidden=True)
+    @system_group.command(name='log', hidden=True)
     @disextc.is_owner()
-    async def info(self, ctx: disextc.Context) -> None:
-        msg = await ctx.bot.application_info()
-        await ctx.send(msg)
+    async def log_command(self, ctx: disextc.Context, *, message: str):
+        """Sends text to discord log."""
+        await self.send_to_log(message)
 
-    @disextc.command(hidden=True)
+    @system_group.command(hidden=True)
     @disextc.is_owner()
-    async def sys(self, ctx: disextc.Context) -> None:
-        """This starts the cog menu."""
-        # system = dii.Page('System Cog -> Things like rebooting the bot')
-        await ctx.send(self.__doc__)
-
-    @disextc.command(hidden=True)
-    @disextc.is_owner()
-    async def shutdown(self, ctx: disextc.Context):
+    async def shutdown_command(self, ctx: disextc.Context):
         # TODO: Confirmation
         # TODO: Use this to create a relogon ->
         #   as I tink the only way you can change the bot activity is at
@@ -187,6 +192,47 @@ class System(disextc.Cog):
         for page in pag.pages:
             await ctx.send(page)
         await ctx.bot.close()
+
+    # Cog Group Commands
+
+    @system_group.group(name='cog', hidden=True)
+    @disextc.is_owner()
+    async def cogs_group(self, ctx: disextc.Context) -> None:
+        """ Cog related commands.
+
+        :param ctx -> Invocation context
+        :return None
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send(txt_cog_sub_err)
+
+    @cogs_group.command(name='act', hidden=True)
+    @disextc.is_owner()
+    async def active_command(self, ctx: disextc.Context) -> None:
+        """ Lists active cogs.
+
+        Lists all cogs currently active in the bot.
+
+        :param ctx -> Invocation Context
+        :return None
+        """
+        pag = disextc.Paginator()
+        pag.add_line(repr(tuple(ctx.bot.cogs.keys())))
+        for page in pag.pages:
+            await ctx.send(page)
+
+    @cogs_group.command(name='list', hidden=True)
+    @disextc.is_owner()
+    async def list_command(self, ctx: disextc.Context) -> None:
+        """ Lists all registered cogs.
+
+        This will list all the cogs that are currently registered with the bot.
+        """
+        from __main__ import installed_cogs
+        pag = disextc.Paginator()
+        pag.add_line(repr(installed_cogs))
+        for page in pag.pages:
+            await ctx.send(page)
 
 
 def setup(bot: disextc.Bot) -> None:
