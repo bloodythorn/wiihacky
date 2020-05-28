@@ -2,25 +2,19 @@ import discord
 import discord.ext.commands as disextc
 import logging as lg
 import os
+
 from logging import handlers
 from pathlib import Path
 
-import cogs.config
-import cogs.discord
-import cogs.memory
-import cogs.menusys
-import cogs.persona
-import cogs.reddit
-import cogs.security
+import cogs
 
-# Pull debug mode from env
+# Set Debug Level: Pull debug mode from env
 DEBUG_MODE = None
 if 'DEBUG' in os.environ:
     DEBUG_MODE = os.environ['DEBUG']
 
-log_level = lg.DEBUG if DEBUG_MODE else lg.INFO
-
 # Prep Logger
+log_level = lg.DEBUG if DEBUG_MODE else lg.INFO
 log_format_string = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
 log_format = lg.Formatter(log_format_string)
 
@@ -56,6 +50,7 @@ installed_cogs = (
     cogs.menusys.MenuSys.qualified_name,
     cogs.persona.Persona.qualified_name,
     cogs.reddit.Reddit.qualified_name,
+    cogs.reddit.Feeds.qualified_name,
     cogs.security.Security.qualified_name,)
 
 # Module Constants
@@ -105,9 +100,8 @@ except KeyError as e:
     log.critical('DISCORD_BOT_TOKEN not set in env.')
     exit(-1)
 except discord.errors.LoginFailure as e:
-    log.error(
-        'Failed to login with given token: {}'.format(e.args))
+    log.error('Failed to login with given token: {}'.format(e.args))
     exit(-1)
 except RuntimeError as e:
-    log.info('Looop experienced a runtime error: {}'.format(e.args))
+    log.info('Loop experienced a runtime error: {}'.format(e.args))
     exit(0)

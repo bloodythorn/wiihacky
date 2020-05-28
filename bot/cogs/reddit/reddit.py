@@ -1,17 +1,21 @@
+import cogs.reddit.utils as utils
 import constants
 import discord
 import discord.ext.commands as disextc
-import discord.ext.tasks as disextt
 import logging as lg
 import os
-import praw as prw
+import praw
 import typing as typ
 
-# from constants import paginate, send_paginator
+# TODO: Upvote/downvote query.
+# TODO: watch for upvote/down vote, tally per user, use as money.
+# todo: strip &#x200B;
+# todo: persistence
 
+reddit_config_group = 'reddit'
 
-# TODO : Comment Scroll Setup and Continue
-# TODO : Submission Scroll ^
+log = lg.getLogger(__name__)
+
 
 # praw uses tons of protected members we need access to.
 # noinspection PyProtectedMember
@@ -35,82 +39,59 @@ class Reddit(disextc.Cog):
     def __init__(self, bot: disextc.Bot):
         super().__init__()
         self.bot = bot
-        self.reddit = None
-        self.feeds = {}
+
+    @property
+    async def reddit(self) -> typ.Optional[praw.reddit.Reddit]:
+        if not await utils.reddit_credential_check():
+            return None
+        return praw.Reddit(
+                user_agent=os.environ['REDDIT_USER_AGENT'],
+                client_id=os.environ['REDDIT_CLIENT_ID'],
+                client_secret=os.environ['REDDIT_CLIENT_SECRET'],
+                username=os.environ['REDDIT_USERNAME'],
+                password=os.environ['REDDIT_PASSWORD'])
 
     # Listeners
 
     @disextc.Cog.listener()
     async def on_ready(self):
         """ Test Reddit Cog credentials and config. """
-        lg.getLogger().debug('on_ready reddit init fired.')
         await self.bot.wait_until_ready()
-        if self.reddit is None:
-            await self.reddit_init()
-
-    # Processes
-
-    @disextt.loop(seconds=1.0)
-    async def feed_processing(self) -> None:
-        """This processes all configured feeds."""
-        pass
-
-    @disextt.loop(seconds=10.0)
-    async def reddit_processes(self) -> None:
-        """ Reddit's Automated Processes. """
-        # lg.getLogger().debug(
-        #    f'Reddit Tick: {repr(self.reddit_processes.loop)}')
-        pass
+        log.debug('on_ready reddit init fired.')
+        await self.reddit_init()
 
     # Helpers
-
-    @staticmethod
-    async def credential_check() -> bool:
-        """ Check Reddit config for bot. """
-        return True if 'REDDIT_USER_AGENT' in os.environ and \
-                       'REDDIT_CLIENT_ID' in os.environ and \
-                       'REDDIT_CLIENT_SECRET' in os.environ and \
-                       'REDDIT_USERNAME' in os.environ and \
-                       'REDDIT_PASSWORD' in os.environ else False
 
     async def reddit_init(self) -> None:
         """ Init and attach Reddit API. """
         txt_no_creds = \
             'Reddit credentials not setup, Reddit functions disabled.'
         txt_login_failed = \
-            'Unable to log into reddit: {}. Reboot to try again.'
-        txt_logged_in = 'Logged into reddit.'
+            'Unable to log into reddit. Reboot to try again.'
+        txt_logged_in = 'Logged into reddit as {}.'
 
         # Fetch Owner
         appinfo: discord.AppInfo = await self.bot.application_info()
         owner: discord.User = appinfo.owner
 
         # This fires if the bot can't find the credentials in env.
-        if not await self.credential_check():
-            lg.getLogger().info(txt_no_creds)
+        if not await utils.reddit_credential_check():
+            log.info(txt_no_creds)
             pag_msg = await constants.paginate(txt_no_creds)
             if owner is not None:
                 await constants.send_paginator(owner, pag_msg)
-            self.reddit_processes.stop()
             return
 
         # This is if the bot does find the creds.
-        try:
-            self.reddit = prw.Reddit(
-                user_agent=os.environ['REDDIT_USER_AGENT'],
-                client_id=os.environ['REDDIT_CLIENT_ID'],
-                client_secret=os.environ['REDDIT_CLIENT_SECRET'],
-                username=os.environ['REDDIT_USERNAME'],
-                password=os.environ['REDDIT_PASSWORD']
-            )
-        except Exception as e:
-            lg.getLogger().info(txt_login_failed.format(e.args))
+        reddit: praw.reddit.Reddit = await self.reddit
+        if reddit:
+            # Success!
+            log.info(txt_logged_in.format(reddit.user.me().name))
+        else:
+            log.info(txt_login_failed)
             pag_msg = await constants.paginate(txt_login_failed)
             await constants.send_paginator(owner, pag_msg)
-            return
-
-        # Success!
-        lg.getLogger().info(txt_logged_in)
+        return
 
     # Reddit Group Commands
 
@@ -121,47 +102,19 @@ class Reddit(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send('No subcommand given.')
 
-    @reddit_group.command(name='daemon', hidden=True)
+    @reddit_group.command(name='inbox', hidden=True)
     @disextc.is_owner()
-    async def daemon_toggle_command(
-            self, ctx: disextc.Context, on: typ.Optional[bool]) -> None:
-        """ Toggle Process Status.
-
-        Without bool -> status given
-        with bool -> set status
-
-        :param ctx -> Invocation Context
-        :param on -> Bool with desired state of running.
-        :return None
-        """
-        if on is None:
-            running_status = 'The reddit daemon is currenty '
-            if self.reddit_processes.is_being_cancelled():
-                running_status += 'is being canceled.'
-            else:
-                running_status += \
-                    f'running. Next in' + \
-                    f' :{self.reddit_processes.next_iteration}' \
-                    if self.reddit_processes.next_iteration is not None \
-                    else 'stopped.'
-            pag = await constants.paginate(running_status)
-            await constants.send_paginator(ctx, pag)
-        else:
-            if self.reddit_processes.is_being_cancelled():
-                await ctx.send('Currently cancelling...')
-            elif self.reddit_processes.loop.is_running():
-                if on:
-                    await ctx.send(f'Reddit processes starting.')
-                    self.reddit_processes.start()
-                else:
-                    await ctx.send(f'Reddit processes stopping.')
-                    self.reddit_processes.stop()
+    async def inbox_command(self, ctx: disextc.Context):
+        # TODO: Turn this into a group with inbox functions.
+        await ctx.send(
+            f'```Inbox->All: {list(await self.reddit.inbox.all())}```')
 
     @reddit_group.command(name='id', hidden=True)
     @disextc.is_owner()
     async def get_profile_command(self, ctx: disextc.Context, redditor: str):
         """ This retrieves a redditor's profile. """
-        result: prw.reddit.models.Redditor = self.reddit.redditor(redditor)
+        result: praw.reddit.models.Redditor = \
+            await self.reddit.redditor(redditor)
         if result is None:
             await ctx.send(f'Could not find redditor: {redditor}')
         else:
@@ -171,12 +124,24 @@ class Reddit(disextc.Cog):
                     f'link karma: {result.link_karma} ' +
                     f'post karma: {result.comment_karma}'))
 
-    # Feed Group Commands
-
-    @reddit_group.group()
+    @reddit_group.command(name='sub', hidden=True)
     @disextc.is_owner()
-    async def feed_group(self, ctx: disextc.Context):
-        """Grouping for reddit feed related commands. """
+    async def get_submission_command(self, ctx: disextc.Context, sub_id: str):
+        """ Retrieve Submission. """
+        # TODO:
+        #   gj4d4z -> Picture Post
+        #   eu4iwf -> Self Post
+        #   gjmvt8 -> Video Post
+        submission: praw.reddit.Submission = \
+            await self.reddit.submission(id=sub_id)
+        await utils.display_submission(self.bot, ctx, submission)
+
+    @reddit_group.command(name='com', hidden=True)
+    @disextc.is_owner()
+    async def get_comment_command(self, ctx: disextc.Context, com_id: str):
+        """ Retrieve Comment."""
+        comment: praw.reddit.Comment = await self.reddit.comment(com_id)
+        await utils.display_comment(self.bot, ctx, comment)
 
     # Moderator Group Commands
 
@@ -194,18 +159,13 @@ class Reddit(disextc.Cog):
             self, ctx: disextc.Context, over: int = 500):
         """ Retrieve the stats for mod actions. """
 
-        # TODO: Turn this into a check
-        # No reddit, no execute.
-        if self.reddit is None:
-            lg.getLogger().debug('Reddit function used without reddit init.')
-            return
-
         # Warn user for delay
         # TODO: Move this to personality.
         await ctx.send('This may take a moment...')
 
         # fetch subreddit and moderators, and define the actions we care about.
-        wh = self.reddit.subreddit('WiiHacks')
+        reddit = await self.reddit
+        wh = reddit.subreddit('WiiHacks')
         mods = tuple(sorted([mod.name for mod in list(wh.moderator())]))
         metered_actions = {
             'approvecomment': 'app_com',
@@ -224,29 +184,30 @@ class Reddit(disextc.Cog):
         headers = ['name']
 
         # Populate dictionary with results, as well as pull actions and actors
-        for log in wh.mod.log(limit=over):
+        for entry in wh.mod.log(limit=over):
 
             # Filter
             # TODO: Make this variable/configurable?
-            if log._mod not in mods or log.action not in metered_actions.keys():
+            if entry._mod not in mods or \
+                    entry.action not in metered_actions.keys():
                 continue
 
             # save Oldest
             if oldest is None:
-                oldest = log.created_utc
-            elif log.created_utc < oldest:
-                oldest = log.created_utc
+                oldest = entry.created_utc
+            elif entry.created_utc < oldest:
+                oldest = entry.created_utc
 
             # If mod isn't present, record them.
-            if log._mod not in data:
-                data[log._mod] = {}
+            if entry._mod not in data:
+                data[entry._mod] = {}
 
             # New action for mod.
-            if log.action not in data[log._mod]:
-                data[log._mod][log.action] = 1
+            if entry.action not in data[entry._mod]:
+                data[entry._mod][entry.action] = 1
 
             # Increment (If you've reached here we have both mod + action)
-            data[log._mod][log.action] += 1
+            data[entry._mod][entry.action] += 1
 
         # Pull detected actors and actions
         actors = tuple(sorted([a for a in data]))
@@ -280,8 +241,3 @@ class Reddit(disextc.Cog):
 {table}
 Oldest Log Entry: {str(datetime.datetime.fromtimestamp(oldest))}
 ```""")
-
-
-def setup(bot: disextc.Bot) -> None:
-    """ Loads reddit cog. """
-    bot.add_cog(Reddit(bot))

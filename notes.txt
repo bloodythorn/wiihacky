@@ -93,20 +93,17 @@ Then I can make a separate class for the y/n prompt that will take any message a
 # remove feed
 # feed subgroup?
 
-class Feed:
-  def __init__(self, name: str):
-
-
 Feed->
   Name:
   SubReddit->
-    Name:
+    subreddit:
     channel id:
     type:
   MultiReddit->
     user:
-    name:
-    type
+    multireddit:
+    channel id:
+    type:
 Feed Types:
   new -> Constant feed of new submissions
     nodata

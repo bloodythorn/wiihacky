@@ -4,6 +4,7 @@ import discord.ext.commands as disextc
 #   things like spam and antimalware.
 #   The checks for role can be here or constants.
 #   maybe move current checks here?
+#   User registration.
 
 
 class Security(disextc.Cog):

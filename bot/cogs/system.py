@@ -11,7 +11,10 @@ system_defaults = {
 }
 
 # TODO:
-#   create a place for bot commands
+#   create a place for bot commands ?
+# TODO: Add logging to functions
+#   Logging will need a state of a list of tuples storing guild/channel
+
 
 # TODO:
 #   on_message_delete, on_message_edit, on_reaction_clear,
@@ -155,7 +158,7 @@ class System(disextc.Cog):
             for page in pages.pages:
                 await ctx.send(page)
 
-    @system_group.command(name='sysinfo', hidden=True)
+    @system_group.command(name='info', hidden=True)
     @disextc.is_owner()
     async def application_info_command(self, ctx: disextc.Context) -> None:
         """ Bot's application info.
@@ -165,6 +168,7 @@ class System(disextc.Cog):
         :param ctx -> Invocation Context
         :return None
         """
+        # TODO: Flesh this out.
         await send_paginator(
             ctx, await paginate(repr(await self.bot.application_info())))
 
@@ -179,7 +183,7 @@ class System(disextc.Cog):
         """Sends text to discord log."""
         await self.send_to_log(message)
 
-    @system_group.command(hidden=True)
+    @system_group.command(name='shutdown', hidden=True)
     @disextc.is_owner()
     async def shutdown_command(self, ctx: disextc.Context):
         # TODO: Confirmation

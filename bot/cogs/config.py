@@ -42,6 +42,7 @@ class Config(disextc.Cog):
 
     def __init__(self, bot: disextc.Bot, **attrs):
         super().__init__()
+        # TODO: Should we use this sort of init on other cogs/classes?
         self.file_name = attrs.pop('file_name', config_default_file_name)
         self.bot = bot
         self.data = {}
@@ -51,16 +52,17 @@ class Config(disextc.Cog):
     @disextc.Cog.listener()
     async def on_ready(self):
         """ Initialize the config cog. """
+        await self.bot.wait_until_ready()
+
         txt_config_on_ready = "on_ready config cog fired."
         lg.getLogger().debug(txt_config_on_ready)
-        await self.bot.wait_until_ready()
 
         # Grab the owner
         appinfo: discord.AppInfo = await self.bot.application_info()
         owner: discord.User = appinfo.owner
-        # Check for a config in the cwd.
-        # No config? Create one
-        # Config? Load it.
+        # TODO: Check for a config in the cwd.
+        #   No config? Create one
+        #   Config? Load it.
 
     # Helpers
 
@@ -73,6 +75,22 @@ class Config(disextc.Cog):
         file_np = os.getcwd() + '/' + self.file_name
         with aiofiles.open(file_np, 'w') as f:
             f.write(yl.safe_dump(self.data))
+
+    # Config Command Group
+
+    @disextc.group(name='con', hidden=True)
+    @disextc.is_owner()
+    async def config_group(self, ctx: disextc.Context):
+        """Group for config cog commands."""
+        # TODO: more Gracefully
+        if ctx.invoked_subcommand is None:
+            await ctx.send('No config subcommand given.')
+
+    @config_group.command(name='show', hidden=True)
+    @disextc.is_owner()
+    async def show_config_command(self, ctx: disextc.Context):
+        """Dumps current config into ctx. """
+        await ctx.send('```' + repr(self.data) + '```')
 
 
 def setup(bot: disextc.Bot) -> None:

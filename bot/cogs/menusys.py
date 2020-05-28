@@ -1,7 +1,6 @@
 import discord as discord
 import discord.ext.commands as disextc
-import discord_interactive as disint
-import praw
+# TODO: Remove these
 from constants import paginate, send_paginator
 
 # TODO: Help System... needs to be more than default.
@@ -37,99 +36,11 @@ class MenuSys(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(f'No menusys subcommand given.')
 
-    # TODO:
-    #   gj4d4z -> Picture Post
-    #   gkh43r -> Self Post
-    #   gjmvt8 -> Video Post
-    @menusys_grouping.command(hidden=True)
-    @disextc.is_owner()
-    async def test_pag(self, ctx: disextc.Context):
-        """ Test the pagination Command ."""
-        from pagination import LinePaginator
-        reddit: praw.Reddit = self.bot.get_cog('Reddit').reddit
-        sub: praw.reddit.Submission = reddit.submission(id='gkh43r')
-        embed = discord.Embed()
-        embed.title = sub.title
-        embed.url = sub.url
-        embed.set_author(
-            name=sub.author.name,
-            url=f'https://www.reddit.com/u/{sub.author.name}')
-        lines = []
-        for line in sub.selftext.split('\n'):
-            if line.strip() != '':
-                max_size = 80
-
-                def split_dis(a: str):
-                    if len(a) < max_size:
-                        return a, ''
-                    else:
-                        return a[max_size+1:], a[0:max_size]
-                while len(line) > max_size:
-                    line, split = split_dis(line)
-                    lines.append(split.strip())
-                lines.append(line.strip())
-        await LinePaginator.paginate(
-            lines, ctx, embed,
-            max_size=1000,
-            max_lines=20,
-            restrict_to_user=ctx.author,
-            footer_text='/r/WiiHacks/')
-
-    @menusys_grouping.command(hidden=True)
-    @disextc.is_owner()
-    async def mmenu(self, ctx: disextc.Context) -> None:
-        """ Invoke Main Menu.
-
-        This currently holds a menu mock up that will eventually evolve into
-        a real menu-ing system.
-        """
-        back = '⬅️'
-        up = '⬆️'
-        root_menu = disint.Page('Welcome to the r/WiiHacks Interactive Menu')
-        wiihelp = disint.Page('Here is where the interactive help will be')
-        reddit = disint.Page('Here you can do reddit searches or browse feeds')
-        moderator = disint.Page('This is for reddit and discord moderation')
-        admin = disint.Page('Bot administration Menu')
-        rmod = disint.Page('Reddit Moderation Tools')
-        dmod = disint.Page('Discord Moderation Tools')
-        config = disint.Page('Config Cog -> Configuration options in the bot.')
-        memory = disint.Page('Memory Cog -> Access bot memory')
-        person = disint.Page('Personality Cog -> How the bot behaves')
-        secure = disint.Page('Security Cog -> Bot security')
-        system = disint.Page('System Cog -> Bot functions')
-        root_menu.link(
-            wiihelp, description='Help System', parent_reaction=back)
-        root_menu.link(reddit, description='Reddit Menu', parent_reaction=back)
-        root_menu.link(
-            moderator, description='Moderator Menus', parent_reaction=back)
-        root_menu.link(
-            admin, description='Admin Menu *KEEP OUT*', parent_reaction=back)
-        moderator.link(
-            rmod, description='Reddit Moderation', parent_reaction=back)
-        moderator.link(
-            dmod, description='Discord Moderation', parent_reaction=back)
-        admin.link(config, description='Config Cog', parent_reaction=back)
-        admin.link(memory, description='Memory Cog', parent_reaction=back)
-        admin.link(person, description='Personality Cog', parent_reaction=back)
-        admin.link(secure, description='Security Cog', parent_reaction=back)
-        admin.link(system, description='System Cog', parent_reaction=back)
-        root_menu.root_of(wiihelp, root_reaction=up)
-        root_menu.root_of(reddit, root_reaction=up)
-        root_menu.root_of(moderator, root_reaction=up)
-        root_menu.root_of(admin, root_reaction=up)
-        root_menu.root_of(rmod, root_reaction=up)
-        root_menu.root_of(dmod, root_reaction=up)
-        root_menu.root_of(config, root_reaction=up)
-        root_menu.root_of(memory, root_reaction=up)
-        root_menu.root_of(person, root_reaction=up)
-        root_menu.root_of(secure, root_reaction=up)
-        help_menu = disint.Help(ctx.bot, root_menu)
-        await help_menu.display(ctx.author)
-
 
 # TODO: This will eventually need to be split off into its own module.
 #   Currently it's not being used at all.
 class CustomHelpCommand(disextc.HelpCommand):
+
     def __init__(self, **options):
         self.width = options.pop('width', 80)
         self.indent = options.pop('indent', 0)

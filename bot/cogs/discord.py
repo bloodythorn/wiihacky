@@ -2,30 +2,25 @@ import discord as discord
 import discord.ext.commands as disextc
 import typing as typ
 
-txt_cog_sub_err = 'Invalid discord command.'
+txt_cog_sub_err = 'Invalid discord subcommand.'
 
 
-# TODO: Welcomer
 # TODO: Top TODOs
-#   Flesh out commands.
-#   make a defaults system
-
+# TODO: Welcomer
+# TODO: Flesh out commands.
 # TODO: moderator functions
-# TODO: Add logging to functions
-#   Logging will need a state of a list of tuples storing guild/channel
-# TODO: To prevent botspam, the main help engine might only want to invoke
-#   in a single channel instead of other channels, then ping the user....
-#   sooo a CLI and a log channel? Log private? CLI Public?
+# TODO: Bot CLI Channels
 # TODO: cache_messages
 #   This might require a 'reader'
 # TODO: Allowed mentions
 # Some of the following might already be implemented in id.
 # TODO: get channel, guild, user, emoji, all_channels, all_members,
 # TODO: Yes/no confirmation prompt with reactions, that should belong here.
+# TODO: yes/no dialog or multiple choice dialog
 # TODO: Change presence
 # TODO: Fetch Guilds -> Might need to make a bot-testing guild.
 # TODO: Pins -> Identify and cache files, especially syschecks.
-# TODO: Create Guild ?
+# TODO: Create Guild/channel/category etc ?
 # TODO: Invites
 # TODO: Widgets?
 # TODO: Webhooks
@@ -38,45 +33,18 @@ class Discord(disextc.Cog):
     def __init__(self, bot: disextc.Bot):
         super().__init__()
         self.bot = bot
+        # TODO: Get rid of these
         from constants import paginate, send_paginator
         self.paginate = paginate
         self.send_paginator = send_paginator
 
     # Helpers
+
+    # TODO: Prolly don't need a function for this.
     async def get_owner(self) -> discord.User:
         await self.bot.wait_until_ready()
         appinfo: discord.AppInfo = await self.bot.application_info()
         return appinfo.owner
-
-    # Discord Cog Listeners
-
-    @disextc.Cog.listener(name='on_reaction_add')
-    async def angry_axe_listener(
-            self, reaction: discord.Reaction, user: discord.User) -> None:
-        """ Listener for Angry Axe™.
-
-        on_reaction_add this function inspects the message and user adding the
-        reaction to determine whether or not the message will be deleted.
-        This is originally developed as a troubleshooting tool to delete the
-        bot's DMs.
-
-        :param reaction -> The reaction that caused the event.
-        :param user -> The user that added the reaction.
-        :return None
-        """
-        # TODO: FINISH THIS/FIX THIS
-        emoji_anger = '💢'
-        emoji_axe = '🪓'
-        from constants import id_bloodythorn
-        if reaction.emoji == emoji_axe or reaction.emoji == emoji_anger:
-            if isinstance(reaction.message.channel, discord.DMChannel) and \
-               reaction.message.author == self.bot.user:
-                await reaction.message.delete()
-                # else do nothing.
-            # FIXME: This needs to be more security accessable.
-            elif isinstance(reaction.message.channel, discord.TextChannel) and \
-                    user.id == id_bloodythorn:
-                await reaction.message.delete()
 
     # Discord Group Commands
 
@@ -91,9 +59,9 @@ class Discord(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @discord_group.command(hidden=True)
+    @discord_group.command(name='act', hidden=True)
     @disextc.is_owner()
-    async def activity(self, ctx: disextc.Context) -> None:
+    async def activity_command(self, ctx: disextc.Context) -> None:
         """ Read Bot Activity.
 
         This currently only retrieves and prints the bot activity.
@@ -106,9 +74,9 @@ class Discord(disextc.Cog):
         me = discord.utils.get(self.bot.get_all_members(), id=self.bot.user.id)
         await self.send_paginator(ctx, await self.paginate(repr(me.activities)))
 
-    @discord_group.command(hidden=True)
+    @discord_group.command(name='id', hidden=True)
     @disextc.is_owner()
-    async def id(self, ctx: disextc.Context, what: typ.Union[
+    async def multi_id_command(self, ctx: disextc.Context, what: typ.Union[
                      discord.Member,
                      discord.TextChannel,
                      discord.VoiceChannel,
@@ -128,9 +96,9 @@ class Discord(disextc.Cog):
         # TODO: Paginate results.
         await self.send_paginator(ctx, await self.paginate(repr(what)))
 
-    @discord_group.command(hidden=True)
+    @discord_group.command(name='guilds', hidden=True)
     @disextc.is_owner()
-    async def guilds(self, ctx: disextc.Context) -> None:
+    async def guild_list_command(self, ctx: disextc.Context) -> None:
         """ Guild list.
 
         :param ctx -> Invocation Context
@@ -140,9 +108,9 @@ class Discord(disextc.Cog):
             ctx, await self.paginate(
                 repr([a.name for a in list(self.bot.guilds)])))
 
-    @discord_group.command(hidden=True)
+    @discord_group.command(name='latency', hidden=True)
     @disextc.is_owner()
-    async def latency(self, ctx: disextc.Context) -> None:
+    async def latency_command(self, ctx: disextc.Context) -> None:
         """ Reads client latency.
 
         This returns the latency the client is currently under.
@@ -154,9 +122,9 @@ class Discord(disextc.Cog):
         await self.send_paginator(
             ctx, await self.paginate(repr(self.bot.latency)))
 
-    @discord_group.command(hidden=True)
+    @discord_group.command(name='status', hidden=True)
     @disextc.is_owner()
-    async def status(self, ctx: disextc.Context) -> None:
+    async def status_command(self, ctx: disextc.Context) -> None:
         """ Status of the Bot.
 
         This will read out the current status of the bot.
@@ -164,12 +132,13 @@ class Discord(disextc.Cog):
         :param ctx -> Invocation context.
         :return None
         """
+        # TODO: Necessary?
         me = discord.utils.get(self.bot.get_all_members(), id=self.bot.user.id)
         await self.send_paginator(ctx, await self.paginate(repr(me.status)))
 
-    @discord_group.command(hidden=True)
+    @discord_group.command(name='version', hidden=True)
     @disextc.is_owner()
-    async def version(self, ctx: disextc.Context) -> None:
+    async def version_control(self, ctx: disextc.Context) -> None:
         """ Return discord.py version.
 
         :param ctx -> Invocation Context
@@ -190,12 +159,13 @@ class Discord(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @channel_group.command(hidden=True)
+    @channel_group.command(name='pos', hidden=True)
     @disextc.is_owner()
-    async def pos(self, ctx: disextc.Context,
-                  channel: typ.Union[discord.TextChannel,
-                                     discord.VoiceChannel]
-                  ) -> None:
+    async def position_command(
+        self, ctx: disextc.Context,
+        channel: typ.Union[discord.TextChannel,
+                           discord.VoiceChannel]
+    ) -> None:
         """ Channel Position in List. """
         # TODO: Getter/setter by adding another arg that's an integer.
         #   Also a requirement is that the channel is refered to by ID
@@ -203,17 +173,17 @@ class Discord(disextc.Cog):
         await self.send_paginator(
             ctx, await self.paginate(repr(channel.position)))
 
-    @channel_group.command(hidden=True)
+    @channel_group.command(name='priv', hidden=True)
     @disextc.is_owner()
-    async def private(self, ctx: disextc.Context):
+    async def list_private_channels_command(self, ctx: disextc.Context):
         """ List private channels. """
         # TODO: Channel functions -> Close, create, delete, permissions
         await self.send_paginator(
             ctx, await self.paginate(repr(self.bot.private_channels)))
 
-    @channel_group.command(hidden=True)
+    @channel_group.command(name='voice', hidden=True)
     @disextc.is_owner()
-    async def voice(self, ctx: disextc.Context):
+    async def list_voice_connections_command(self, ctx: disextc.Context):
         """ Voice connections. """
         await self.send_paginator(
             ctx, await self.paginate(repr(self.bot.voice_clients)))
@@ -296,7 +266,6 @@ class Discord(disextc.Cog):
             raise disextc.BadArgument(dev_not_found)
 
     # Uncategorized
-
     # TODO Emoji group?
 
     @message_group.command(hidden=True)

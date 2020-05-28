@@ -4,6 +4,7 @@ import discord
 import discord.ext.commands as disextc
 import logging as lg
 import os
+# TODO: Get rid of these
 from constants import paginate, send_paginator
 
 # TODO: Make SQL Console Channel
