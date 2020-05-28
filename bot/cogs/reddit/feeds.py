@@ -1,8 +1,10 @@
-import praw
+import discord
 import discord.ext.commands as disextc
 import discord.ext.tasks as disextt
 import logging as lg
+import praw
 import typing as typ
+
 import cogs.reddit.utils as utils
 
 
@@ -13,7 +15,7 @@ from datetime import timedelta
 # TODO: This needs a lot of doccu attention.
 # !fee sub add wiihacks-comment wiihacks 711058635215601746 comments
 # !fee sub add wiihacks-new wiihacks 711058353660362782 new
-
+# !fee mul add bloodythorn-gaming-new bloodythorn gaming 715415648095961090 new
 feed_config_group = 'feeds'
 log = lg.getLogger(__name__)
 
@@ -33,12 +35,19 @@ class FeedMode:
     def name(self):
         return self._mode_name
 
-    async def get_new_posts(self, subreddit: praw.reddit.Subreddit):
+    def to_dict(self):
+        output = vars(self)
+        return output
+
+    async def get_new_posts(self,
+                            feed_source: typ.Union[
+                                praw.reddit.Subreddit,
+                                praw.reddit.models.Multireddit]):
         new_list = None
         if self._mode_name == 'new':
-            new_list = list(subreddit.new(limit=10))
+            new_list = list(feed_source.new(limit=10))
         elif self._mode_name == 'comments':
-            new_list = list(subreddit.comments(limit=10))
+            new_list = list(feed_source.comments(limit=10))
         new_list = new_list
         if self._cache is None:  # Un-initialized
             self._cache = new_list
@@ -52,6 +61,23 @@ class FeedMode:
                 if post.id not in old_ids:
                     diff.append(post)
             return set(diff)
+
+    async def execute(self,
+                      bot: disextc.Bot,
+                      channel: discord.TextChannel,
+                      feed_source: typ.Union[
+                        praw.reddit.Subreddit,
+                        praw.reddit.models.Multireddit]) -> None:
+        new_posts = await self.get_new_posts(feed_source)
+        for post in new_posts:
+            if isinstance(post, praw.reddit.Comment):
+                await utils.display_comment(
+                    bot, channel, post,
+                    clear=False, stop=False, eject=False)
+            if isinstance(post, praw.reddit.Submission):
+                await utils.display_submission(
+                    bot, channel, post,
+                    clear=False, stop=False, eject=False)
 
 
 class PeriodMode(FeedMode):
@@ -98,6 +124,7 @@ class Feed:
     def __init__(self, name: str, channel_id: int):
         self._name = name
         self._channel_id = channel_id
+        self._mode = None
     # TODO: from_dict
 
     @property
@@ -109,7 +136,9 @@ class Feed:
         return self._channel_id
 
     def to_dict(self):
-        return vars(self)
+        output = vars(self)
+        output['mode'] = self._mode.to_dict()
+        return output
 
 
 class SubredditFeed(Feed):
@@ -138,7 +167,10 @@ class SubredditFeed(Feed):
     def mode(self):
         return self._mode
 
-    # TODO: from_dict
+    async def execute(self, bot: disextc.Bot, reddit: praw.Reddit):
+        subreddit = reddit.subreddit(self._subreddit)
+        channel = bot.get_channel(self._channel_id)
+        await self._mode.execute(bot, channel, subreddit)
 
 
 class MultiredditFeed(Feed):
@@ -152,12 +184,28 @@ class MultiredditFeed(Feed):
     mode:
     """
     def __init__(self,
-                 name: str, channel_id: int, user: str, multi: str, mode: str):
+                 name: str,
+                 channel_id: int,
+                 user: str,
+                 multi: str,
+                 mode: str):
         super().__init__(name, channel_id)
         self._user = user
         self._multi = multi
         self._mode: FeedMode = get_mode(mode)(mode)
-    # TODO: from_dict
+
+    @property
+    def multireddit(self):
+        return self._user, self._multi
+
+    @property
+    def mode(self):
+        return self._mode
+
+    async def execute(self, bot: disextc.Bot, reddit: praw.Reddit):
+        multireddit = reddit.multireddit(redditor=self._user, name=self._multi)
+        channel = bot.get_channel(self._channel_id)
+        await self._mode.execute(bot, channel, multireddit)
 
 
 def get_mode(
@@ -196,29 +244,8 @@ class Feeds(disextc.Cog):
         try:
             reddit = await self.bot.get_cog('Reddit').reddit
             if self.feeds is not None:
-                for feed in self.feeds:
-                    subreddit = reddit.subreddit(
-                        self.feeds[feed].subreddit)
-                    channel = self.bot.get_channel(
-                        self.feeds[feed].channel_id)
-                    todo = await self.feeds[feed].mode.get_new_posts(subreddit)
-                    # for f in asyncio.as_completed([x(i) for i in range(10)]):
-                    for post in todo:
-                        if isinstance(post, praw.reddit.Comment):
-                            lg.getLogger(__name__).debug(
-                                f'Comment Fired')
-                            await utils.display_comment(
-                                self.bot,
-                                channel,
-                                post, clear=False, stop=False, eject=False)
-                        if isinstance(post, praw.reddit.Submission):
-                            lg.getLogger(__name__).debug(f'Submission Fired')
-                            await utils.display_submission(
-                                self.bot,
-                                channel,
-                                post, clear=False, stop=False, eject=False)
-        # todo: handle -> prawcore.exceptions.ServerError:
-        #  received 503 HTTP response
+                for feed in self.feeds.values():
+                    await feed.execute(self.bot, reddit)
         except Exception as e:
             lg.getLogger(__name__).debug(
                 f'Exception During Reddit Access: {e.args}')
@@ -237,10 +264,14 @@ class Feeds(disextc.Cog):
         # Get Config Cog
         config = self.bot.get_cog('Config')
         if config is None:
-            log.error('Could not load config cog to save feed config')
+            log.error('Could not load config cog to load feed config')
             return
         if 'reddit' not in config.data:
-            log.error('No feed/reddit config to load.')
+            log.error('Reddit not configured.')
+            self.feeds = {}
+            return
+        if 'feeds' not in config.data['reddit']:
+            log.error('Feeds not configured in Reddit.')
             self.feeds = {}
             return
 
@@ -300,8 +331,8 @@ class Feeds(disextc.Cog):
     ) -> None:
         feed = SubredditFeed(
             name=feed_name,
-            channel_id=channel_id,
             subreddit=subreddit_name,
+            channel_id=channel_id,
             mode=feed_type)
         channel = self.bot.get_channel(channel_id)
         reddit = await self.bot.get_cog('Reddit').reddit
@@ -332,5 +363,35 @@ class Feeds(disextc.Cog):
 
     @multireddit_feed_group.command(name='add', hidden=True)
     @disextc.is_owner()
-    async def add_multi_feed_command(self, ctx: disextc.Context) -> None:
-        await ctx.send('Implement Add Feed')
+    async def add_multi_feed_command(
+            self,
+            ctx: disextc.Context,
+            feed_name: str,
+            user_name: str,
+            multi_name: str,
+            channel_id: int,
+            feed_type: str
+    ) -> None:
+        feed = MultiredditFeed(
+            name=feed_name,
+            user=user_name,
+            multi=multi_name,
+            channel_id=channel_id,
+            mode=feed_type)
+        channel = self.bot.get_channel(channel_id)
+        reddit: praw.reddit.Reddit = await self.bot.get_cog('Reddit').reddit
+        multi = reddit.multireddit(redditor=user_name, name=multi_name)
+
+        if not FeedMode.verify_mode(feed_type):
+            raise Exception(f'Unknown feed type: {feed_type}')
+
+        if channel is None:
+            raise Exception('Argument channel_id not found.')
+        try:
+            multi._fetch()
+        except Exception as e:
+            raise Exception(f'Argument subreddit_name not found {e}.')
+
+        self.feeds[feed.name] = feed
+
+        await ctx.send(f'```Created feed {repr(feed)} {channel} {multi}```')

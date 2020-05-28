@@ -76,7 +76,7 @@ async def display_submission(
         linefy_submission_text(submission.selftext), msgble, embed,
         max_size=1000,
         restrict_to_user=user,
-        footer_text=f'{submission.id}',
+        footer_text=f'r/{submission.subreddit.display_name} / {submission.id}',
         clear_on_timeout=clear,
         stop_button=stop,
         eject_button=eject)
