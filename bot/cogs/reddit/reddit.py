@@ -161,83 +161,87 @@ class Reddit(disextc.Cog):
 
         # Warn user for delay
         # TODO: Move this to personality.
-        await ctx.send('This may take a moment...')
+        await ctx.send(f'Tallying {over} log entries...')
 
-        # fetch subreddit and moderators, and define the actions we care about.
         reddit = await self.reddit
-        wh = reddit.subreddit('WiiHacks')
-        mods = tuple(sorted([mod.name for mod in list(wh.moderator())]))
-        metered_actions = {
-            'approvecomment': 'app_com',
-            'approvelink': 'app_lnk',
-            'distinguish': 'dst',
-            'ignorereports': 'ign_rep',
-            'lock': 'lck',
-            'removecomment': 'rem_com',
-            'removelink': 'rem_lnk',
-            'spamcomment': 'spam_com',
-            'spamlink': 'spm_lnk',
-            'sticky': 'stky'}
-        # Raw data
-        data = {}
-        oldest = None
-        headers = ['name']
 
-        # Populate dictionary with results, as well as pull actions and actors
-        for entry in wh.mod.log(limit=over):
+        async with ctx.typing():
+            # fetch subreddit and moderators
+            #   and define the actions we care about.
+            # TODO: Configurable? v Magic String
+            wh = reddit.subreddit('WiiHacks')
+            mods = tuple(sorted([mod.name for mod in list(wh.moderator())]))
+            metered_actions = {
+                'approvecomment': 'app_com',
+                'approvelink': 'app_lnk',
+                'distinguish': 'dst',
+                'ignorereports': 'ign_rep',
+                'lock': 'lck',
+                'removecomment': 'rem_com',
+                'removelink': 'rem_lnk',
+                'spamcomment': 'spam_com',
+                'spamlink': 'spm_lnk',
+                'sticky': 'stky'}
+            # Raw data
+            data = {}
+            oldest = None
+            headers = ['name']
 
-            # Filter
-            # TODO: Make this variable/configurable?
-            if entry._mod not in mods or \
-                    entry.action not in metered_actions.keys():
-                continue
+            # Populate dictionary with results
+            #   as well as pull actions and actors
+            for entry in wh.mod.log(limit=over):
 
-            # save Oldest
-            if oldest is None:
-                oldest = entry.created_utc
-            elif entry.created_utc < oldest:
-                oldest = entry.created_utc
+                # Filter
+                # TODO: Make this variable/configurable?
+                if entry._mod not in mods or \
+                        entry.action not in metered_actions.keys():
+                    continue
 
-            # If mod isn't present, record them.
-            if entry._mod not in data:
-                data[entry._mod] = {}
+                # save Oldest
+                if oldest is None:
+                    oldest = entry.created_utc
+                elif entry.created_utc < oldest:
+                    oldest = entry.created_utc
 
-            # New action for mod.
-            if entry.action not in data[entry._mod]:
-                data[entry._mod][entry.action] = 1
+                # If mod isn't present, record them.
+                if entry._mod not in data:
+                    data[entry._mod] = {}
 
-            # Increment (If you've reached here we have both mod + action)
-            data[entry._mod][entry.action] += 1
+                # New action for mod.
+                if entry.action not in data[entry._mod]:
+                    data[entry._mod][entry.action] = 1
 
-        # Pull detected actors and actions
-        actors = tuple(sorted([a for a in data]))
-        actions = []
-        for actor in actors:
-            actions += list(data[actor].keys())
-        actions = tuple(sorted(list(dict.fromkeys(actions))))
-        for action in actions:
-            headers.append(metered_actions[action])
+                # Increment (If you've reached here we have both mod + action)
+                data[entry._mod][entry.action] += 1
 
-        # Flatten the data
-        # TODO: Mods that don't have stats don't show up
-        flats = []
-        for mod in mods:
-            temp = [mod]
+            # Pull detected actors and actions
+            actors = tuple(sorted([a for a in data]))
+            actions = []
+            for actor in actors:
+                actions += list(data[actor].keys())
+            actions = tuple(sorted(list(dict.fromkeys(actions))))
             for action in actions:
-                if action in metered_actions.keys():
-                    if mod in data and action in data[mod]:
-                        temp.append(int(data[mod][action]))
-                    else:
-                        temp.append(0)
-            flats.append(tuple(temp))
+                headers.append(metered_actions[action])
 
-        # Output Stats
-        import datetime
-        import prettytable
-        table = prettytable.PrettyTable(headers)
-        for row in flats:
-            table.add_row(row)
-        await ctx.send(f"""```
-{table}
+            # Flatten the data
+            # TODO: Mods that don't have stats don't show up
+            flats = []
+            for mod in mods:
+                temp = [mod]
+                for action in actions:
+                    if action in metered_actions.keys():
+                        if mod in data and action in data[mod]:
+                            temp.append(int(data[mod][action]))
+                        else:
+                            temp.append(0)
+                flats.append(tuple(temp))
+
+            # Output Stats
+            import datetime
+            import prettytable
+            table = prettytable.PrettyTable(headers)
+            for row in flats:
+                table.add_row(row)
+            await ctx.send(f"""```{table}
 Oldest Log Entry: {str(datetime.datetime.fromtimestamp(oldest))}
 ```""")
