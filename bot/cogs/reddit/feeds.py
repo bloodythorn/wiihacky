@@ -11,7 +11,6 @@ import cogs.reddit.utils as utils
 from datetime import timedelta
 
 # TODO: Top Posts for Today
-# TODO: Multireddit stuff
 # TODO: This needs a lot of doccu attention.
 # !fee sub add wiihacks-comment wiihacks 711058635215601746 comments
 # !fee sub add wiihacks-new wiihacks 711058353660362782 new

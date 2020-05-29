@@ -1,3 +1,4 @@
+import checks
 import cogs.reddit.utils as utils
 import constants
 import discord
@@ -7,12 +8,14 @@ import os
 import praw
 import typing as typ
 
+
 # TODO: Upvote/downvote query.
 # TODO: watch for upvote/down vote, tally per user, use as money.
 # todo: strip &#x200B;
 # todo: persistence
 
 reddit_config_group = 'reddit'
+moderator_and_up = ['Admin', 'Vice Admin', 'Moderator']
 
 log = lg.getLogger(__name__)
 
@@ -95,8 +98,8 @@ class Reddit(disextc.Cog):
 
     # Reddit Group Commands
 
-    @disextc.group(name='red', hidden=True)
-    @disextc.is_owner()
+    @disextc.group(name='red')
+    @checks.has_role(moderator_and_up)
     async def reddit_group(self, ctx: disextc.Context):
         """ Grouping for the reddit cog commands. """
         if ctx.invoked_subcommand is None:
@@ -145,19 +148,24 @@ class Reddit(disextc.Cog):
 
     # Moderator Group Commands
 
-    @reddit_group.group(name='mod', hidden=True)
-    @disextc.is_owner()
+    @reddit_group.group(name='mod')
+    @checks.has_role(moderator_and_up)
     async def moderator_group(self, ctx: disextc.Context):
         """Grouping for moderator commands."""
         # TODO: Handle error more gracefully
         if ctx.invoked_subcommand is None:
             await ctx.send(f'reddit moderator subcommand not given')
 
-    @moderator_group.command(name='stats', hidden=True)
-    @disextc.is_owner()
+    @moderator_group.command(name='stats')
+    @checks.has_role(moderator_and_up)
     async def moderator_statistics(
             self, ctx: disextc.Context, over: int = 500):
         """ Retrieve the stats for mod actions. """
+        # TODO: Add totals to columns/rows
+        # Protection
+        if over > 5000:
+            await ctx.send(f'``` Cannot parse more than 5000 entries. ```')
+            return
 
         # Warn user for delay
         # TODO: Move this to personality.
