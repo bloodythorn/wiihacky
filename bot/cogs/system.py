@@ -98,7 +98,8 @@ class System(disextc.Cog):
         if self.log_channel is None:
             return
         log_chan = self.bot.get_channel(self.log_channel)
-        await log_chan.send(message)
+        if log_chan is not None:
+            await log_chan.send(message)
 
     # Listeners
 
@@ -180,6 +181,8 @@ class System(disextc.Cog):
     @system_group.command(name='log', hidden=True)
     @disextc.is_owner()
     async def log_command(self, ctx: disextc.Context, *, message: str):
+        # TODO: Make Log Entry and Paginate!
+        #   Turn this into a decorator
         """Sends text to discord log."""
         await self.send_to_log(message)
 

@@ -1,62 +1,27 @@
-USE mysql;
-SELECT User, Host, plugin FROM mysql.user;
+User Registration system:
 
+User_Table -> A database that stores
+Columns:
+  Discord_id:
+    Source -> discord user snowflake id
+    type -> long integer
+  Reddit
 
-CREATE USER 'user'@'localhost' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON *.* TO 'user'@'localhost';
-UPDATE user SET plugin='auth_socket' WHERE User='user';
-FLUSH PRIVILEGES;
-exit;
+Functions:
 
-show variables like 'validate_password%';
-SET GLOBAL validate_password.check_user_name=OFF;
-SET GLOBAL validate_password.length=1;
-SET GLOBAL validate_password.policy=LOW;
-SET GLOBAL validate_password.mixed_case_count=0;
-SET GLOBAL validate_password.number_count=0;
-SET GLOBAL validate_password.special_char_count=0;
+  update userlist -> make sure each user is cataloged
+  add/remove user
+  register reddit account -> add reddit account to records
+    this should be unique but someone could possibly give a duplicate
+  validate user -> mark the user as having gone through the validation process
 
+Routines:
 
-1. set root user to mysql_native_password
-
-$ sudo mysql -u root -p # I had to use "sudo" since is new installation
-
-mysql:~ USE mysql;
-SELECT User, Host, plugin FROM mysql.user;
-mysql:~ UPDATE user SET plugin='mysql_native_password' WHERE User='root';
-mysql:~ FLUSH PRIVILEGES;
-mysql:~ exit;
-
-$ service mysql restart 
-
-Mysql change user password using the following method:
-
-    Open the bash shell and connect to the server as root user
-    mysql -u root -h localhost -p
-    Run command:
-    ALTER USER 'user'@'localhost' IDENTIFIED BY 'password';
-
-    
+  Last online
 
 Reddit:
 
-What will I need for the feed?
-
-  A from. reddit/subreddit/multireddit feed.
-
-Comment Feed (No sends, just reads, access to redditors)
-  From and To (reddit to group->channel)
-  Paginate Comments
-Post Feed (no sends, just reads, access to redditors)
-  from and to (subreddit new/top/etc, or multi-reddit feed)
-  paginate posts
-User catalog
-  On start up reads recorded users in db (creates table if none)
-  Then reads the active users in the discord
-    Compare -> record news
-  These All need to be tracked per user
-    On Join/On Part
-    on online/offline
+#######################
 
 System:
   A Discord/console/file out collective logger 

@@ -1,6 +1,6 @@
-import checks
 import cogs.reddit.utils as utils
 import constants
+import decorators
 import discord
 import discord.ext.commands as disextc
 import logging as lg
@@ -13,6 +13,10 @@ import typing as typ
 # TODO: watch for upvote/down vote, tally per user, use as money.
 # todo: strip &#x200B;
 # todo: persistence
+# TODO: Submission/Comment search
+# TODO: Search by timestamp
+# https://www.reddit.com/r/redditdev/comments/5gfvik/praw_getting_all_submissions_for_the_past_two/
+# https://praw.readthedocs.io/en/latest/code_overview/models/subreddit.html?highlight=submissions#praw.models.Subreddit.submissions
 
 reddit_config_group = 'reddit'
 moderator_and_up = ['Admin', 'Vice Admin', 'Moderator']
@@ -99,7 +103,7 @@ class Reddit(disextc.Cog):
     # Reddit Group Commands
 
     @disextc.group(name='red')
-    @checks.has_role(moderator_and_up)
+    @decorators.has_role(moderator_and_up)
     async def reddit_group(self, ctx: disextc.Context):
         """ Grouping for the reddit cog commands. """
         if ctx.invoked_subcommand is None:
@@ -110,14 +114,14 @@ class Reddit(disextc.Cog):
     async def inbox_command(self, ctx: disextc.Context):
         # TODO: Turn this into a group with inbox functions.
         await ctx.send(
-            f'```Inbox->All: {list(await self.reddit.inbox.all())}```')
+            f'```Inbox->All: {list((await self.reddit).inbox.all())}```')
 
     @reddit_group.command(name='id', hidden=True)
     @disextc.is_owner()
     async def get_profile_command(self, ctx: disextc.Context, redditor: str):
         """ This retrieves a redditor's profile. """
         result: praw.reddit.models.Redditor = \
-            await self.reddit.redditor(redditor)
+            (await self.reddit).redditor(redditor)
         if result is None:
             await ctx.send(f'Could not find redditor: {redditor}')
         else:
@@ -136,20 +140,20 @@ class Reddit(disextc.Cog):
         #   eu4iwf -> Self Post
         #   gjmvt8 -> Video Post
         submission: praw.reddit.Submission = \
-            await self.reddit.submission(id=sub_id)
+            (await self.reddit).submission(id=sub_id)
         await utils.display_submission(self.bot, ctx, submission)
 
     @reddit_group.command(name='com', hidden=True)
     @disextc.is_owner()
     async def get_comment_command(self, ctx: disextc.Context, com_id: str):
         """ Retrieve Comment."""
-        comment: praw.reddit.Comment = await self.reddit.comment(com_id)
+        comment: praw.reddit.Comment = (await self.reddit).comment(com_id)
         await utils.display_comment(self.bot, ctx, comment)
 
     # Moderator Group Commands
 
     @reddit_group.group(name='mod')
-    @checks.has_role(moderator_and_up)
+    @decorators.has_role(moderator_and_up)
     async def moderator_group(self, ctx: disextc.Context):
         """Grouping for moderator commands."""
         # TODO: Handle error more gracefully
@@ -157,7 +161,8 @@ class Reddit(disextc.Cog):
             await ctx.send(f'reddit moderator subcommand not given')
 
     @moderator_group.command(name='stats')
-    @checks.has_role(moderator_and_up)
+    @decorators.has_role(moderator_and_up)
+    @decorators.log_invocation()
     async def moderator_statistics(
             self, ctx: disextc.Context, over: int = 500):
         """ Retrieve the stats for mod actions. """

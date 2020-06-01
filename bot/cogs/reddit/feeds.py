@@ -1,3 +1,4 @@
+import asyncio
 import discord
 import discord.ext.commands as disextc
 import discord.ext.tasks as disextt
@@ -7,41 +8,66 @@ import typing as typ
 
 import cogs.reddit.utils as utils
 
-
 from datetime import timedelta
 
 # TODO: Top Posts for Today
 # TODO: This needs a lot of doccu attention.
-# !fee sub add wiihacks-comment wiihacks 711058635215601746 comments
+# TODO: Debug logging in commands
+# TODO: So far new and comments are all that's implemented in FeedModes
+# TODO: Feed Commands should be put in documentation
+# !fee sub add wiihacks-comments wiihacks 711058635215601746 comments
 # !fee sub add wiihacks-new wiihacks 711058353660362782 new
-# !fee mul add bloodythorn-gaming-new bloodythorn gaming 715415648095961090 new
-feed_config_group = 'feeds'
+
+config_group_reddit = 'reddit'
+config_group_feeds = 'feeds'
 log = lg.getLogger(__name__)
 
 
 # Feed Modes
 
 class FeedMode:
-    def __init__(self, mode_name: str):
+
+    """ The base class for a feed mode.
+
+    Since the base feed mode doesn't require any extra information the only
+    thing stored is the mode_name.
+    """
+
+    def __init__(self, mode_name: str) -> None:
+        """ Init Class """
         self._mode_name = mode_name
         self._cache = None
 
     @staticmethod
-    def verify_mode(name: str):
+    def verify_mode(name: str) -> bool:
+        """ Verify Mode Name
+
+        This will return true if the string given matches one of the two feed
+        mode types for this class.
+        """
         return name in ['new', 'comments']
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """ Getter for self._name """
         return self._mode_name
 
-    def to_dict(self):
-        output = vars(self)
+    def to_dict(self) -> dict:
+        """ Output class to dict()."""
+        output = dict()
+        output['mode_name'] = self._mode_name
         return output
 
-    async def get_new_posts(self,
-                            feed_source: typ.Union[
-                                praw.reddit.Subreddit,
-                                praw.reddit.models.Multireddit]):
+    async def get_new_posts(
+            self,
+            feed_source: typ.Union[
+                praw.reddit.Subreddit,
+                praw.reddit.models.Multireddit]):
+        """ Get new posts.
+
+        Return a list of 'new' posts, timewise from the last time the command
+        was checked. For the first time it returns an empty set.
+        """
         new_list = None
         if self._mode_name == 'new':
             new_list = list(feed_source.new(limit=10))
@@ -67,6 +93,11 @@ class FeedMode:
                       feed_source: typ.Union[
                         praw.reddit.Subreddit,
                         praw.reddit.models.Multireddit]) -> None:
+        """ Execute mode.
+
+        Each time this is run, it will determine if there is anything to do and
+        if so, do it.
+        """
         new_posts = await self.get_new_posts(feed_source)
         for post in new_posts:
             if isinstance(post, praw.reddit.Comment):
@@ -79,6 +110,7 @@ class FeedMode:
                     clear=False, stop=False, eject=False)
 
 
+# TODO: Finish
 class PeriodMode(FeedMode):
     def __init__(self, mode_name: str, period: timedelta):
         super().__init__(mode_name)
@@ -90,6 +122,7 @@ class PeriodMode(FeedMode):
         return name in ['hot', 'rising']
 
 
+# TODO: Finish
 class TimeFrameMode(PeriodMode):
     def __init__(self, mode_name, period: timedelta, tf: str):
         super().__init__(mode_name, period)
@@ -114,28 +147,31 @@ class Feed:
 
     Parameters
     -----------
-    name: :class:`str`
+    feed_name: :class:`str`
         The name of the feed.
     channel_id: :class:`int`
         Snowflake ID of the channel to broadcast
 
     """
-    def __init__(self, name: str, channel_id: int):
-        self._name = name
+    def __init__(self, feed_name: str, channel_id: int):
+        self._feed_name = feed_name
         self._channel_id = channel_id
         self._mode = None
-    # TODO: from_dict
+
+    # TODO: from_dict should give either subreddit or reddit feed?
 
     @property
-    def name(self) -> str:
-        return self._name
+    def feed_name(self) -> str:
+        return self._feed_name
 
     @property
     def channel_id(self) -> int:
         return self._channel_id
 
     def to_dict(self):
-        output = vars(self)
+        output = dict()
+        output['feed_name'] = self._feed_name
+        output['channel_id'] = self._channel_id
         output['mode'] = self._mode.to_dict()
         return output
 
@@ -150,11 +186,11 @@ class SubredditFeed(Feed):
     mode:
     """
     def __init__(self,
-                 name: str,
+                 feed_name: str,
                  channel_id: int,
                  subreddit: str,
                  mode: str):
-        super().__init__(name, channel_id)
+        super().__init__(feed_name, channel_id)
         self._subreddit = subreddit
         self._mode = get_mode(mode)(mode)
 
@@ -165,6 +201,30 @@ class SubredditFeed(Feed):
     @property
     def mode(self):
         return self._mode
+
+    @classmethod
+    def from_dict(cls, obj: dict):
+        if all([
+            'feed_name' in obj,
+            'channel_id' in obj,
+            'subreddit' in obj,
+            'mode' in obj,
+            'mode_name' in obj['mode']
+        ]):
+            return cls(
+                feed_name=obj['feed_name'],
+                channel_id=obj['channel_id'],
+                subreddit=obj['subreddit'],
+                mode=obj['mode']['mode_name']
+            )
+        else:
+            raise RuntimeError('Unable to parse SubredditFeed from dict:'
+                               f'{obj}')
+
+    def to_dict(self):
+        output = super().to_dict()
+        output['subreddit'] = self._subreddit
+        return output
 
     async def execute(self, bot: disextc.Bot, reddit: praw.Reddit):
         subreddit = reddit.subreddit(self._subreddit)
@@ -183,12 +243,12 @@ class MultiredditFeed(Feed):
     mode:
     """
     def __init__(self,
-                 name: str,
+                 feed_name: str,
                  channel_id: int,
                  user: str,
                  multi: str,
                  mode: str):
-        super().__init__(name, channel_id)
+        super().__init__(feed_name, channel_id)
         self._user = user
         self._multi = multi
         self._mode: FeedMode = get_mode(mode)(mode)
@@ -201,11 +261,40 @@ class MultiredditFeed(Feed):
     def mode(self):
         return self._mode
 
+    @classmethod
+    def from_dict(cls, obj: dict):
+        if all([
+            'feed_name' in obj,
+            'channel_id' in obj,
+            'user' in obj,
+            'multi' in obj,
+            'mode' in obj,
+            'mode_name' in obj['mode']
+        ]):
+            return cls(
+                feed_name=obj['feed_name'],
+                channel_id=obj['channel_id'],
+                user=obj['user'],
+                multi=obj['multi'],
+                mode=obj['mode']['mode_name']
+            )
+        else:
+            raise RuntimeError('Unable to parse Multireddit Feed from dict:'
+                               f' {obj}')
+
+    def to_dict(self):
+        output = super().to_dict()
+        output['user'] = self._user
+        output['multi'] = self._multi
+        return output
+
     async def execute(self, bot: disextc.Bot, reddit: praw.Reddit):
         multireddit = reddit.multireddit(redditor=self._user, name=self._multi)
         channel = bot.get_channel(self._channel_id)
         await self._mode.execute(bot, channel, multireddit)
 
+
+# Utilities
 
 def get_mode(
         modestr: str
@@ -223,17 +312,40 @@ def get_mode(
         raise Exception(f'Unknown mode name: {modestr}')
 
 
+def feed_from_dict(
+        obj: dict
+) -> typ.Optional[typ.Union[SubredditFeed, MultiredditFeed]]:
+    """Convert from Dictionary
+
+    Given a dictionary this function will attempt to return a parsed object.
+    """
+    log.debug(f'from_dict fired: {obj}')
+    if 'subreddit' in obj:
+        return SubredditFeed.from_dict(obj)
+    return None
+
+
 class Feeds(disextc.Cog):
 
     def __init__(self, bot: disextc.Bot):
         super().__init__()
         self.bot = bot
         self.feeds = {}
+        self._feeds_loaded = False
         self.feed_processing_loop.start()
+
+    # Events
 
     @disextc.Cog.listener()
     async def on_ready(self):
-        await self.load_feeds()
+        """ Prep the Cog on load. """
+        await self.bot.wait_until_ready()
+        # FIXME: Right now this will just go on forever, every 5 seconds...
+        #   Might want to put a max-retry, or incrementing timer for retry.
+        while not self._feeds_loaded:
+            await asyncio.sleep(5)
+            self._feeds_loaded = await self.load_feeds()
+
     # Processes
 
     @disextt.loop(seconds=5.0)
@@ -242,9 +354,8 @@ class Feeds(disextc.Cog):
         await self.bot.wait_until_ready()
         try:
             reddit = await self.bot.get_cog('Reddit').reddit
-            if self.feeds is not None:
-                for feed in self.feeds.values():
-                    await feed.execute(self.bot, reddit)
+            for feed in self.feeds.values():
+                await feed.execute(self.bot, reddit)
         except Exception as e:
             lg.getLogger(__name__).debug(
                 f'Exception During Reddit Access: {e.args}')
@@ -258,21 +369,31 @@ class Feeds(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send('```' + repr(self.feeds) + '```')
 
-    async def load_feeds(self) -> None:
+    async def load_feeds(self) -> bool:
         """Loads or saves feeds to/from config file. """
+
         # Get Config Cog
         config = self.bot.get_cog('Config')
         if config is None:
             log.error('Could not load config cog to load feed config')
-            return
-        if 'reddit' not in config.data:
+            return False
+
+        # Check for reddit group
+        if config_group_reddit not in config.data:
             log.error('Reddit not configured.')
-            self.feeds = {}
-            return
-        if 'feeds' not in config.data['reddit']:
+            return False
+
+        # Check for feeds group in reddit group
+        if config_group_feeds not in config.data[config_group_reddit]:
             log.error('Feeds not configured in Reddit.')
-            self.feeds = {}
-            return
+            return False
+
+        # Grab the feed group and put them in.
+        feed_group = config.data[config_group_reddit][config_group_feeds]
+        for feed_data in feed_group.values():
+            await self.add_feed(feed_from_dict(feed_data))
+        log.debug('Feeds Loaded.')
+        return True
 
     async def save_feeds(self) -> None:
         """Loads or saves feeds to/from config file. """
@@ -280,29 +401,54 @@ class Feeds(disextc.Cog):
         config = self.bot.get_cog('Config')
         if config is None:
             log.error('Could not load config cog to save feed config')
-            return
-        if 'reddit' not in config.data:
-            # TODO: FIXME
-            # config.data.update(reddit_config_defaults)
-            pass
-        log.debug('save feeds not implemented.')
+            raise RuntimeError('Could not load config cog to save feed config')
+        # Check for reddit group
+        if config_group_reddit not in config.data:
+            config.data[config_group_reddit] = {}
+        if config_group_feeds not in config.data[config_group_reddit]:
+            config.data[config_group_reddit][config_group_feeds] = {}
+
+        if self.feeds is None:
+            self.feeds = {}
+        for feed in self.feeds.values():
+            log.debug(f'Saving: {feed.feed_name}')
+            config.data[config_group_reddit][config_group_feeds][feed.feed_name] = feed.to_dict()
+            await config.save_config()
+        log.debug('Feeds saved.')
 
     async def add_feed(self, feed: Feed) -> None:
-        if feed.name in self.feeds:
+        # TODO: Docu and log
+        if feed.feed_name in self.feeds:
             raise KeyError('Entry already exists')
-        self.feeds[feed.name] = feed
-        await self.save_feeds()
+        self.feeds[feed.feed_name] = feed
 
     async def remove_feed(self, name: str) -> None:
+        # TODO: Docu and log
         if name not in self.feeds:
             raise KeyError('Entry not in dict.')
         self.feeds[name] = None
+
+    @feed_group.command(name='save', hidden=True)
+    @disextc.is_owner()
+    async def save_feeds_command(self, ctx: disextc.Context):
+        """Saves feeds for persistence."""
         await self.save_feeds()
+        log.info('Feeds saved.')
+        await ctx.send('Feeds saved.')
+
+    @feed_group.command(name='load', hidden=True)
+    @disextc.is_owner()
+    async def load_feeds_command(self, ctx: disextc.Context):
+        """Loads feeds from memory."""
+        await self.load_feeds()
+        log.debug('Feeds loaded.')
+        await ctx.send('Feeds loaded.')
 
     @feed_group.command(name='rem', hidden=True)
     @disextc.is_owner()
     async def remove_feed_command(
             self, ctx: disextc.Context, feed_name: str) -> None:
+        # TODO: Log and docu
         if feed_name in self.feeds:
             self.feeds.pop(feed_name)
             await ctx.send(f'Removed feed: {feed_name}')
@@ -312,6 +458,7 @@ class Feeds(disextc.Cog):
     @feed_group.group(name='sub', hidden=True)
     @disextc.is_owner()
     async def subreddit_feed_group(self, ctx: disextc.Context) -> None:
+        # TODO: reformat this.
         if ctx.invoked_subcommand is None:
             await ctx.send(
                 '```' +
@@ -328,8 +475,9 @@ class Feeds(disextc.Cog):
             channel_id: int,
             feed_type: str,
     ) -> None:
+        # FIXME: This currently only handles one type of mode.
         feed = SubredditFeed(
-            name=feed_name,
+            feed_name=feed_name,
             subreddit=subreddit_name,
             channel_id=channel_id,
             mode=feed_type)
@@ -347,13 +495,15 @@ class Feeds(disextc.Cog):
         except Exception as e:
             raise Exception(f'Argument subreddit_name not found {e}.')
 
-        self.feeds[feed.name] = feed
+        await self.add_feed(feed)
 
         await ctx.send(f'```Created feed {repr(feed)} {channel} {sub}```')
+        # TODO: Send to discord log
 
     @feed_group.group(name='mul', hidden=True)
     @disextc.is_owner()
     async def multireddit_feed_group(self, ctx: disextc.Context) -> None:
+        # TODO: Reformat this
         if ctx.invoked_subcommand is None:
             await ctx.send(
                 '```' +
@@ -371,8 +521,9 @@ class Feeds(disextc.Cog):
             channel_id: int,
             feed_type: str
     ) -> None:
+        # FIXME: This currently only handles one type of feed
         feed = MultiredditFeed(
-            name=feed_name,
+            feed_name=feed_name,
             user=user_name,
             multi=multi_name,
             channel_id=channel_id,
@@ -391,6 +542,6 @@ class Feeds(disextc.Cog):
         except Exception as e:
             raise Exception(f'Argument subreddit_name not found {e}.')
 
-        self.feeds[feed.name] = feed
+        await self.add_feed(feed)
 
         await ctx.send(f'```Created feed {repr(feed)} {channel} {multi}```')
