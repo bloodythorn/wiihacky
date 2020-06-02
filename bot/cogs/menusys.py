@@ -15,6 +15,7 @@ class MenuSys(disextc.Cog):
 
     # Listeners
 
+    # FIXME: Something about this.
     # @disextc.Cog.listener(name='on_command_error')
     # async def command_error(self, ctx: disextc.Context, error):
     #    """ Error Handler for commands. """

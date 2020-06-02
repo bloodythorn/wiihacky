@@ -185,6 +185,7 @@ class System(disextc.Cog):
         #   Turn this into a decorator
         """Sends text to discord log."""
         await self.send_to_log(message)
+        await ctx.send(f"Sent '{message}' to the log.")
 
     @system_group.command(name='shutdown', hidden=True)
     @disextc.is_owner()
@@ -205,11 +206,7 @@ class System(disextc.Cog):
     @system_group.group(name='cog', hidden=True)
     @disextc.is_owner()
     async def cogs_group(self, ctx: disextc.Context) -> None:
-        """ Cog related commands.
-
-        :param ctx -> Invocation context
-        :return None
-        """
+        """ Cog related commands. """
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
@@ -240,6 +237,48 @@ class System(disextc.Cog):
         pag.add_line(repr(installed_cogs))
         for page in pag.pages:
             await ctx.send(page)
+
+    @cogs_group.command(name='load', hidden=True)
+    @disextc.is_owner()
+    async def load_cog_command(self, ctx: disextc.Context, name: str):
+        """ Loads given extension/cog. """
+        # Proper case for cogging.
+        final_name = name[0].upper() + name[1:].lower()
+        from __main__ import installed_cogs
+        if final_name not in installed_cogs:
+            raise disextc.CommandError(
+                f'{name} not found in installed cogs.')
+        self.bot.load_extension('cogs.' + name.lower())
+        await ctx.send(f'{name} cog has been loaded.')
+
+    @cogs_group.command(name='unload', hidden=True)
+    @disextc.is_owner()
+    async def unload_cog_command(self, ctx: disextc.Context, name: str):
+        """ Unloads given extension/cog. """
+        cog = self.bot.get_cog(name)
+        if cog is None:
+            raise disextc.CommandError(
+                f'No cog found with the name {name}.')
+        self.bot.unload_extension('cogs.' + name.lower())
+        await ctx.send(f'{name} cog unloaded.')
+
+    @cogs_group.command(name='reload', hidden=True)
+    @disextc.is_owner()
+    async def reload_cog_command(
+            self, ctx: disextc.Context, name: str) -> None:
+        """Reloads given cog."""
+        cog = self.bot.get_cog(name)
+        if cog is None:
+            from __main__ import installed_cogs
+            final_name = name[0].upper() + name[1:].lower()
+            if final_name not in installed_cogs:
+                raise disextc.CommandError(
+                    f'No cog found with the name {name}.')
+            else:
+                raise disextc.CommandError(
+                    f'That cog is currently not loaded.')
+        self.bot.reload_extension('cogs.' + name.lower())
+        await ctx.send(f'{name} cog reloaded.')
 
 
 def setup(bot: disextc.Bot) -> None:
