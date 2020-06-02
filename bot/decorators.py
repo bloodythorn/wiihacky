@@ -4,8 +4,6 @@ import typing as typ
 
 import constants
 
-# TODO: Make a check that logs the function to registered logging
-
 # Log instance for this module
 log = lg.getLogger(__name__)
 

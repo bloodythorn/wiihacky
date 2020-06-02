@@ -30,7 +30,6 @@ stream_handler.setFormatter(log_format)
 log = lg.getLogger()
 log.setLevel(log_level)
 log.addHandler(file_handler)
-# TODO: Make this settable with a command line param
 log.addHandler(stream_handler)
 
 # Set helper lib libraries log levels.
@@ -84,9 +83,6 @@ wh.load_extension('cogs.persona')
 wh.load_extension('cogs.reddit')
 wh.load_extension('cogs.security')
 wh.load_extension('cogs.system')
-# TODO: Discogs?!?
-# TODO: DDG Search
-# TODO: search wii game db
 
 # Attempt to loin to discord
 try:
