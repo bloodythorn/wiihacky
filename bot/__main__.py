@@ -1,3 +1,4 @@
+import aiohttp
 import discord
 import discord.ext.commands as disextc
 import logging as lg
@@ -84,6 +85,7 @@ wh.load_extension('cogs.reddit')
 wh.load_extension('cogs.security')
 wh.load_extension('cogs.system')
 
+# TODO: Retry/fail attempts
 # Attempt to loin to discord
 try:
     log.info('Bot Starting...')
@@ -97,6 +99,9 @@ except KeyError as e:
     exit(-1)
 except discord.errors.LoginFailure as e:
     log.error('Failed to login with given token: {}'.format(e.args))
+    exit(-1)
+except aiohttp.ClientConnectionError as e:
+    log.error(f'Failed to login to discord: {e.args}')
     exit(-1)
 except RuntimeError as e:
     log.info('Loop experienced a runtime error: {}'.format(e.args))

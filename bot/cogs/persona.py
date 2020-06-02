@@ -1,7 +1,7 @@
 import discord.ext.commands as disextc
 from random import choice
 
-# TODO: Wait/one moment question
+# TODO: Wait/one moment question/statement
 
 # TODO: Move these eventually to their own module.
 txt_positive = [

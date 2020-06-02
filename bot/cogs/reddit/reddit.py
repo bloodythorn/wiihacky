@@ -8,6 +8,7 @@ import os
 import praw
 import typing as typ
 
+import cogs.reddit.utils as utils
 
 # TODO: Upvote/downvote query.
 # TODO: watch for upvote/down vote, tally per user, use as money.
@@ -52,11 +53,11 @@ class Reddit(disextc.Cog):
         if not await utils.reddit_credential_check():
             return None
         return praw.Reddit(
-                user_agent=os.environ['REDDIT_USER_AGENT'],
-                client_id=os.environ['REDDIT_CLIENT_ID'],
-                client_secret=os.environ['REDDIT_CLIENT_SECRET'],
-                username=os.environ['REDDIT_USERNAME'],
-                password=os.environ['REDDIT_PASSWORD'])
+            user_agent=os.environ['REDDIT_USER_AGENT'],
+            client_id=os.environ['REDDIT_CLIENT_ID'],
+            client_secret=os.environ['REDDIT_CLIENT_SECRET'],
+            username=os.environ['REDDIT_USERNAME'],
+            password=os.environ['REDDIT_PASSWORD'])
 
     # Listeners
 
@@ -162,15 +163,20 @@ class Reddit(disextc.Cog):
 
     @moderator_group.command(name='stats')
     @decorators.has_role(moderator_and_up)
-    @decorators.log_invocation()
+    # @decorators.log_invocation()
     async def moderator_statistics(
-            self, ctx: disextc.Context, over: int = 500):
+            self,
+            ctx: disextc.Context,
+            over: int = 500,
+            mods_only: bool = True,
+            limit_actions: bool = True):
         """ Retrieve the stats for mod actions. """
         # TODO: Add totals to columns/rows
+        # TODO: Clean this up, it's a mess. Decouple
+
         # Protection
         if over > 5000:
-            await ctx.send(f'``` Cannot parse more than 5000 entries. ```')
-            return
+            raise disextc.CommandError('Cannot parse more than 5000 entries.')
 
         # Warn user for delay
         # TODO: Move this to personality.
@@ -183,7 +189,10 @@ class Reddit(disextc.Cog):
             #   and define the actions we care about.
             # TODO: Configurable? v Magic String
             wh = reddit.subreddit('WiiHacks')
-            mods = tuple(sorted([mod.name for mod in list(wh.moderator())]))
+            users = []
+            if mods_only:
+                users = \
+                    tuple(sorted([mod.name for mod in list(wh.moderator())]))
             metered_actions = {
                 'approvecomment': 'app_com',
                 'approvelink': 'app_lnk',
@@ -195,37 +204,17 @@ class Reddit(disextc.Cog):
                 'spamcomment': 'spam_com',
                 'spamlink': 'spm_lnk',
                 'sticky': 'stky'}
+            if not limit_actions:
+                metered_actions = dict()
+
             # Raw data
-            data = {}
-            oldest = None
+            data, oldest = await utils.tally_moderator_actions(
+                history_limit=over,
+                subreddit=wh,
+                user_names=users,
+                actions_names=list(metered_actions.keys())
+            )
             headers = ['name']
-
-            # Populate dictionary with results
-            #   as well as pull actions and actors
-            for entry in wh.mod.log(limit=over):
-
-                # Filter
-                # TODO: Make this variable/configurable?
-                if entry._mod not in mods or \
-                        entry.action not in metered_actions.keys():
-                    continue
-
-                # save Oldest
-                if oldest is None:
-                    oldest = entry.created_utc
-                elif entry.created_utc < oldest:
-                    oldest = entry.created_utc
-
-                # If mod isn't present, record them.
-                if entry._mod not in data:
-                    data[entry._mod] = {}
-
-                # New action for mod.
-                if entry.action not in data[entry._mod]:
-                    data[entry._mod][entry.action] = 1
-
-                # Increment (If you've reached here we have both mod + action)
-                data[entry._mod][entry.action] += 1
 
             # Pull detected actors and actions
             actors = tuple(sorted([a for a in data]))
@@ -233,20 +222,28 @@ class Reddit(disextc.Cog):
             for actor in actors:
                 actions += list(data[actor].keys())
             actions = tuple(sorted(list(dict.fromkeys(actions))))
+            # If we meter the actions we have replacement headers that are more
+            # readable.
             for action in actions:
-                headers.append(metered_actions[action])
+                if limit_actions:
+                    headers.append(metered_actions[action])
+                else:
+                    headers.append(action[:5])
+            # TODO Add total column header here.
 
             # Flatten the data
-            # TODO: Mods that don't have stats don't show up
+            # FIXME: users that don't have stats don't show up
             flats = []
-            for mod in mods:
-                temp = [mod]
+            for user in users:
+                temp = [user]
                 for action in actions:
-                    if action in metered_actions.keys():
-                        if mod in data and action in data[mod]:
-                            temp.append(int(data[mod][action]))
+                    if (limit_actions and action in metered_actions.keys()) or \
+                            not limit_actions:
+                        if user in data and action in data[user]:
+                            temp.append(int(data[user][action]))
                         else:
                             temp.append(0)
+                # TODO: Add total column here.
                 flats.append(tuple(temp))
 
             # Output Stats
@@ -255,6 +252,7 @@ class Reddit(disextc.Cog):
             table = prettytable.PrettyTable(headers)
             for row in flats:
                 table.add_row(row)
+            log.debug(f'Sending: {table} | {oldest}')
             await ctx.send(f"""```{table}
 Oldest Log Entry: {str(datetime.datetime.fromtimestamp(oldest))}
 ```""")

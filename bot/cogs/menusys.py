@@ -15,16 +15,16 @@ class MenuSys(disextc.Cog):
 
     # Listeners
 
-    @disextc.Cog.listener(name='on_command_error')
-    async def command_error(self, ctx: disextc.Context, error):
-        """ Error Handler for commands. """
-        import cogs.persona
-        persona: cogs.persona.Persona = self.bot.get_cog('Persona')
-        if persona is not None:
-            pag = await paginate(
-                f'{await persona.random_error}: ' +
-                f'{ctx.message.content} -> {error}')
-            await send_paginator(ctx, pag)
+    # @disextc.Cog.listener(name='on_command_error')
+    # async def command_error(self, ctx: disextc.Context, error):
+    #    """ Error Handler for commands. """
+    #    import cogs.persona
+    #    persona: cogs.persona.Persona = self.bot.get_cog('Persona')
+    #    if persona is not None:
+    #        pag = await paginate(
+    #            f'{await persona.random_error}: ' +
+    #            f'{ctx.message.content} -> {error}')
+    #        await send_paginator(ctx, pag)
 
     # MenuSys Group Commands
 
