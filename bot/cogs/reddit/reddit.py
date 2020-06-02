@@ -126,11 +126,15 @@ class Reddit(disextc.Cog):
         if result is None:
             await ctx.send(f'Could not find redditor: {redditor}')
         else:
+            import yaml as yl
+            result._fetch()
+            temp = vars(result)
+            temp['_reddit'] = None
+            # TODO: Paginate this display.
             await constants.send_paginator(
                 ctx, await constants.paginate(
-                    f'{repr(result)} created:{result.created_utc} ' +
-                    f'link karma: {result.link_karma} ' +
-                    f'post karma: {result.comment_karma}'))
+                    f'{yl.safe_dump(temp)}'
+))
 
     @reddit_group.command(name='sub', hidden=True)
     @disextc.is_owner()
