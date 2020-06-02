@@ -72,40 +72,60 @@ class Memory(disextc.Cog):
         appinfo: discord.AppInfo = await self.bot.application_info()
         owner: discord.User = appinfo.owner
 
-        # TODO: Move these to their own functions. Maybe do them Async
-        # MySQL
-        # Check credentials in env
-        if not await self.mysql_credential_check():
-            log.info(txt_no_mysql_creds)
-            pag = await paginate(txt_no_mysql_creds)
-            if owner is not None:
-                await send_paginator(owner, pag)
-            # Check connection to DB
-            if not await self.mysql_connection_check():
-                # TODO: Better failure reason given for troubleshooting purposes
-                sql_could_not_connect = \
-                    'Could not connect with MYSQL creds given.'
-                log.info(sql_could_not_connect)
-                pag = await paginate(sql_could_not_connect)
-                if owner is not None:
-                    await send_paginator(owner, pag)
-
-        # Redis
-        txt_no_redis_creds = "Redis creds not setup in env, redis disabled."
-        if not await self.redis_credentials_check():
-            log.info(txt_no_redis_creds)
-            pag = await paginate(txt_no_redis_creds)
-            if owner is not None:
-                await send_paginator(owner, pag)
-            if not await self.redis_connection_check():
-                redis_could_not_connect = \
-                    "Could not connect with Redis creds given."
-                log.info(redis_could_not_connect)
-                pag = await paginate(redis_could_not_connect)
-                if owner is not None:
-                    await send_paginator(owner, pag)
+        # MySQL & redis checks
+        await asyncio.gather(self.mysql_on_ready(), self.redis_on_ready())
 
     # Helpers
+
+    async def mysql_on_ready(self):
+        """ This performs the initial mysql checks. """
+        txt_no_mysql_creds = \
+            'MYSQL Database credentials not setup, DB functions disabled.'
+        sql_could_not_connect = \
+            'Could not connect with MYSQL creds given.'
+
+        system = self.bot.get_cog('System')
+        if system is None:
+            log.error('System cog unable to be retrieved')
+
+        if not await self.mysql_credential_check():
+            log.error(txt_no_mysql_creds)
+            system = self.bot.get_cog('System')
+            # TODO: Paginate?
+            if system is not None:
+                await system.send_to_log(txt_no_mysql_creds)
+        else:
+            if not await self.mysql_connection_check():
+                # TODO: Better failure reason given for troubleshooting.
+                log.error(sql_could_not_connect)
+                if system is not None:
+                    await system.send_to_log(sql_could_not_connect)
+            else:
+                # Test was a success.
+                log.debug('mysql connection successful.')
+
+    async def redis_on_ready(self):
+        """ This performs the initial redis checks. """
+        txt_no_redis_creds = "Redis creds not setup in env, redis disabled."
+        redis_could_not_connect = "Could not connect with Redis creds given."
+        system = self.bot.get_cog('System')
+        if system is None:
+            log.error('System cog unable to be retrieved.')
+
+        if not await self.redis_credentials_check():
+            log.error(txt_no_redis_creds)
+            # TODO: Paginate?
+            if system is not None:
+                await system.send_to_log(txt_no_redis_creds)
+        else:
+            if not await self.redis_connection_check():
+                log.error(redis_could_not_connect)
+                # TODO: Paginate?
+                if system is not None:
+                    await system.send_to_log(redis_could_not_connect)
+            else:
+                # Test was successful.
+                log.debug('redis connection successful')
 
     @staticmethod
     async def mysql_connection_check() -> bool:

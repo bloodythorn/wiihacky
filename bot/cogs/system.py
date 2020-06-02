@@ -32,7 +32,7 @@ system_defaults = {
 #   on_invite_create, on_invite_delete, on_group_join, on_group_remove
 #   on_relationship_add, on_relationship_update,
 
-txt_cog_sub_err = 'Invalid cog command.'
+txt_cog_sub_err = 'Invalid system cog subcommand.'
 # TODO: Bot.description : maybe after DB hookup?
 # TODO: Confirm Action for more destructive commands.
 # TODO: Get Cog Listeners
