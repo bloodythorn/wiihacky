@@ -2,6 +2,7 @@ import discord as discord
 import discord.ext.commands as disextc
 import logging as lg
 
+# TODO: Get this out of here.
 from constants import paginate, send_paginator
 
 system_defaults = {
@@ -10,13 +11,12 @@ system_defaults = {
     'commands_channel': 'commands',
 }
 
+log = lg.getLogger(__name__)
+
 # TODO:
-#   create a place for bot commands ?
-# TODO: Add logging to functions
+#   Add logging to functions
 #   Logging will need a state of a list of tuples storing guild/channel
-
-
-# TODO:
+#   Cog Functions need logging.
 #   on_message_delete, on_message_edit, on_reaction_clear,
 #   on_reaction_clear_emoji,
 #   on_private_channel_delete, on_private_channel_create,
@@ -31,13 +31,33 @@ system_defaults = {
 #   on_voice_state_update, on_member_ban, on_member_unban,
 #   on_invite_create, on_invite_delete, on_group_join, on_group_remove
 #   on_relationship_add, on_relationship_update,
-
-txt_cog_sub_err = 'Invalid system cog subcommand.'
 # TODO: Bot.description : maybe after DB hookup?
 # TODO: Confirm Action for more destructive commands.
 # TODO: Get Cog Listeners
 # https://discordpy.readthedocs.io/en/latest/ext/commands/cogs.html#inspection
 
+txt_cog_sub_err = 'Invalid system cog subcommand.'
+
+
+# Converters
+
+class FuzzyCogName(disextc.Converter):
+    async def convert(self, ctx, argument: str):
+        from fuzzywuzzy import process
+        results = process.extract(argument, ctx.bot.cogs.keys())
+        log.debug(f'fuzzy results: {results}')
+        # if we have an exact match
+        if results[0][1] == 100:
+            return results[0][0]
+
+        # Apply threshold
+        if (results[0][1] < 75) or (results[0][1] - results[1][1]) < 5:
+            raise disextc.CommandError(f"'{argument}' too ambiguous.")
+
+        return results[0][0]
+
+
+# Classes
 
 class System(disextc.Cog):
     """ Cog responsible for the Bot Operation.
@@ -91,6 +111,7 @@ class System(disextc.Cog):
         await log_chan.send(boot_txt.format(
             discord.__version__, praw.__version__))
         await log_chan.send('Log channel initialized, bot has booted.')
+        # TODO: Output whether in debug or not.
 
     async def send_to_log(self, message: str):
         """Sends a messaged to the designated, connected log channel. """
@@ -210,7 +231,7 @@ class System(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @cogs_group.command(name='act', hidden=True)
+    @cogs_group.command(name='active', hidden=True)
     @disextc.is_owner()
     async def active_command(self, ctx: disextc.Context) -> None:
         """ Lists active cogs.
@@ -220,10 +241,7 @@ class System(disextc.Cog):
         :param ctx -> Invocation Context
         :return None
         """
-        pag = disextc.Paginator()
-        pag.add_line(repr(tuple(ctx.bot.cogs.keys())))
-        for page in pag.pages:
-            await ctx.send(page)
+        await ctx.send('```' + repr(list(ctx.bot.cogs.keys())) + '```')
 
     @cogs_group.command(name='list', hidden=True)
     @disextc.is_owner()
@@ -232,53 +250,54 @@ class System(disextc.Cog):
 
         This will list all the cogs that are currently registered with the bot.
         """
-        from __main__ import installed_cogs
-        pag = disextc.Paginator()
-        pag.add_line(repr(installed_cogs))
-        for page in pag.pages:
-            await ctx.send(page)
+        from __main__ import cog_names
+        await ctx.send('```' + repr(list(cog_names)) + '```')
 
     @cogs_group.command(name='load', hidden=True)
     @disextc.is_owner()
-    async def load_cog_command(self, ctx: disextc.Context, name: str):
+    async def load_cog_command(
+            self, ctx: disextc.Context, name: FuzzyCogName):
         """ Loads given extension/cog. """
-        # Proper case for cogging.
-        final_name = name[0].upper() + name[1:].lower()
-        from __main__ import installed_cogs
-        if final_name not in installed_cogs:
+        from __main__ import cog_names
+        if name not in cog_names:
             raise disextc.CommandError(
                 f'{name} not found in installed cogs.')
-        self.bot.load_extension('cogs.' + name.lower())
+        from __main__ import cog_names, module_names
+        cog_to_module = dict(zip(cog_names, module_names))
+        self.bot.load_extension('cogs.' + cog_to_module[str(name)])
         await ctx.send(f'{name} cog has been loaded.')
 
     @cogs_group.command(name='unload', hidden=True)
     @disextc.is_owner()
-    async def unload_cog_command(self, ctx: disextc.Context, name: str):
+    async def unload_cog_command(
+            self, ctx: disextc.Context, name: FuzzyCogName):
         """ Unloads given extension/cog. """
-        cog = self.bot.get_cog(name)
-        if cog is None:
+        if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
-                f'No cog found with the name {name}.')
-        self.bot.unload_extension('cogs.' + name.lower())
+                f'No loaded cog found with the name {name}.')
+        from __main__ import cog_names, module_names
+        cog_to_module = dict(zip(cog_names, module_names))
+        self.bot.unload_extension('cogs.' + cog_to_module[str(name)])
         await ctx.send(f'{name} cog unloaded.')
 
     @cogs_group.command(name='reload', hidden=True)
     @disextc.is_owner()
     async def reload_cog_command(
-            self, ctx: disextc.Context, name: str) -> None:
+            self, ctx: disextc.Context, name: FuzzyCogName) -> None:
         """Reloads given cog."""
-        cog = self.bot.get_cog(name)
-        if cog is None:
-            from __main__ import installed_cogs
-            final_name = name[0].upper() + name[1:].lower()
-            if final_name not in installed_cogs:
-                raise disextc.CommandError(
-                    f'No cog found with the name {name}.')
-            else:
-                raise disextc.CommandError(
-                    f'That cog is currently not loaded.')
-        self.bot.reload_extension('cogs.' + name.lower())
+        if name not in ctx.bot.cogs.keys():
+            raise disextc.CommandError(
+                f"Could not find cog '{name}' in loaded cog list.")
+        from __main__ import cog_names, module_names
+        cog_to_module = dict(zip(cog_names, module_names))
+        self.bot.reload_extension('cogs.' + cog_to_module[str(name)])
         await ctx.send(f'{name} cog reloaded.')
+
+    @system_group.command(name='test', hidden=True)
+    @disextc.is_owner()
+    async def test_command(self, ctx: disextc.Context, name: FuzzyCogName):
+        """Testing Command"""
+        await ctx.send(f'Preconverted :{name} : {cog_to_module[str(name)]}')
 
 
 def setup(bot: disextc.Bot) -> None:

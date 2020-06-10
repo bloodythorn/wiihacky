@@ -30,7 +30,7 @@ async def was_sent_from_wiihacks(ctx: disextc.Context) -> bool:
 
 # Decorators
 
-def has_role(role_names) -> typ.Callable:
+def has_roles(role_names) -> typ.Callable:
     """ This will check to see if the user has one of the roles provided. """
     async def predicate(ctx: disextc.Context) -> bool:
         if not ctx.guild:  # Return False in a DM

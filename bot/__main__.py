@@ -39,19 +39,10 @@ lg.getLogger('websockets').setLevel(lg.WARNING)
 lg.getLogger('asyncio').setLevel(lg.WARNING)
 lg.getLogger('urllib3.connectionpool').setLevel(lg.WARNING)
 lg.getLogger('prawcore').setLevel(lg.WARNING)
+lg.getLogger('aioredis').setLevel(lg.WARNING)
+
 
 log.info('Logger is setup.')
-
-# A grouping of all installed cogs
-installed_cogs = (
-    cogs.config.Config.qualified_name,
-    cogs.discord.Discord.qualified_name,
-    cogs.memory.Memory.qualified_name,
-    cogs.menusys.MenuSys.qualified_name,
-    cogs.persona.Persona.qualified_name,
-    cogs.reddit.Reddit.qualified_name,
-    cogs.reddit.Feeds.qualified_name,
-    cogs.security.Security.qualified_name,)
 
 # Module Constants
 command_chars = ('!',)
@@ -75,13 +66,45 @@ wh = disextc.Bot(
         state=txt_activity_state,
         details=txt_activity_details))
 
+# I believe this needs to be here
+module_names = (
+    cogs.aliases_mods.__name__[5:],
+    cogs.aliases_users.__name__[5:],
+    cogs.config.__name__[5:],
+    cogs.discord.__name__[5:],
+    cogs.memory.__name__[5:],
+    cogs.menusys.__name__[5:],
+    cogs.persona.__name__[5:],
+    cogs.reddit.reddit.__name__[5:],
+    cogs.reddit.feeds.__name__[5:],
+    cogs.register.__name__[5:],
+    cogs.security.__name__[5:],
+    cogs.system.__name__[5:])
+cog_names = (
+    cogs.aliases_mods.ModAliases.__qualname__,
+    cogs.aliases_users.UserAliases.__qualname__,
+    cogs.config.Config.__qualname__,
+    cogs.discord.Discord.__qualname__,
+    cogs.memory.Memory.__qualname__,
+    cogs.menusys.MenuSys.__qualname__,
+    cogs.persona.Persona.__qualname__,
+    cogs.reddit.reddit.Reddit.__qualname__,
+    cogs.reddit.feeds.Feeds.__qualname__,
+    cogs.register.Register.__qualname__,
+    cogs.security.Security.__qualname__,
+    cogs.system.System.__qualname__)
+
 # Load Cog/Extensions
+wh.load_extension('cogs.aliases_mods')
+wh.load_extension('cogs.aliases_users')
 wh.load_extension('cogs.config')
 wh.load_extension('cogs.discord')
 wh.load_extension('cogs.memory')
 wh.load_extension('cogs.menusys')
 wh.load_extension('cogs.persona')
-wh.load_extension('cogs.reddit')
+wh.load_extension('cogs.reddit.reddit')
+wh.load_extension('cogs.reddit.reddit')
+wh.load_extension('cogs.register')
 wh.load_extension('cogs.security')
 wh.load_extension('cogs.system')
 

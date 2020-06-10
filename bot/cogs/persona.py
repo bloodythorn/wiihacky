@@ -17,7 +17,7 @@ txt_negative = [
     'negatory', 'never', 'nix', 'no', 'not', 'null', 'refusal', 'refuse',
     'reject', 'rejection']
 txt_errors = [
-    'error', 'jive turkey', 'wrong', 'try again', 'psych', 'no can do',
+    'error', 'wrong', 'try again', 'psych', 'no can do',
     'Clarify?', 'Wut da hell?', '...:', 'Hmm?', """Beg'pardon?""",
     'Like I really have nothing better to do than listen to you babble...',
     """User don't know what they want""", 'got bad event:', 'Figure it out.']

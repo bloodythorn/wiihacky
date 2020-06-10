@@ -104,7 +104,7 @@ class Reddit(disextc.Cog):
     # Reddit Group Commands
 
     @disextc.group(name='red')
-    @decorators.has_role(moderator_and_up)
+    @decorators.has_roles(moderator_and_up)
     async def reddit_group(self, ctx: disextc.Context):
         """ Grouping for the reddit cog commands. """
         if ctx.invoked_subcommand is None:
@@ -158,7 +158,7 @@ class Reddit(disextc.Cog):
     # Moderator Group Commands
 
     @reddit_group.group(name='mod')
-    @decorators.has_role(moderator_and_up)
+    @decorators.has_roles(moderator_and_up)
     async def moderator_group(self, ctx: disextc.Context):
         """Grouping for moderator commands."""
         # TODO: Handle error more gracefully
@@ -166,7 +166,7 @@ class Reddit(disextc.Cog):
             await ctx.send(f'reddit moderator subcommand not given')
 
     @moderator_group.command(name='stats')
-    @decorators.has_role(moderator_and_up)
+    @decorators.has_roles(moderator_and_up)
     # @decorators.log_invocation()
     async def moderator_statistics(
             self,
@@ -260,3 +260,7 @@ class Reddit(disextc.Cog):
             await ctx.send(f"""```{table}
 Oldest Log Entry: {str(datetime.datetime.fromtimestamp(oldest))}
 ```""")
+
+def setup(bot: disextc.Bot) -> None:
+    """ Loads reddit cog. """
+    bot.add_cog(Reddit(bot))

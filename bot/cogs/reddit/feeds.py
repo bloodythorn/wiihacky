@@ -15,6 +15,7 @@ from datetime import timedelta
 # TODO: Debug logging in commands
 # TODO: So far new and comments are all that's implemented in FeedModes
 # TODO: Feed Commands should be put in documentation
+# FIXME: For some reason every so often, 10hr old posts will re-post.
 # !fee sub add wiihacks-comments wiihacks 711058635215601746 comments
 # !fee sub add wiihacks-new wiihacks 711058353660362782 new
 
@@ -334,6 +335,9 @@ class Feeds(disextc.Cog):
         self._feeds_loaded = False
         self.feed_processing_loop.start()
 
+    def cog_unload(self):
+        self.feed_processing_loop.cancel()
+
     # Events
 
     @disextc.Cog.listener()
@@ -545,3 +549,7 @@ class Feeds(disextc.Cog):
         await self.add_feed(feed)
 
         await ctx.send(f'```Created feed {repr(feed)} {channel} {multi}```')
+
+def setup(bot: disextc.Bot) -> None:
+    """ Loads reddit cog. """
+    bot.add_cog(Feeds(bot))

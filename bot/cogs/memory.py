@@ -12,6 +12,8 @@ from constants import paginate, send_paginator
 # TODO: Make SQL Console Channel
 # TODO: Clean up what you have
 # TODO: Implement redis
+# todo: db backup
+# https://www.tutorialspoint.com/redis/redis_backup.htm
 
 log = lg.getLogger(__name__)
 
