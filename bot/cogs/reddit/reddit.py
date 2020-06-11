@@ -1,5 +1,3 @@
-import cogs.reddit.utils as utils
-import constants
 import decorators
 import discord
 import discord.ext.commands as disextc
@@ -8,6 +6,7 @@ import os
 import praw
 import typing as typ
 
+import constants
 import cogs.reddit.utils as utils
 
 # TODO: Upvote/downvote query.
@@ -20,7 +19,6 @@ import cogs.reddit.utils as utils
 # https://praw.readthedocs.io/en/latest/code_overview/models/subreddit.html?highlight=submissions#praw.models.Subreddit.submissions
 
 reddit_config_group = 'reddit'
-moderator_and_up = ['Admin', 'Vice Admin', 'Moderator']
 
 log = lg.getLogger(__name__)
 
@@ -103,8 +101,8 @@ class Reddit(disextc.Cog):
 
     # Reddit Group Commands
 
-    @disextc.group(name='red')
-    @decorators.has_roles(moderator_and_up)
+    @disextc.group(name='red', hidden=True)
+    @decorators.with_roles(constants.moderator_and_up)
     async def reddit_group(self, ctx: disextc.Context):
         """ Grouping for the reddit cog commands. """
         if ctx.invoked_subcommand is None:
@@ -133,8 +131,7 @@ class Reddit(disextc.Cog):
             # TODO: Paginate this display.
             await constants.send_paginator(
                 ctx, await constants.paginate(
-                    f'{yl.safe_dump(temp)}'
-))
+                    f'{yl.safe_dump(temp)}'))
 
     @reddit_group.command(name='sub', hidden=True)
     @disextc.is_owner()
@@ -157,17 +154,17 @@ class Reddit(disextc.Cog):
 
     # Moderator Group Commands
 
-    @reddit_group.group(name='mod')
-    @decorators.has_roles(moderator_and_up)
+    @reddit_group.group(name='mod', hidden=True)
+    @decorators.with_roles(constants.moderator_and_up)
     async def moderator_group(self, ctx: disextc.Context):
         """Grouping for moderator commands."""
         # TODO: Handle error more gracefully
         if ctx.invoked_subcommand is None:
             await ctx.send(f'reddit moderator subcommand not given')
 
-    @moderator_group.command(name='stats')
-    @decorators.has_roles(moderator_and_up)
-    # @decorators.log_invocation()
+    # TODO: Decorator for console log output
+    @moderator_group.command(name='stats', hidden=True)
+    @decorators.with_roles(constants.moderator_and_up)
     async def moderator_statistics(
             self,
             ctx: disextc.Context,
@@ -260,6 +257,7 @@ class Reddit(disextc.Cog):
             await ctx.send(f"""```{table}
 Oldest Log Entry: {str(datetime.datetime.fromtimestamp(oldest))}
 ```""")
+
 
 def setup(bot: disextc.Bot) -> None:
     """ Loads reddit cog. """

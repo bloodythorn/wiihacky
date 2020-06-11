@@ -19,8 +19,7 @@ txt_negative = [
 txt_errors = [
     'error', 'wrong', 'try again', 'psych', 'no can do',
     'Clarify?', 'Wut da hell?', '...:', 'Hmm?', """Beg'pardon?""",
-    'Like I really have nothing better to do than listen to you babble...',
-    """User don't know what they want""", 'got bad event:', 'Figure it out.']
+    'got bad event:', 'Figure it out.']
 # TODO: Flesh out insults.
 txt_insults = [
     """You're spare parts, bub.""",

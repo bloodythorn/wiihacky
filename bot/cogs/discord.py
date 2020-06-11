@@ -76,14 +76,18 @@ class Discord(disextc.Cog):
 
     @discord_group.command(name='id', hidden=True)
     @disextc.is_owner()
-    async def multi_id_command(self, ctx: disextc.Context, what: typ.Union[
-                     discord.Member,
-                     discord.TextChannel,
-                     discord.VoiceChannel,
-                     discord.User,
-                     discord.Message,
-                     discord.Guild,
-                     ]) -> None:
+    async def multi_id_command(
+            self,
+            ctx: disextc.Context,
+            what: typ.Union[
+                discord.Member,
+                discord.TextChannel,
+                discord.VoiceChannel,
+                discord.User,
+                discord.Message,
+                discord.Guild,
+                discord.Role,
+            ]) -> None:
         """ ID member, txt/voicechannel, user, message, guild.
 
         This function will take a string and see if it is a member,

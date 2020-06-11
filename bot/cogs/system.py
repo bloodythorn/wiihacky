@@ -293,12 +293,6 @@ class System(disextc.Cog):
         self.bot.reload_extension('cogs.' + cog_to_module[str(name)])
         await ctx.send(f'{name} cog reloaded.')
 
-    @system_group.command(name='test', hidden=True)
-    @disextc.is_owner()
-    async def test_command(self, ctx: disextc.Context, name: FuzzyCogName):
-        """Testing Command"""
-        await ctx.send(f'Preconverted :{name} : {cog_to_module[str(name)]}')
-
 
 def setup(bot: disextc.Bot) -> None:
     """ Loads system cog. """

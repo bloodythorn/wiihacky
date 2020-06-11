@@ -17,7 +17,8 @@ Functions:
 
 Routines:
 
-  Last online
+  Last online -> This should record (recorded in table) when a user goes
+    out of 'online' status, and clears when they are in online.
 
 Reddit:
 

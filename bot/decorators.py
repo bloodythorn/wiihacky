@@ -30,7 +30,28 @@ async def was_sent_from_wiihacks(ctx: disextc.Context) -> bool:
 
 # Decorators
 
-def has_roles(role_names) -> typ.Callable:
+def without_role(role_ids: typ.List[int]) -> typ.Callable:
+    """ This will check to see if the user does not have any role listed."""
+    async def predicate(ctx: disextc.Context) -> bool:
+        if not ctx.guild: # Return false in a DM
+            log.debug(
+                f"{ctx.author} tried to use the '{ctx.command.name}'"
+                "command from a DM. "
+                "This command is restricted by the with_role decorator."
+                "Rejecting request.")
+            raise disextc.CommandError("Cannot run command from DM.")
+
+        for role in ctx.author.roles:
+            log.debug(f'without_role: {role.id} {role_ids}')
+            if role.id in role_ids:
+                disextc.CommandError(
+                    f"The '{role.name}' role prevents you " 
+                    f"from running this command.")
+        return True
+    return disextc.check(predicate)
+
+
+def with_roles(role_ids: typ.List[int]) -> typ.Callable:
     """ This will check to see if the user has one of the roles provided. """
     async def predicate(ctx: disextc.Context) -> bool:
         if not ctx.guild:  # Return False in a DM
@@ -40,10 +61,11 @@ def has_roles(role_names) -> typ.Callable:
                 "This command is restricted by the with_role decorator."
                 "Rejecting request.")
             raise disextc.CommandError("Cannot run command from DM.")
-        exe_roles = [a.name for a in ctx.message.author.roles]
-        for role in role_names:
-            if role in exe_roles:
-                return True
+
+        for role in ctx.author.roles:
+            if role.id in role_ids:
+                if role.id in role_ids:
+                    return True
         raise disextc.CommandError(f'You do not have permissions to use this.')
     return disextc.check(predicate)
 
