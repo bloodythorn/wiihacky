@@ -86,8 +86,7 @@ class Register(disextc.Cog):
         return False
 
     async def is_user(
-            self,
-            user: typ.Union[discord.User, discord.Member]) -> bool:
+            self, user: typ.Union[discord.User, discord.Member]) -> bool:
         """Is User
 
         Verifies if the user is contained in the DB
@@ -124,7 +123,7 @@ class Register(disextc.Cog):
         from cogs.memory import redis_db_scratch
         return await memory.get_redis_pool(redis_db_scratch)
 
-    async def get_next_index(self) -> int:
+    async def get_next_user_index(self) -> int:
         """ Returns and reserves next index."""
         # If the index doesn't exist, create it.
         redis: aioredis.Redis = await self.get_redis()
@@ -243,7 +242,7 @@ class Register(disextc.Cog):
         whu = WiiHacksUser(
             snowflake_id=user.id,
             utc_added=int(datetime.utcnow().timestamp()),
-            registry_id=await self.get_next_index())
+            registry_id=await self.get_next_user_index())
 
         # Okay good to record
         await self.user_write(whu)
@@ -400,11 +399,14 @@ class Register(disextc.Cog):
             return False
         log.debug(f'Found Member: {member}')
 
-        # make sure the message came from the registered account in whu
         whu = await self.user_read(member)
         log.debug(f'Found user: {whu}|{whu.reddit_name}')
+        # User already verified? Nothing to do.
+        if whu.verified:
+            log.warning(f"User '{member.id}' has re-verified.")
+            return True
 
-        # make sure everything matches up.
+        # make sure the message came from the registered account in whu
         if msg.author.name.lower() == whu.reddit_name.lower():
             log.debug(f'Successfully match {msg.author.name.lower()} == '
                       f'{whu.reddit_name.lower()} = '
@@ -453,18 +455,24 @@ class Register(disextc.Cog):
                 return m
 
         log.debug(f'Process Inbox fired.')
-        # grab all unread inbox messages
-        reddit: praw.Reddit = await self.get_reddit()
+        results = None
+        verified = None
+        try:
+            # grab all unread inbox messages
+            reddit: praw.Reddit = await self.get_reddit()
 
-        # Check each one (only messages)
-        in_messages = \
-            [a for a in reddit.inbox.unread(limit=None)
-             if (type(a) == praw.reddit.models.Message)]
-        results = list(zip(
-            in_messages,
-            await asyncio.gather(
-                *(self.check_message(m) for m in in_messages))))
-        verified = list(map(mark_read, results))
+            # Check each one (only messages)
+            in_messages = \
+                [a for a in reddit.inbox.unread(limit=None)
+                 if (type(a) == praw.reddit.models.Message)]
+            results = list(zip(
+                in_messages,
+                await asyncio.gather(
+                    *(self.check_message(m) for m in in_messages))))
+            verified = list(map(mark_read, results))
+        except Exception as e:
+            log.error(
+                f'An error was encountered processing the inbox: {e.args}')
         log.debug(f'{results}|{verified}')
 
     # Processes
@@ -690,15 +698,24 @@ class Register(disextc.Cog):
     async def registration_command(
             self, ctx: disextc.Context, reddit_name: str) -> None:
         """ Register your Reddit account with r/WiiHacks Discord guild."""
+        # TODO: Clean this up, it's a mess
         try:
-            # Pull user to check
+            # Pull user to check, create if they don't exist.
             if not await self.is_user(ctx.author):
                 await self.add_user(ctx.author)
             whu: WiiHacksUser = await self.user_read(ctx.author)
             if whu.last_attempt_failed:
                 raise disextc.CommandError(f're-register fail')
+            # Users can only try this once without moderator intervention.
             whu.last_attempt_failed = True
-            whu.reddit_name = reddit_name
+
+            # Setup reddit name
+            log.debug(f'{reddit_name[0:2]}')
+            if reddit_name[0:2] == 'u/':
+                log.debug(f'Trimming {reddit_name}.')
+                whu.reddit_name = reddit_name[2:]
+            else:
+                whu.reddit_name = reddit_name
             await self.user_write(whu)
             await ctx.send(
                 f'Registering your reddit account as u/{reddit_name}...')

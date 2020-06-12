@@ -222,6 +222,14 @@ class System(disextc.Cog):
             await ctx.send(page)
         await ctx.bot.close()
 
+    # TODO: Make redditor public (alias)
+    @system_group.command(name='hs', hidden=True)
+    @disextc.is_owner()
+    async def health_and_safety_display_command(self, ctx: disextc.Context):
+        """This command displays a mock health and safety screen."""
+        from constants import health_and_safety_text
+        await ctx.send(content="** **\n"+health_and_safety_text)
+
     # Cog Group Commands
 
     @system_group.group(name='cog', hidden=True)

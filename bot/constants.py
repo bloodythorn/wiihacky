@@ -50,14 +50,17 @@ or on the [r/WiiHacks discord](https://discord.com/invite/6fsXnTr) #support
 channel if you aren't verified in 24 hours.
 """
 
-health_and_safety_text = """
-:warning: WARNING-HEALTH AND SAFETY
+health_and_safety_text = """** **
+     :warning: WARNING-HEALTH AND SAFETY
 
 BEFORE PLAYING, READ YOUR OPERATIONS
-MANUAL FOR IMPORTANT INFORMATION
-  ABOUT YOUR HEALTH AND SAFETY.
+  MANUAL FOR IMPORTANT INFORMATION
+      ABOUT YOUR HEALTH AND SAFETY.
 
-       Press Ⓐ to continue.
+                          Also online at
+          www.nintendo.com/healthsafety
+
+                     Press Ⓐ to continue.
 """
 
 
