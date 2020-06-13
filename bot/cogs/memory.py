@@ -201,7 +201,7 @@ class Memory(disextc.Cog):
     @staticmethod
     async def get_redis_pool(database: int):
         return await aioredis.create_redis_pool(
-            f"redis://{os.environ['REDIS_HOST']}/{database}")
+            f"redis://{os.environ['REDIS_HOST']}", db=database)
 
     # Memory Group Commands
 
