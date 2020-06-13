@@ -14,13 +14,19 @@ import constants
 import decorators
 
 log = lg.getLogger(__name__)
+
 index_key = 'registry_index'
 user_prefix = 'user:'
 snowflake_prefix = 'snowflake:'
 reddit_prefix = 'reddit:'
 redditor_role = 'Redditor'
 username_regex = re.compile(r'^([^#]*)#([0-9]*)')
-updown_vote_regex = re.compile(r'^(up|down)([_]?vote)?$')
+up_down_vote_regex = re.compile(r'^(up|down)([_]?vote)?$')
+thumbs_up = '👍'
+thumbs_down = '👎'
+reddit_user_role_id = 708924829679747073
+up_vote_emoji_id = 718726011759493126
+down_vote_emoji_id = 718725629847142410
 
 
 @dc.dataclass()
@@ -51,38 +57,51 @@ class Register(disextc.Cog):
         super().__init__()
         self.bot = bot
         self.check_inbox_process.start()
-        self.sync_users_process.start()
+        # self.sync_users_process.start()
 
     def cog_unload(self):
         pass
         self.check_inbox_process.cancel()
-        self.sync_users_process.cancel()
+        # self.sync_users_process.cancel()
 
     # Checks
 
     @staticmethod
     def in_context(reaction: discord.Reaction, user: discord.User) -> bool:
-        # TODO: Currently it's a free-for all. Refine this later maybe?
-        # TODO: Context Considerations:
-        #   reaction.message.author
-        #   reaction.emoji.name
-        #   user
+        # Currently it's a free-for all. Refine this later maybe?
+        # Context Considerations:
+        # reaction.message.author reaction.emoji.name user
         return True
 
     @staticmethod
     def is_up_vote(emoji: discord.Emoji) -> bool:
+        """Detects if the emoji qualifies as an 'up vote'. """
+        log.debug(f'Testing for up vote: {emoji}')
         if hasattr(emoji, 'name'):
-            _result = re.match(updown_vote_regex, emoji.name)
-            if _result is not None and _result.group(1).lower() == 'up':
+            result_one = re.match(up_down_vote_regex, emoji.name)
+            if result_one is not None and result_one.group(1).lower() == 'up':
+                log.debug(f'Pattern {up_down_vote_regex} matched.')
                 return True
-        return False
+        elif isinstance(emoji, str):
+            if emoji == thumbs_up:
+                return True
+        else:
+            log.debug(f'Failing Emoji:{emoji}')
+            return False
 
     @staticmethod
     def is_down_vote(emoji: discord.Emoji) -> bool:
+        """Detects if the emoji qualifies as a 'down vote'. """
+        log.debug(f'Testing for down vote: {emoji}')
         if hasattr(emoji, 'name'):
-            _result = re.match(updown_vote_regex, emoji.name)
-            if _result is not None and _result.group(1).lower() == 'down':
+            result_one = re.match(up_down_vote_regex, emoji.name)
+            if result_one is not None and result_one.group(1).lower() == 'down':
                 return True
+        elif isinstance(emoji, str):
+            if emoji == thumbs_down:
+                return True
+        else:
+            log.debug(f'Failing Emoji:{emoji}')
         return False
 
     async def is_user(
@@ -102,11 +121,10 @@ class Register(disextc.Cog):
         finally:
             redis.close()
             await redis.wait_closed()
-        return result is not None
+            return result is not None
 
     # Getters
 
-    # TODO: This needs to change to the live DB when done.
     async def get_redis(self) -> aioredis.Redis:
         """ This will retrieve the redis for use.
 
@@ -119,9 +137,8 @@ class Register(disextc.Cog):
         if memory is None:
             raise RuntimeError('I have no memory.')
 
-        # TODO: Change this to the live DB once you finish.
-        from cogs.memory import redis_db_scratch
-        return await memory.get_redis_pool(redis_db_scratch)
+        from cogs.memory import redis_db_config
+        return await memory.get_redis_pool(redis_db_config)
 
     async def get_next_user_index(self) -> int:
         """ Returns and reserves next index."""
@@ -318,7 +335,7 @@ class Register(disextc.Cog):
 
         # Replace user record
         await self.user_write(whu)
-        log.debug(f'verify_user success: {user}|{whu}|{role}')
+        log.info(f'verify_user success: {user}|{whu}|{role}')
 
     async def unverify_user(self, user: discord.Member) -> None:
         """ Removes verification from user. """
@@ -536,10 +553,11 @@ class Register(disextc.Cog):
     async def up_down_vote_add_monitor(
             self, reaction: discord.Reaction, user: discord.User):
         """ Monitor Up / Down Vote Tally"""
-        log.debug(f'up_downvote_add:{reaction}')
+        log.debug(f'up_downvote_add:{reaction.emoji}')
         # Context matters most
         if self.in_context(reaction=reaction, user=user):
             # These tests will only work if the emoji has a name.
+            log.debug(f'testing reaction: {reaction.emoji}')
             if self.is_up_vote(reaction.emoji):
                 await self.up_vote_user(reaction.message.author)
                 log.debug(f'Up Vote reaction added {reaction.emoji}')
@@ -552,7 +570,7 @@ class Register(disextc.Cog):
     @disextc.Cog.listener(name='on_reaction_remove')
     async def up_down_vote_remove_monitor(
             self, reaction: discord.Reaction, user: discord.User):
-        log.debug(f'up_downvote_add:{reaction}')
+        log.debug(f'up_downvote_add:{reaction.emoji}')
         # Context matters most
         if self.in_context(reaction=reaction, user=user):
             # These tests will only work if the emoji has a name.
@@ -572,7 +590,7 @@ class Register(disextc.Cog):
     async def registry_group(self, ctx: disextc.Context) -> None:
         """Registry Group"""
         if ctx.invoked_subcommand is None:
-            await ctx.send(f'No subcommend for registry group given.')
+            await ctx.send(f'No sub command for registry group given.')
 
     @registry_group.command(name='add', hidden=True)
     @disextc.is_owner()
@@ -647,17 +665,15 @@ class Register(disextc.Cog):
             count, ex_time = await self.sync_users()
             await ctx.send(f'{count} users synced in {ex_time} seconds.')
 
-    # TODO: move the constants out of here.
-    # TODO: Might want to put log output in console not discord. (make a deco)
     @registry_group.command(name='karma', hidden=True)
-    @decorators.with_roles(constants.moderator_and_up + [708924829679747073])
+    @decorators.with_roles(constants.moderator_and_up + [reddit_user_role_id])
     async def get_user_karma_command(
             self, ctx: disextc.Context, *, user: discord.Member):
         """ This will return given user's karma or executor's karma if user
         is absent, or unable to be found.
         """
-        up_vote = self.bot.get_emoji(718726011759493126)
-        down_vote = self.bot.get_emoji(718725629847142410)
+        up_vote = self.bot.get_emoji(up_vote_emoji_id)
+        down_vote = self.bot.get_emoji(down_vote_emoji_id)
         whu: WiiHacksUser = await self.user_read(user)
         display_name = user.display_name
         await ctx.send(
@@ -666,7 +682,7 @@ class Register(disextc.Cog):
             f'({whu.up_votes}{up_vote}/{whu.down_votes}{down_vote})')
 
     @registry_group.command(name='last', hidden=True)
-    @decorators.with_roles(constants.moderator_and_up + [708924829679747073])
+    @decorators.with_roles(constants.moderator_and_up + [reddit_user_role_id])
     async def last_seen_command(
             self, ctx: disextc.Context, *, user: discord.Member) -> None:
         """ Will retrieve when user was last seen. """
@@ -691,14 +707,12 @@ class Register(disextc.Cog):
                     f"They were last in online status : " +
                     f"{str(datetime.fromtimestamp(whu.last_online))} UTC")
 
-    # TODO: Constants
     @registry_group.command(name='register', hidden=True)
-    @decorators.without_role([708924829679747073])
+    @decorators.without_role([reddit_user_role_id])
     @decorators.log_invocation()
     async def registration_command(
             self, ctx: disextc.Context, reddit_name: str) -> None:
         """ Register your Reddit account with r/WiiHacks Discord guild."""
-        # TODO: Clean this up, it's a mess
         try:
             # Pull user to check, create if they don't exist.
             if not await self.is_user(ctx.author):
@@ -706,6 +720,7 @@ class Register(disextc.Cog):
             whu: WiiHacksUser = await self.user_read(ctx.author)
             if whu.last_attempt_failed:
                 raise disextc.CommandError(f're-register fail')
+
             # Users can only try this once without moderator intervention.
             whu.last_attempt_failed = True
 
@@ -717,23 +732,30 @@ class Register(disextc.Cog):
             else:
                 whu.reddit_name = reddit_name
             await self.user_write(whu)
-            await ctx.send(
-                f'Registering your reddit account as u/{reddit_name}...')
+
+            # Notify user
+            register_txt = f"Registering your reddit account as " + \
+                           f"u/{reddit_name}. I'll send a DM to " + \
+                           f"that account to verify."
+            await ctx.send(register_txt)
             await self.register_reddit(ctx.author, reddit_name)
-            await ctx.send(f'Sending a DM to u/{whu.reddit_name}...')
+
+            # Send DM
             await self.send_verification(whu)
-            await ctx.send(f"Verification was sent to {reddit_name}'s DM." +
+            await ctx.send(f"Verification was sent to u/{reddit_name}'s DM." +
                            " Please follow the instructions contained within.")
-            await self.user_write(whu)
         except Exception as e:
             await ctx.send(
                 f'An error occurred while trying to register your reddit' +
                 f' account. Please contact a moderator or bot dev.')
             log.error(f'An error has occurred registering {ctx.author} ' +
                       f'| {e.args}')
+
+            # Update Last Attempt
             whu: WiiHacksUser = await self.user_read(ctx.author)
             whu.last_attempt_failed = True
             await self.user_write(whu)
+
             system_cog = self.bot.get_cog('System')
             if system_cog is not None:
                 await system_cog.send_to_log(
