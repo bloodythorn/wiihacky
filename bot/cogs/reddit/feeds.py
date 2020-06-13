@@ -340,6 +340,8 @@ class Feeds(disextc.Cog):
 
     # Events
 
+    # TODO: listeners for on_member_join, on_member_remove
+
     @disextc.Cog.listener()
     async def on_ready(self):
         """ Prep the Cog on load. """
@@ -549,6 +551,7 @@ class Feeds(disextc.Cog):
         await self.add_feed(feed)
 
         await ctx.send(f'```Created feed {repr(feed)} {channel} {multi}```')
+
 
 def setup(bot: disextc.Bot) -> None:
     """ Loads reddit cog. """

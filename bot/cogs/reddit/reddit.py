@@ -152,6 +152,24 @@ class Reddit(disextc.Cog):
         comment: praw.reddit.Comment = (await self.reddit).comment(com_id)
         await utils.display_comment(self.bot, ctx, comment)
 
+    # Inbox Group Commands
+
+    @reddit_group.group(name='inb', hidden=True)
+    @disextc.is_owner()
+    async def inbox_group(self, ctx: disextc.Context, count: int = 10):
+        if ctx.invoked_subcommand is None:
+            # TODO: I need a paginator that lists reddit items.
+            await ctx.send(
+                f'```Inbox->All: ' +
+                f'{list((await self.reddit).inbox.all(limit=count))}```')
+
+    @inbox_group.command(name='unread', hidden=True)
+    @disextc.is_owner()
+    async def unread_inbox_command(self, ctx: disextc.Context):
+        """List only unread items in inbox."""
+        await ctx.send(
+            f'```Inbox->New: {list((await self.reddit).inbox.unread())}```')
+
     # Moderator Group Commands
 
     @reddit_group.group(name='mod', hidden=True)

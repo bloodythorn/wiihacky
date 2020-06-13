@@ -30,6 +30,7 @@ async def was_sent_from_wiihacks(ctx: disextc.Context) -> bool:
 
 # Decorators
 
+# TODO: This might not be working.
 def without_role(role_ids: typ.List[int]) -> typ.Callable:
     """ This will check to see if the user does not have any role listed."""
     async def predicate(ctx: disextc.Context) -> bool:
