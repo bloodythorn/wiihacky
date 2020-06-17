@@ -28,6 +28,9 @@ reddit_user_role_id = 708924829679747073
 up_vote_emoji_id = 718726011759493126
 down_vote_emoji_id = 718725629847142410
 
+# TODO: Multiple reactions on the same profile doesn't seem to work. (prolly
+#   because it was hit after the message was removed from cache.
+# TODO: Refactor last_attempt_failed to more accurately reflect what it does.
 
 @dc.dataclass()
 class WiiHacksUser:
@@ -57,12 +60,12 @@ class Register(disextc.Cog):
         super().__init__()
         self.bot = bot
         self.check_inbox_process.start()
-        # self.sync_users_process.start()
+        self.sync_users_process.start()
 
     def cog_unload(self):
         pass
         self.check_inbox_process.cancel()
-        # self.sync_users_process.cancel()
+        self.sync_users_process.cancel()
 
     # Checks
 
@@ -696,7 +699,7 @@ class Register(disextc.Cog):
         if whu.last_status_since == 0 or \
                 whu.last_status == '':
             await ctx.send(
-                f"User '{user.name}' has a default entry: {whu}")
+                f"User '{user.name}' has no recorded online status...")
         else:
             from datetime import datetime
             await ctx.send(
@@ -729,6 +732,9 @@ class Register(disextc.Cog):
             if reddit_name[0:2] == 'u/':
                 log.debug(f'Trimming {reddit_name}.')
                 whu.reddit_name = reddit_name[2:]
+            elif reddit_name[0:3] == '/u/':
+                log.debug(f'Trimming {reddit_name}.')
+                whu.reddit_name = reddit_name[3:]
             else:
                 whu.reddit_name = reddit_name
             await self.user_write(whu)

@@ -4,6 +4,7 @@ import discord.ext.commands as disextc
 from constants import paginate, send_paginator
 
 # TODO: Help System... needs to be more than default.
+# TODO: Make moderator commands invisible
 
 
 class MenuSys(disextc.Cog):
@@ -16,6 +17,7 @@ class MenuSys(disextc.Cog):
     # Listeners
 
     # FIXME: Something about this.
+    #   A way to get more info, or turn it on and off...
     @disextc.Cog.listener(name='on_command_error')
     async def command_error(self, ctx: disextc.Context, error):
         """ Error Handler for commands. """

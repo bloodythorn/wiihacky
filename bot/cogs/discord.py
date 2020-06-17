@@ -1,12 +1,13 @@
 import discord as discord
 import discord.ext.commands as disextc
+import logging as lg
 import typing as typ
+
+log = lg.getLogger(__name__)
 
 txt_cog_sub_err = 'Invalid discord subcommand.'
 
 
-# TODO: Top TODOs
-# TODO: Welcomer
 # TODO: Flesh out commands.
 # TODO: moderator functions
 # TODO: Bot CLI Channels
@@ -40,11 +41,13 @@ class Discord(disextc.Cog):
 
     # Helpers
 
-    # TODO: Prolly don't need a function for this.
-    async def get_owner(self) -> discord.User:
-        await self.bot.wait_until_ready()
-        appinfo: discord.AppInfo = await self.bot.application_info()
-        return appinfo.owner
+    # TODO: Send Greeting (Person, Location)
+
+    # Listeners
+
+    @disextc.Cog.listener(name='on_member_join')
+    async def greeter(self, member: discord.Member):
+        log.debug(f'on_member_join: {member}')
 
     # Discord Group Commands
 

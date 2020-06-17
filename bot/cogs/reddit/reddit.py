@@ -108,13 +108,6 @@ class Reddit(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send('No subcommand given.')
 
-    @reddit_group.command(name='inbox', hidden=True)
-    @disextc.is_owner()
-    async def inbox_command(self, ctx: disextc.Context):
-        # TODO: Turn this into a group with inbox functions.
-        await ctx.send(
-            f'```Inbox->All: {list((await self.reddit).inbox.all())}```')
-
     @reddit_group.command(name='id', hidden=True)
     @disextc.is_owner()
     async def get_profile_command(self, ctx: disextc.Context, redditor: str):
@@ -186,95 +179,110 @@ class Reddit(disextc.Cog):
     async def moderator_statistics(
             self,
             ctx: disextc.Context,
-            over: int = 500,
-            mods_only: bool = True,
+            count: int = 500,
+            display_key: bool = True,
+            limit_to_mods: bool = True,
             limit_actions: bool = True):
         """ Retrieve the stats for mod actions. """
-        # TODO: Add totals to columns/rows
-        # TODO: Clean this up, it's a mess. Decouple
-
         # Protection
-        if over > 5000:
+        if count > 5000:
             raise disextc.CommandError('Cannot parse more than 5000 entries.')
 
         # Warn user for delay
-        # TODO: Move this to personality.
-        await ctx.send(f'Tallying {over} log entries...')
+        await ctx.send(f'Tallying {count} log entries...')
 
         reddit = await self.reddit
 
         async with ctx.typing():
-            # fetch subreddit and moderators
-            #   and define the actions we care about.
+            # fetch sub & mods and define the actions we care about.
             # TODO: Configurable? v Magic String
             wh = reddit.subreddit('WiiHacks')
-            users = []
-            if mods_only:
-                users = \
+            users_to_pull = set()
+            if limit_to_mods:
+                users_to_pull = \
                     tuple(sorted([mod.name for mod in list(wh.moderator())]))
-            metered_actions = {
-                'approvecomment': 'app_com',
-                'approvelink': 'app_lnk',
-                'distinguish': 'dst',
-                'ignorereports': 'ign_rep',
-                'lock': 'lck',
-                'removecomment': 'rem_com',
-                'removelink': 'rem_lnk',
-                'spamcomment': 'spam_com',
-                'spamlink': 'spm_lnk',
-                'sticky': 'stky'}
-            if not limit_actions:
-                metered_actions = dict()
+            metered_actions = tuple()
+            if limit_actions:
+                metered_actions = tuple(sorted([
+                    'approvecomment', 'approvelink',
+                    'lock', 'distinguish', 'ignorereports', 'sticky',
+                    'removecomment', 'removelink',
+                    'spamcomment', 'spamlink']))
 
             # Raw data
             data, oldest = await utils.tally_moderator_actions(
-                history_limit=over,
+                history_limit=count,
                 subreddit=wh,
-                user_names=users,
-                actions_names=list(metered_actions.keys())
-            )
-            headers = ['name']
+                user_names=[*users_to_pull],
+                actions_names=[*metered_actions])
 
             # Pull detected actors and actions
-            actors = tuple(sorted([a for a in data]))
+            actors = tuple(sorted(data.keys()))
             actions = []
             for actor in actors:
                 actions += list(data[actor].keys())
-            actions = tuple(sorted(list(dict.fromkeys(actions))))
-            # If we meter the actions we have replacement headers that are more
-            # readable.
-            for action in actions:
-                if limit_actions:
-                    headers.append(metered_actions[action])
-                else:
-                    headers.append(action[:5])
-            # TODO Add total column header here.
+            # Sorted List of actions with removed doubles.
+            actions = tuple(sorted(set(actions)))
 
-            # Flatten the data
-            # FIXME: users that don't have stats don't show up
-            flats = []
-            for user in users:
-                temp = [user]
-                for action in actions:
-                    if (limit_actions and action in metered_actions.keys()) or \
-                            not limit_actions:
-                        if user in data and action in data[user]:
-                            temp.append(int(data[user][action]))
-                        else:
-                            temp.append(0)
-                # TODO: Add total column here.
-                flats.append(tuple(temp))
+            # Convert to an np array
+            import numpy as np
+            tally = np.full(
+                shape=(len(actors) + 1, len(actions) + 1), fill_value=0)
+            for idx_y, actor in enumerate(actors):
+                for idx_x, action in enumerate(actions):
+                    if action in data[actor]:
+                        tally[idx_y][idx_x] = data[actor][action]
 
-            # Output Stats
-            import datetime
+            # Calc the Totals
+            tally[len(actors), :] = tally.sum(axis=0)
+            tally[:, len(actions)] = tally.sum(axis=1)
+
+            # Headers
             import prettytable
-            table = prettytable.PrettyTable(headers)
-            for row in flats:
-                table.add_row(row)
-            log.debug(f'Sending: {table} | {oldest}')
-            await ctx.send(f"""```{table}
-Oldest Log Entry: {str(datetime.datetime.fromtimestamp(oldest))}
-```""")
+            fields = ['X'] + [str(i) for i in range(len(actions))] + ['ttl']
+            table = prettytable.PrettyTable(fields)
+            for field in fields:
+                table.align[field] = 'r'
+
+            # Rows
+            for idx, actor in enumerate(actors):
+                table.add_row([idx] + list(tally[idx, :]))
+            table.add_row(['ttl'] + list(tally[len(actors), :]))
+
+            # Format Output
+            output1 = f'Moderator Statistics Table:\n{table}'
+
+            # Create Key
+            column_key = [(str(idx), action)
+                          for idx, action in enumerate(actions)]
+            row_key = [(str(idx), action) for idx, action in enumerate(actors)]
+            # Fill in blanks of the shorter list.
+            blank = ('-', 'X')
+            if len(column_key) > len(row_key):
+                while len(column_key) > len(row_key):
+                    row_key.append(blank)
+            else:
+                while len(column_key) < len(row_key):
+                    column_key.append(blank)
+            key_zip = list(zip(column_key, row_key))
+            template = '{: >22} - |{: ^}| - {: <}\n'
+            output2 = '{: >24} {: ^} {: <}\n'.format("column", "| |", "row")
+            for row in key_zip:
+                output2 += template.format(
+                    row[0][1], row[0][0], row[1][1])
+            output2 += f'Oldest Log Entry : '
+            import datetime
+            output2 += str(datetime.datetime.utcfromtimestamp(oldest)) + ' UTC'
+
+            # send
+            log.debug(f'sizes o1: {len(output1)} | o2: {len(output2)}')
+            if len(output1) >= 2000:
+                # FIXME: This is hackish ^
+                await ctx.send(f'```Table too large to output...```')
+            else:
+                await ctx.send(f'```{output1}```')
+            if display_key:
+                await ctx.send(f'```{output2}```')
 
 
 def setup(bot: disextc.Bot) -> None:

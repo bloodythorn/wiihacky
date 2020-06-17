@@ -2,6 +2,7 @@ from .aliases_mods import ModAliases
 from .aliases_users import UserAliases
 from .config import Config
 from .discord import Discord
+from .laboratory import Laboratory
 from .memory import Memory
 from .menusys import MenuSys
 from .persona import Persona

@@ -32,6 +32,8 @@ def red_creds_check():
                 r'No reddit credentials set in env')
 
 
+# TODO: timestamp: in dicscord output of submissions.
+
 # Pagination-related
 # TODO: Make sure split doesn't happen in the middle of links.
 async def display_submission(
@@ -119,9 +121,9 @@ async def display_comment(
 # noinspection PyProtectedMember
 async def tally_moderator_actions(
         history_limit: int,
-        subreddit: praw.reddit.Subreddit = None,
-        user_names: typ.List[str] = None,
-        actions_names: typ.List[str] = None
+        subreddit: praw.reddit.Subreddit,
+        user_names: typ.List[str],
+        actions_names: typ.List[str]
 ):
     """Tally moderator log stats.
 
@@ -149,20 +151,19 @@ async def tally_moderator_actions(
     return_data = {}
     oldest_entry = None
     for log_entry in subreddit.mod.log(limit=history_limit):
-        # Filter
+
+        # Filters
+
         # A list of users was specified and mod wasn't found.
-
-        if (user_names is not None and len(user_names) > 0) and \
-                log_entry._mod not in user_names:
+        if len(user_names) != 0 and log_entry._mod not in user_names:
             continue
+
         # If an action name list was given and it wasn't in it.
-        if (actions_names is not None or len(actions_names) > 0) and \
-                log_entry.action not in actions_names:
+        if len(actions_names) != 0 and log_entry.action not in actions_names:
             continue
 
-        # Update Oldest Entry
-        if oldest_entry is None or \
-                log_entry.created_utc < oldest_entry:
+        # Initialize or Update Oldest Entry
+        if oldest_entry is None or log_entry.created_utc < oldest_entry:
             oldest_entry = log_entry.created_utc
 
         # Check if actor exists
@@ -175,6 +176,11 @@ async def tally_moderator_actions(
 
         # Increment
         return_data[log_entry._mod][log_entry.action] += 1
+
+    # add in the names on the list who no actions were found for.
+    for user in user_names:
+        if user not in return_data.keys():
+            return_data[user] = {}
 
     log.debug(f'tally_moderator_actions data: {return_data}, {oldest_entry}')
     return return_data, oldest_entry

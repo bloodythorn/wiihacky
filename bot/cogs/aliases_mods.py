@@ -29,15 +29,20 @@ class ModAliases(disextc.Cog):
         await ctx.invoke(cmd, *args, **kwargs)
 
     @disextc.command(name="modstats", aliases=("mstats",))
-    async def mod_stats_alias(self, ctx: disextc.Context, count: typ.Optional[int]) -> None:
+    async def mod_stats_alias(
+            self,
+            ctx: disextc.Context,
+            count: int = 500,
+            key: bool = True
+    ) -> None:
         """ Retrieve the stats for mod actions. """
-        if count is None:
-            await self.invoke(ctx, "red mod stats")
-        else:
-            await self.invoke(ctx, "red mod stats", count)
+        await self.invoke(
+            ctx, "red mod stats", count=count, display_key=key)
 
     @disextc.command(name='reg_reset', aliases=("ureset",))
-    async def reset_registration_alias(self, ctx: disextc.Context, user_id: int) -> None:
+    async def reset_registration_alias(
+            self, ctx: disextc.Context, user_id: int
+    ) -> None:
         """ Reset user's verification. User ID required. """
         await self.invoke(ctx, "reg reset", user_id)
 

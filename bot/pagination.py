@@ -1,9 +1,10 @@
 import asyncio
 import contextlib as ctxlib
-import logging
-import typing as typ
 import discord
 import discord.ext.commands as disextc
+import logging
+import praw
+import typing as typ
 
 # TODO: CodeBlock Paginator
 # TODO: Image archive paginator

@@ -14,6 +14,7 @@ system_defaults = {
 log = lg.getLogger(__name__)
 
 # TODO:
+#   Log COG RELOADS
 #   Add logging to functions
 #   Logging will need a state of a list of tuples storing guild/channel
 #   Cog Functions need logging.

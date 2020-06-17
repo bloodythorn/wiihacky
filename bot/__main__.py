@@ -9,6 +9,8 @@ from pathlib import Path
 
 import cogs
 
+# TODO: Make the log level settable at during runtime.
+
 # Set Debug Level: Pull debug mode from env
 DEBUG_MODE = None
 if 'DEBUG' in os.environ:
@@ -72,6 +74,7 @@ module_names = (
     cogs.aliases_users.__name__[5:],
     cogs.config.__name__[5:],
     cogs.discord.__name__[5:],
+    cogs.laboratory.__name__[5:],
     cogs.memory.__name__[5:],
     cogs.menusys.__name__[5:],
     cogs.persona.__name__[5:],
@@ -85,6 +88,7 @@ cog_names = (
     cogs.aliases_users.UserAliases.__qualname__,
     cogs.config.Config.__qualname__,
     cogs.discord.Discord.__qualname__,
+    cogs.laboratory.Laboratory.__qualname__,
     cogs.memory.Memory.__qualname__,
     cogs.menusys.MenuSys.__qualname__,
     cogs.persona.Persona.__qualname__,
@@ -99,6 +103,7 @@ wh.load_extension('cogs.aliases_mods')
 wh.load_extension('cogs.aliases_users')
 wh.load_extension('cogs.config')
 wh.load_extension('cogs.discord')
+wh.load_extension('cogs.laboratory')
 wh.load_extension('cogs.memory')
 wh.load_extension('cogs.menusys')
 wh.load_extension('cogs.persona')
