@@ -8,6 +8,7 @@ import typing as typ
 
 import cogs.reddit.utils as utils
 
+from collections import deque
 from datetime import timedelta
 
 # TODO: Top Posts for Today
@@ -37,7 +38,7 @@ class FeedMode:
     def __init__(self, mode_name: str) -> None:
         """ Init Class """
         self._mode_name = mode_name
-        self._cache = None
+        self._cache = deque()
 
     @staticmethod
     def verify_mode(name: str) -> bool:
@@ -69,24 +70,37 @@ class FeedMode:
         Return a list of 'new' posts, timewise from the last time the command
         was checked. For the first time it returns an empty set.
         """
+        # get recent feed
+        # log.debug(f'get_new_posts fired : {self._cache}')
         new_list = None
         if self._mode_name == 'new':
             new_list = list(feed_source.new(limit=10))
         elif self._mode_name == 'comments':
             new_list = list(feed_source.comments(limit=10))
-        new_list = new_list
-        if self._cache is None:  # Un-initialized
-            self._cache = new_list
-            return set()
+        # log.debug(f'fetched: {new_list}')
+
+        # Filter out ones we already have.
+        new_list = [a for a in new_list if a not in self._cache]
+        # log.debug(f'trimmed to {new_list} due to {self._cache}')
+
+        # Un-initialized
+        if len(self._cache) == 0:
+            # log.debug(f'Initialized cache: {len(self._cache)}')
+            return_data = []
         else:
-            old_list = self._cache
-            self._cache = new_list
-            diff = []
-            old_ids = [a.id for a in old_list]
-            for post in new_list:
-                if post.id not in old_ids:
-                    diff.append(post)
-            return set(diff)
+            return_data = new_list
+
+        # log.debug(f'Adding to cache...')
+        self._cache.extend(new_list)
+
+        # drain excess
+        cache_limit = 20
+        while len(self._cache) >= cache_limit:
+            # log.debug(f'Draining excess: {len(self._cache)} > {cache_limit}')
+            self._cache.popleft()
+
+        # Send out new
+        return return_data
 
     async def execute(self,
                       bot: disextc.Bot,
