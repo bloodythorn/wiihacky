@@ -13,6 +13,9 @@ text_wh_name = 'WiiHacks'
 id_bloodythorn = 574629343142346757
 id_wiihacks = 582816924359065611
 id_wiihacky = 630280409137283085
+
+reddit_user_role_id = 708924829679747073
+
 moderator_and_up = [
     657740509854302222,
     708923965824827454,

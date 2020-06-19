@@ -1,7 +1,12 @@
 import discord as discord
 import discord.ext.commands as disextc
 import logging as lg
+import nltk
+import random
 import typing as typ
+
+import constants
+import decorators
 
 log = lg.getLogger(__name__)
 
@@ -287,6 +292,22 @@ class Discord(disextc.Cog):
         """
         await self.send_paginator(
             ctx, await self.paginate(repr(ctx.bot.emojis)))
+
+    @discord_group.command(name='rename', hidden=True)
+    @decorators.with_roles(constants.moderator_and_up)
+    async def rename_command(
+            self, ctx: disextc.Context,
+            member: discord.Member,
+            name: typ.Optional[str]
+    ):
+        old_name = member.display_name
+        if name is None:
+            new_name = random.choice(nltk.corpus.names.words())
+        else:
+            new_name = name
+        await member.edit(
+            nick=new_name, reason=f'renamed by {ctx.author.display_name}')
+        await ctx.send(f'{old_name} is now {new_name}!!!')
 
 
 def setup(bot: disextc.Bot) -> None:

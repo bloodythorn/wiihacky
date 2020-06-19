@@ -15,6 +15,7 @@ import decorators
 
 log = lg.getLogger(__name__)
 
+# TODO: Move more of this to constants.
 index_key = 'registry_index'
 user_prefix = 'user:'
 snowflake_prefix = 'snowflake:'
@@ -24,7 +25,6 @@ username_regex = re.compile(r'^([^#]*)#([0-9]*)')
 up_down_vote_regex = re.compile(r'^(up|down)([_]?vote)?$')
 thumbs_up = '👍'
 thumbs_down = '👎'
-reddit_user_role_id = 708924829679747073
 up_vote_emoji_id = 718726011759493126
 down_vote_emoji_id = 718725629847142410
 
@@ -669,7 +669,8 @@ class Register(disextc.Cog):
             await ctx.send(f'{count} users synced in {ex_time} seconds.')
 
     @registry_group.command(name='karma', hidden=True)
-    @decorators.with_roles(constants.moderator_and_up + [reddit_user_role_id])
+    @decorators.with_roles(
+        constants.moderator_and_up + [constants.reddit_user_role_id])
     async def get_user_karma_command(
             self, ctx: disextc.Context, *, user: discord.Member):
         """ This will return given user's karma or executor's karma if user
@@ -685,7 +686,8 @@ class Register(disextc.Cog):
             f'({whu.up_votes}{up_vote}/{whu.down_votes}{down_vote})')
 
     @registry_group.command(name='last', hidden=True)
-    @decorators.with_roles(constants.moderator_and_up + [reddit_user_role_id])
+    @decorators.with_roles(
+        constants.moderator_and_up + [constants.reddit_user_role_id])
     async def last_seen_command(
             self, ctx: disextc.Context, *, user: discord.Member) -> None:
         """ Will retrieve when user was last seen. """
@@ -711,7 +713,7 @@ class Register(disextc.Cog):
                     f"{str(datetime.fromtimestamp(whu.last_online))} UTC")
 
     @registry_group.command(name='register', hidden=True)
-    @decorators.without_role([reddit_user_role_id])
+    @decorators.without_role([constants.reddit_user_role_id])
     @decorators.log_invocation()
     async def registration_command(
             self, ctx: disextc.Context, reddit_name: str) -> None:

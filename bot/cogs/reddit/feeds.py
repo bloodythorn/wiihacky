@@ -16,7 +16,7 @@ from datetime import timedelta
 # TODO: Debug logging in commands
 # TODO: So far new and comments are all that's implemented in FeedModes
 # TODO: Feed Commands should be put in documentation
-# FIXME: For some reason every so often, 10hr old posts will re-post.
+# TODO: The ability to reload feeds.
 # !fee sub add wiihacks-comments wiihacks 711058635215601746 comments
 # !fee sub add wiihacks-new wiihacks 711058353660362782 new
 
@@ -94,7 +94,7 @@ class FeedMode:
         self._cache.extend(new_list)
 
         # drain excess
-        cache_limit = 20
+        cache_limit = 50
         while len(self._cache) >= cache_limit:
             # log.debug(f'Draining excess: {len(self._cache)} > {cache_limit}')
             self._cache.popleft()

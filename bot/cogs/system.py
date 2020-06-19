@@ -1,6 +1,10 @@
 import discord as discord
 import discord.ext.commands as disextc
 import logging as lg
+import typing as typ
+
+import constants
+import decorators
 
 # TODO: Get this out of here.
 from constants import paginate, send_paginator
@@ -223,13 +227,17 @@ class System(disextc.Cog):
             await ctx.send(page)
         await ctx.bot.close()
 
-    # TODO: Make redditor public (alias)
     @system_group.command(name='hs', hidden=True)
-    @disextc.is_owner()
-    async def health_and_safety_display_command(self, ctx: disextc.Context):
+    @decorators.with_roles(constants.moderator_and_up)
+    async def health_and_safety_display_command(
+            self, ctx: disextc.Context,
+            channel: typ.Optional[discord.TextChannel]):
         """This command displays a mock health and safety screen."""
         from constants import health_and_safety_text
-        await ctx.send(content="** **\n"+health_and_safety_text)
+        if channel is None:
+            await ctx.send(content="** **\n"+health_and_safety_text)
+        else:
+            await channel.send(content="** **\n"+health_and_safety_text)
 
     # Cog Group Commands
 

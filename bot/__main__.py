@@ -30,6 +30,8 @@ file_handler.setFormatter(log_format)
 stream_handler = lg.StreamHandler()
 stream_handler.setFormatter(log_format)
 
+# TODO: Make the logger dynamically setable at runtime.
+
 log = lg.getLogger()
 log.setLevel(log_level)
 log.addHandler(file_handler)
@@ -51,7 +53,9 @@ command_chars = ('!',)
 message_cache = 1000 * 10
 txt_help_description = \
     """r/WiiHacks Discord Help Menu"""
-txt_activity_name = "Mankind and Plotting its Demise"
+# todo: move to persona, add more, make rand responder.
+txt_activity_name = "with mankind's vulnerabilities"
+# txt_activity_name = "Mankind and Plotting its Demise"
 txt_activity_state = 'In Development'
 txt_activity_details = \
     "First I will start with the weak, while the strong are enslaved."
@@ -64,7 +68,7 @@ wh = disextc.Bot(
     description=txt_help_description,
     activity=discord.Activity(
         name=txt_activity_name,
-        type=discord.ActivityType.watching,
+        type=discord.ActivityType.playing,
         state=txt_activity_state,
         details=txt_activity_details))
 
