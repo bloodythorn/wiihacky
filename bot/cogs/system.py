@@ -40,14 +40,39 @@ log = lg.getLogger(__name__)
 # TODO: Confirm Action for more destructive commands.
 # TODO: Get Cog Listeners
 # https://discordpy.readthedocs.io/en/latest/ext/commands/cogs.html#inspection
+# TODO: Might consider moving *EVERYTHING* to a module so it can be dynamically
+#   reloaded.
 
 txt_cog_sub_err = 'Invalid system cog subcommand.'
 
 
 # Converters
 
+class FuzzyLogLevelName(disextc.Converter):
+    async def convert(self, ctx, argument: str):
+        log.debug(f'FuzzyLog Fired: {argument}')
+        if argument == '':
+            raise disextc.CommandError(f'Please supply a log level name.')
+        from fuzzywuzzy import process
+        results = process.extract(argument, lg._nameToLevel.keys())
+        log.debug(f'fuzzy results: {results}')
+        # if we have an exact match
+        if results[0][1] == 100:
+            return results[0][0]
+
+        # apply threshold
+        if results[0][1] < 75 or results[0][1] - results[1][1] < 5:
+            raise disextc.CommandError(f'{argument} too ambiguous')
+
+        # return result if passed.
+        return results[0][0]
+
+
 class FuzzyCogName(disextc.Converter):
     async def convert(self, ctx, argument: str):
+        log.debug(f'FuzzyCog Fired: {argument}')
+        if argument == '':
+            raise disextc.CommandError(f'Please supply a cog name.')
         from fuzzywuzzy import process
         results = process.extract(argument, ctx.bot.cogs.keys())
         log.debug(f'fuzzy results: {results}')
@@ -59,6 +84,7 @@ class FuzzyCogName(disextc.Converter):
         if (results[0][1] < 75) or (results[0][1] - results[1][1]) < 5:
             raise disextc.CommandError(f"'{argument}' too ambiguous.")
 
+        # return result if passed.
         return results[0][0]
 
 
@@ -185,7 +211,7 @@ class System(disextc.Cog):
             for page in pages.pages:
                 await ctx.send(page)
 
-    @system_group.command(name='info', hidden=True)
+    @system_group.command(name='inf', hidden=True)
     @disextc.is_owner()
     async def application_info_command(self, ctx: disextc.Context) -> None:
         """ Bot's application info.
@@ -199,7 +225,7 @@ class System(disextc.Cog):
         await send_paginator(
             ctx, await paginate(repr(await self.bot.application_info())))
 
-    @system_group.command(name='commands', hidden=True)
+    @system_group.command(name='com', hidden=True)
     @disextc.is_owner()
     async def list_commands_command(self, ctx):
         await ctx.send([a.name for a in ctx.bot.commands])
@@ -248,7 +274,7 @@ class System(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @cogs_group.command(name='active', hidden=True)
+    @cogs_group.command(name='act', hidden=True)
     @disextc.is_owner()
     async def active_command(self, ctx: disextc.Context) -> None:
         """ Lists active cogs.
@@ -260,7 +286,7 @@ class System(disextc.Cog):
         """
         await ctx.send('```' + repr(list(ctx.bot.cogs.keys())) + '```')
 
-    @cogs_group.command(name='list', hidden=True)
+    @cogs_group.command(name='lst', hidden=True)
     @disextc.is_owner()
     async def list_command(self, ctx: disextc.Context) -> None:
         """ Lists all registered cogs.
@@ -270,7 +296,7 @@ class System(disextc.Cog):
         from __main__ import cog_names
         await ctx.send('```' + repr(list(cog_names)) + '```')
 
-    @cogs_group.command(name='load', hidden=True)
+    @cogs_group.command(name='loa', hidden=True)
     @disextc.is_owner()
     async def load_cog_command(
             self, ctx: disextc.Context, name: FuzzyCogName):
@@ -284,7 +310,7 @@ class System(disextc.Cog):
         self.bot.load_extension('cogs.' + cog_to_module[str(name)])
         await ctx.send(f'{name} cog has been loaded.')
 
-    @cogs_group.command(name='unload', hidden=True)
+    @cogs_group.command(name='unl', hidden=True)
     @disextc.is_owner()
     async def unload_cog_command(
             self, ctx: disextc.Context, name: FuzzyCogName):
@@ -297,7 +323,7 @@ class System(disextc.Cog):
         self.bot.unload_extension('cogs.' + cog_to_module[str(name)])
         await ctx.send(f'{name} cog unloaded.')
 
-    @cogs_group.command(name='reload', hidden=True)
+    @cogs_group.command(name='rel', hidden=True, aliases=('reboot',))
     @disextc.is_owner()
     async def reload_cog_command(
             self, ctx: disextc.Context, name: FuzzyCogName) -> None:
@@ -309,6 +335,26 @@ class System(disextc.Cog):
         cog_to_module = dict(zip(cog_names, module_names))
         self.bot.reload_extension('cogs.' + cog_to_module[str(name)])
         await ctx.send(f'{name} cog reloaded.')
+
+    # console group
+
+    @system_group.command(name='con', hidden=True)
+    @disextc.is_owner()
+    async def change_log_level_command(
+            self, ctx: disextc.Context,
+            name: FuzzyCogName,
+            level: typ.Optional[FuzzyLogLevelName]):
+        log.debug(f'change log level fired: {name} | {level}')
+        if name not in ctx.bot.cogs.keys():
+            raise disextc.CommandError(
+                f"Could not find cog '{name}' in loaded cog list.")
+        from __main__ import cog_names, module_names
+        cog_to_module = dict(zip(cog_names, module_names))
+        module_name = 'cogs.' + cog_to_module[name]
+        temp_log = lg.getLogger(module_name)
+        if level is not None:
+            temp_log.setLevel(str(level))
+        await ctx.send(f'{temp_log}')
 
 
 def setup(bot: disextc.Bot) -> None:

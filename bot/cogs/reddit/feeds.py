@@ -354,7 +354,7 @@ class Feeds(disextc.Cog):
 
     # Events
 
-    # TODO: listeners for on_member_join, on_member_remove
+    # TODO: listeners for on_member_join, on_member_remove, bot_check_once
 
     @disextc.Cog.listener()
     async def on_ready(self):

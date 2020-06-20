@@ -30,8 +30,6 @@ file_handler.setFormatter(log_format)
 stream_handler = lg.StreamHandler()
 stream_handler.setFormatter(log_format)
 
-# TODO: Make the logger dynamically setable at runtime.
-
 log = lg.getLogger()
 log.setLevel(log_level)
 log.addHandler(file_handler)

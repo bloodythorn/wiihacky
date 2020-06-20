@@ -44,7 +44,7 @@ class ModAliases(disextc.Cog):
         await self.invoke(
             ctx, "red mod stats", count=count, display_key=key)
 
-    @disextc.command(name='reg_reset', aliases=("ureset",))
+    @disextc.command(name='regreset', aliases=("regr",))
     @decorators.with_roles(constants.moderator_and_up)
     async def reset_registration_alias(
             self, ctx: disextc.Context, user_id: int

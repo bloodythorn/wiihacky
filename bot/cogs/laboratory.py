@@ -1,11 +1,8 @@
-import asyncio
-import discord
 import discord.ext.commands as disextc
 import logging as lg
 import nltk
 import numpy as np
 import praw
-import random
 import re
 import typing as typ
 
@@ -57,22 +54,10 @@ class Laboratory(disextc.Cog):
     async def lab_group(self, ctx: disextc.Context):
         """Group for testing commands/applications."""
         if ctx.invoked_subcommand is None:
-            bag = await self.word_bag
-            ids = self._ids
-            bsuffix = ''
-            isuffix = ''
-            max_size = 18
-            if len(bag) > max_size:
-                bag = bag[:max_size]
-                bsuffix = f'... ttl:{len(bag)}'
-            if len(ids) > max_size:
-                ids = ids[:max_size]
-                isuffix = f'... ttl:{len(ids)}'
-
             await ctx.send(
-                f'```Current Word Bag:{repr(bag)} {bsuffix}\n'
-                f'Current Categories:{repr(list(sorted(self._cats.keys())))}\n'
-                f'Comment List:{ids} {isuffix}```')
+                f'```WordBag sz:{len(await self.word_bag)}\n'
+                f'Categories:{len(self._cats.keys())}\n'
+                f'Comments :{len(self._ids)}```')
 
     @lab_group.command(name='add', hidden=True)
     @disextc.is_owner()
@@ -191,6 +176,7 @@ class Laboratory(disextc.Cog):
 
         # And finally strip out odd symbols and punctuation.
         alpha_regex = r'[^A-Za-z0-9]+'
+        # fixme: I feel the conditional is backward. But it WAE.
         words = [a for a in words if re.match(alpha_regex, a) is None]
 
         return words
@@ -217,7 +203,12 @@ class Laboratory(disextc.Cog):
 
     # todo: most likely.
     async def train_all(self):
-        pass
+        # Prep all in-out data
+        await self.bow_all()
+        for train_set in self._training_data:
+            await self.train(
+                np.array(train_set[0]),
+                np.array(train_set[1]))
 
     async def train(
             self, X, y,
@@ -226,14 +217,12 @@ class Laboratory(disextc.Cog):
             epochs=50000,
             drop_out=False,
             drop_out_percent=0.5):
-        # Prep all in-out data
-        await self.bow_all()
         np.random.seed(1)
         last_mean_error = 1
 
         # Random Init weights
         self._synapse_0 = 2*np.random.random(
-            (len(X[0]), hidden_neurons)) - 1
+            (1, hidden_neurons)) - 1
         self._synapse_1 = 2*np.random.random(
             (hidden_neurons, len(self._cats.keys()))) - 1
         prev_synapse_0_weight_update = np.zeros_like(self._synapse_0)
@@ -256,7 +245,7 @@ class Laboratory(disextc.Cog):
             # how much did we miss the target value?
             layer_2_error = y - layer_2
 
-            if (j% 10000) == 0 and j > 5000:
+            if (j % 10000) == 0 and j > 5000:
                 # if this 10k iteration's error is greater than the last
                 # iteration, break out
                 if np.mean(np.abs(layer_2_error)) < last_mean_error:

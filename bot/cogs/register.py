@@ -28,6 +28,7 @@ thumbs_down = '👎'
 up_vote_emoji_id = 718726011759493126
 down_vote_emoji_id = 718725629847142410
 
+# todo: command that auto-nicks you to your reddit name and alias
 # TODO: Multiple reactions on the same profile doesn't seem to work. (prolly
 #   because it was hit after the message was removed from cache.
 # TODO: Refactor last_attempt_failed to more accurately reflect what it does.
@@ -546,9 +547,9 @@ class Register(disextc.Cog):
                 if after.status != 'online':
                     whu.last_online = int(datetime.utcnow().timestamp())
                 await self.user_write(whu)
-                log.debug(
-                    f'member update '
-                    f'{before.display_name} {before.status} {after.status}')
+                # log.debug(
+                #    f'member update '
+                #    f'{before.display_name} {before.status} {after.status}')
             else:
                 log.debug(f"User '{before.display_name}' not in redis.")
 
