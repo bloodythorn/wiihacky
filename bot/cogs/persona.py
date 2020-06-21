@@ -14,8 +14,8 @@ txt_positive = [
     'yee', 'yes']
 txt_negative = [
     '0', 'cancel', 'forget it', 'n', 'nah', 'naw', 'nay', 'negative',
-    'negatory', 'never', 'nix', 'no', 'not', 'null', 'refusal', 'refuse',
-    'reject', 'rejection']
+    'negatory', 'never', 'nix', 'no', 'nope', 'not', 'nu-uh', 'null',
+    'refusal', 'refuse', 'reject', 'rejection']
 txt_errors = [
     'error', 'wrong', 'try again', 'psych', 'no can do',
     'Clarify?', 'Wut da hell?', '...:', 'Hmm?', """Beg'pardon?""",

@@ -8,6 +8,7 @@ import typing as typ
 
 import constants
 import cogs.reddit.utils as utils
+from converters import BooleanFuzzyConverter as bool_fuzz
 
 # TODO: Upvote/downvote query.
 # TODO: watch for upvote/down vote, tally per user, use as money.
@@ -180,9 +181,9 @@ class Reddit(disextc.Cog):
             self,
             ctx: disextc.Context,
             count: int = 500,
-            display_key: bool = True,
-            limit_to_mods: bool = True,
-            limit_actions: bool = True):
+            display_key: bool_fuzz = True,
+            limit_to_mods: bool_fuzz = True,
+            limit_actions: bool_fuzz = True):
         """ Retrieve the stats for mod actions. """
         # Protection
         if count > 5000:
@@ -264,12 +265,17 @@ class Reddit(disextc.Cog):
             else:
                 while len(column_key) < len(row_key):
                     column_key.append(blank)
+
             key_zip = list(zip(column_key, row_key))
             template = '{: >22} - |{: ^}| - {: <}\n'
             output2 = '{: >24} {: ^} {: <}\n'.format("column", "| |", "row")
             for row in key_zip:
-                output2 += template.format(
-                    row[0][1], row[0][0], row[1][1])
+                if len(column_key) > len(row_key):
+                    output2 += template.format(
+                        row[0][1], row[0][0], row[1][1])
+                else:
+                    output2 += template.format(
+                        row[0][1], row[0][0], row[1][1])
             output2 += f'Oldest Log Entry : '
             import datetime
             output2 += str(datetime.datetime.utcfromtimestamp(oldest)) + ' UTC'

@@ -4,6 +4,7 @@ import logging as lg
 import typing as typ
 
 import constants
+import converters
 import decorators
 
 # TODO: Get this out of here.
@@ -45,50 +46,6 @@ log = lg.getLogger(__name__)
 
 txt_cog_sub_err = 'Invalid system cog subcommand.'
 
-
-# Converters
-
-class FuzzyLogLevelName(disextc.Converter):
-    async def convert(self, ctx, argument: str):
-        log.debug(f'FuzzyLog Fired: {argument}')
-        if argument == '':
-            raise disextc.CommandError(f'Please supply a log level name.')
-        from fuzzywuzzy import process
-        results = process.extract(argument, lg._nameToLevel.keys())
-        log.debug(f'fuzzy results: {results}')
-        # if we have an exact match
-        if results[0][1] == 100:
-            return results[0][0]
-
-        # apply threshold
-        if results[0][1] < 75 or results[0][1] - results[1][1] < 5:
-            raise disextc.CommandError(f'{argument} too ambiguous')
-
-        # return result if passed.
-        return results[0][0]
-
-
-class FuzzyCogName(disextc.Converter):
-    async def convert(self, ctx, argument: str):
-        log.debug(f'FuzzyCog Fired: {argument}')
-        if argument == '':
-            raise disextc.CommandError(f'Please supply a cog name.')
-        from fuzzywuzzy import process
-        results = process.extract(argument, ctx.bot.cogs.keys())
-        log.debug(f'fuzzy results: {results}')
-        # if we have an exact match
-        if results[0][1] == 100:
-            return results[0][0]
-
-        # Apply threshold
-        if (results[0][1] < 75) or (results[0][1] - results[1][1]) < 5:
-            raise disextc.CommandError(f"'{argument}' too ambiguous.")
-
-        # return result if passed.
-        return results[0][0]
-
-
-# Classes
 
 class System(disextc.Cog):
     """ Cog responsible for the Bot Operation.
@@ -299,7 +256,7 @@ class System(disextc.Cog):
     @cogs_group.command(name='loa', hidden=True)
     @disextc.is_owner()
     async def load_cog_command(
-            self, ctx: disextc.Context, name: FuzzyCogName):
+            self, ctx: disextc.Context, name: converters.FuzzyCogName):
         """ Loads given extension/cog. """
         from __main__ import cog_names
         if name not in cog_names:
@@ -313,7 +270,9 @@ class System(disextc.Cog):
     @cogs_group.command(name='unl', hidden=True)
     @disextc.is_owner()
     async def unload_cog_command(
-            self, ctx: disextc.Context, name: FuzzyCogName):
+            self,
+            ctx: disextc.Context,
+            name: converters.FuzzyCogName):
         """ Unloads given extension/cog. """
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
@@ -326,7 +285,7 @@ class System(disextc.Cog):
     @cogs_group.command(name='rel', hidden=True, aliases=('reboot',))
     @disextc.is_owner()
     async def reload_cog_command(
-            self, ctx: disextc.Context, name: FuzzyCogName) -> None:
+            self, ctx: disextc.Context, name: converters.FuzzyCogName) -> None:
         """Reloads given cog."""
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
@@ -342,8 +301,9 @@ class System(disextc.Cog):
     @disextc.is_owner()
     async def change_log_level_command(
             self, ctx: disextc.Context,
-            name: FuzzyCogName,
-            level: typ.Optional[FuzzyLogLevelName]):
+            name: converters.FuzzyCogName,
+            level: typ.Optional[
+                converters.FuzzyLogLevelName]):
         log.debug(f'change log level fired: {name} | {level}')
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
