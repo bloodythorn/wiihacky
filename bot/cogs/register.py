@@ -225,277 +225,6 @@ class Register(disextc.Cog):
         redis.close()
         await redis.wait_closed()
 
-    # Helpers
-
-    async def set_reddit_key(self, whu: WiiHacksUser, remove=False):
-        """ Set user's reddit key for quick lookup. """
-        redis = await self.get_redis()
-        try:
-            reddit_key = reddit_prefix + whu.reddit_name
-            if remove:
-                await redis.delete(reddit_key)
-            else:
-                record_key = user_prefix + str(whu.registry_id)
-                await redis.set(reddit_key, record_key)
-        except Exception as e:
-            log.error(f'Could not set/remove reddit_key for {whu}|{e.args}')
-        finally:
-            redis.close()
-            await redis.wait_closed()
-
-    async def get_reddit(self) -> praw.Reddit:
-        reddit_cog = self.bot.get_cog('Reddit')
-        if not reddit_cog:
-            raise RuntimeError(f'Could not retrieve reddit cog.')
-        reddit = await reddit_cog.reddit
-        return reddit
-
-    async def add_user(self, user: discord.Member) -> None:
-        """ Adds a user to the registry. """
-        log.debug(f'add_user fired: {user}')
-
-        if await self.is_user(user):
-            raise RuntimeError(
-                f'User is already registered in DB.')
-
-        # Create new user
-        from datetime import datetime
-        whu = WiiHacksUser(
-            snowflake_id=user.id,
-            utc_added=int(datetime.utcnow().timestamp()),
-            registry_id=await self.get_next_user_index())
-
-        # Okay good to record
-        await self.user_write(whu)
-        log.debug(f'add_user succeeded: {whu}')
-
-    async def sync_users(self) -> typ.Tuple[int, float]:
-        """ Reads current users and syncs them to the register.
-
-        This should happen at a long period (hours to days).
-        :return A tuple with members added, and time taken in seconds.
-        """
-        await self.bot.wait_until_ready()
-        log.debug('sync_users fired')
-        from constants import id_wiihacks
-        from time import time
-
-        start_time = time()
-
-        wh: discord.Guild = self.bot.get_guild(id_wiihacks)
-        if wh is None:
-            raise RuntimeError("Could not find WiiHacks Guild!")
-        members = wh.members
-        futures = []
-        for member in members:
-            if not await self.is_user(member):
-                futures.append(self.add_user(member))
-        await asyncio.gather(*futures)
-
-        finish_time = time()
-        duration = finish_time - start_time
-
-        log.debug(f'Synced {len(futures)} users in {duration}.')
-        return len(futures), duration
-
-    async def delete_user(
-            self,
-            user: typ.Union[discord.User, discord.Member]) -> None:
-        """ Marks a user deleted in the registry. """
-        whu: WiiHacksUser = await self.user_read(user)
-        whu.deleted = True
-        await self.user_write(whu)
-
-    async def undelete_user(
-            self,
-            user: typ.Union[discord.User, discord.Member]) -> None:
-        """ Un marks a user deleted in the registry. """
-        whu: WiiHacksUser = await self.user_read(user)
-        whu.deleted = False
-        await self.user_write(whu)
-
-    async def register_reddit(self, user: discord.Member, reddit_name: str):
-        """ Associate a reddit account with a discord account. """
-        log.debug(f'register_reddit fired: {user.display_name}|{reddit_name}')
-        whu: WiiHacksUser = await self.user_read(user)
-        whu.reddit_name = reddit_name
-        await self.user_write(whu)
-
-    async def verify_user(self, user: discord.Member):
-        """ Marks the user's reddit account as verified. """
-        log.debug(f'verify_user fired: {user}')
-
-        # Get user
-        whu: WiiHacksUser = await self.user_read(user)
-
-        # Change verify status and and new role
-        role = disutil.get(user.guild.roles, name=redditor_role)
-        if role is None:
-            raise RuntimeError(
-                f'Could not retrieve role {redditor_role} from guild.')
-        await user.add_roles(role, reason='Reddit name verified.')
-        await self.set_reddit_key(whu)
-        whu.verified = True
-
-        # Replace user record
-        await self.user_write(whu)
-        log.info(f'verify_user success: {user}|{whu}|{role}')
-
-    async def unverify_user(self, user: discord.Member) -> None:
-        """ Removes verification from user. """
-        log.debug(f'unverify_user fired: {user}')
-
-        # get user
-        whu: WiiHacksUser = await self.user_read(user)
-
-        # Change verify status and remove role
-        whu.verified = False
-        role = disutil.get(user.guild.roles, name=redditor_role)
-        if role is None:
-            raise RuntimeError(
-                f'Could not retrieve role {redditor_role} from guild.')
-        await user.remove_roles(role, reason='Reddit name unverified')
-        await self.set_reddit_key(whu, remove=True)
-        await self.user_write(whu)
-
-    async def send_verification(self, whu: WiiHacksUser) -> None:
-        """Send Direct Message Verification.
-
-        This attempts to send a message to the given user's registered
-        reddit account.
-
-        :param whu -> User to attempt to send message to.
-        """
-        from constants import (
-            confirmation_message_subject,
-            confirmation_message_body)
-
-        # Is this record a registered reddit user?
-        if whu.reddit_name == '':
-            raise RuntimeError(
-                f"User: '{whu.snowflake_id}' has no registered reddit name.")
-        if whu.verified:
-            raise RuntimeError(
-                f"User: '{whu.snowflake_id}' is already verified")
-
-        # verify that user exists,
-        reddit: praw.Reddit = await self.get_reddit()
-        redditor: praw.reddit.models.Redditor = reddit.redditor(whu.reddit_name)
-        if redditor is None:
-            raise RuntimeError(
-                f'Redditor {whu.reddit_name} not a valid redditor.')
-
-        # send dm
-        # This was made non-subreddit sent to prevent modmail litter.
-        redditor.message(
-            subject=confirmation_message_subject,
-            message=confirmation_message_body.format(whu.reddit_name))
-        log.debug(f'Send verification request sent to {whu.reddit_name}')
-
-    async def check_message(self, msg: praw.reddit.models.Message) -> bool:
-        """Check Messages for Confirmation.
-
-        This function, given a msg will determine if it meets the conditions
-        of successful verification.
-        :param msg -> Praw Message
-        """
-        await self.bot.wait_until_ready()
-        log.debug(f'check_message fired: {repr(msg)}')
-
-        # regex search it for the {name}#{discriminator} format
-        result = re.match(username_regex, msg.body)
-        if result is not None:
-            log.debug(f'Matched {result.group()} | '
-                      f'group1: {result.group(1)} | group2: {result.group(2)}')
-
-        # If found associate it with a whu
-        from constants import id_wiihacks
-        wiihacks: discord.Guild = self.bot.get_guild(id_wiihacks)
-        discord_display = result.group(1) + "#" + result.group(2)
-        member = wiihacks.get_member_named(discord_display)
-        if member is None:
-            log.error(f'u/{msg.author.name} tried to register to ' +
-                      f'{discord_display} discord account.')
-            msg.mark_read()
-            return False
-        log.debug(f'Found Member: {member}')
-
-        whu = await self.user_read(member)
-        log.debug(f'Found user: {whu}|{whu.reddit_name}')
-        # User already verified? Nothing to do.
-        if whu.verified:
-            log.warning(f"User '{member.id}' has re-verified.")
-            return True
-
-        # make sure the message came from the registered account in whu
-        if msg.author.name.lower() == whu.reddit_name.lower():
-            log.debug(f'Successfully match {msg.author.name.lower()} == '
-                      f'{whu.reddit_name.lower()} = '
-                      f'{msg.author.name.lower() == whu.reddit_name.lower()}')
-            await self.verify_user(member)
-            txt_reddit_verified = 'Your reddit account has been verified!'
-            await member.send(txt_reddit_verified)
-            system_cog = self.bot.get_cog('System')
-            if system_cog is None:
-                log.error(f'Could not obtain system cog to log verify action.')
-            else:
-                await system_cog.send_to_log(
-                    f'{member.display_name} has been verified as '
-                    f'u/{whu.reddit_name} on Reddit!')
-            return True
-        else:
-            log.warning(
-                f'Registered name and message author do not match: '
-                f'{msg.author.name.lower()}|{whu.reddit_name.lower()}')
-            msg.mark_read()
-            return False
-
-    async def up_vote_user(self, user: discord.User, add: bool = True):
-        whu = await self.user_read(user)
-        if add:
-            whu.up_votes += 1
-        else:
-            whu.up_votes -= 1
-        await self.user_write(whu)
-
-    async def down_vote_user(self, user: discord.User, add: bool = True):
-        whu = await self.user_read(user)
-        if add:
-            whu.down_votes += 1
-        else:
-            whu.down_votes -= 1
-        await self.user_write(whu)
-
-    async def process_inbox(self) -> None:
-        """ Processes the inbox for return verifications. """
-        def mark_read(
-                m: praw.reddit.models.Message
-        ) -> praw.reddit.models.Message:
-            if m[1] is True:
-                m[0].mark_read()
-                return m
-
-        log.debug(f'Process Inbox fired.')
-        results = None
-        verified = None
-        try:
-            # grab all unread inbox messages
-            reddit: praw.Reddit = await self.get_reddit()
-
-            # Check each one (only messages)
-            in_messages = \
-                [a for a in reddit.inbox.unread(limit=None)
-                 if (type(a) == praw.reddit.models.Message)]
-            results = list(zip(
-                in_messages,
-                await asyncio.gather(
-                    *(self.check_message(m) for m in in_messages))))
-            verified = list(map(mark_read, results))
-        except Exception as e:
-            log.error(
-                f'An error was encountered processing the inbox: {e.args}')
-        log.debug(f'{results}|{verified}')
-
     # Processes
 
     @disextt.loop(minutes=1)
@@ -792,6 +521,277 @@ class Register(disextc.Cog):
         await self.user_write(whu)
         await ctx.send(
             f'{member.display_name} has been unregistered by {ctx.author}.')
+
+    # Helpers
+
+    async def set_reddit_key(self, whu: WiiHacksUser, remove=False):
+        """ Set user's reddit key for quick lookup. """
+        redis = await self.get_redis()
+        try:
+            reddit_key = reddit_prefix + whu.reddit_name
+            if remove:
+                await redis.delete(reddit_key)
+            else:
+                record_key = user_prefix + str(whu.registry_id)
+                await redis.set(reddit_key, record_key)
+        except Exception as e:
+            log.error(f'Could not set/remove reddit_key for {whu}|{e.args}')
+        finally:
+            redis.close()
+            await redis.wait_closed()
+
+    async def get_reddit(self) -> praw.Reddit:
+        reddit_cog = self.bot.get_cog('Reddit')
+        if not reddit_cog:
+            raise RuntimeError(f'Could not retrieve reddit cog.')
+        reddit = await reddit_cog.reddit
+        return reddit
+
+    async def add_user(self, user: discord.Member) -> None:
+        """ Adds a user to the registry. """
+        log.debug(f'add_user fired: {user}')
+
+        if await self.is_user(user):
+            raise RuntimeError(
+                f'User is already registered in DB.')
+
+        # Create new user
+        from datetime import datetime
+        whu = WiiHacksUser(
+            snowflake_id=user.id,
+            utc_added=int(datetime.utcnow().timestamp()),
+            registry_id=await self.get_next_user_index())
+
+        # Okay good to record
+        await self.user_write(whu)
+        log.debug(f'add_user succeeded: {whu}')
+
+    async def sync_users(self) -> typ.Tuple[int, float]:
+        """ Reads current users and syncs them to the register.
+
+        This should happen at a long period (hours to days).
+        :return A tuple with members added, and time taken in seconds.
+        """
+        await self.bot.wait_until_ready()
+        log.debug('sync_users fired')
+        from constants import id_wiihacks
+        from time import time
+
+        start_time = time()
+
+        wh: discord.Guild = self.bot.get_guild(id_wiihacks)
+        if wh is None:
+            raise RuntimeError("Could not find WiiHacks Guild!")
+        members = wh.members
+        futures = []
+        for member in members:
+            if not await self.is_user(member):
+                futures.append(self.add_user(member))
+        await asyncio.gather(*futures)
+
+        finish_time = time()
+        duration = finish_time - start_time
+
+        log.debug(f'Synced {len(futures)} users in {duration}.')
+        return len(futures), duration
+
+    async def delete_user(
+            self,
+            user: typ.Union[discord.User, discord.Member]) -> None:
+        """ Marks a user deleted in the registry. """
+        whu: WiiHacksUser = await self.user_read(user)
+        whu.deleted = True
+        await self.user_write(whu)
+
+    async def undelete_user(
+            self,
+            user: typ.Union[discord.User, discord.Member]) -> None:
+        """ Un marks a user deleted in the registry. """
+        whu: WiiHacksUser = await self.user_read(user)
+        whu.deleted = False
+        await self.user_write(whu)
+
+    async def register_reddit(self, user: discord.Member, reddit_name: str):
+        """ Associate a reddit account with a discord account. """
+        log.debug(f'register_reddit fired: {user.display_name}|{reddit_name}')
+        whu: WiiHacksUser = await self.user_read(user)
+        whu.reddit_name = reddit_name
+        await self.user_write(whu)
+
+    async def verify_user(self, user: discord.Member):
+        """ Marks the user's reddit account as verified. """
+        log.debug(f'verify_user fired: {user}')
+
+        # Get user
+        whu: WiiHacksUser = await self.user_read(user)
+
+        # Change verify status and and new role
+        role = disutil.get(user.guild.roles, name=redditor_role)
+        if role is None:
+            raise RuntimeError(
+                f'Could not retrieve role {redditor_role} from guild.')
+        await user.add_roles(role, reason='Reddit name verified.')
+        await self.set_reddit_key(whu)
+        whu.verified = True
+
+        # Replace user record
+        await self.user_write(whu)
+        log.info(f'verify_user success: {user}|{whu}|{role}')
+
+    async def unverify_user(self, user: discord.Member) -> None:
+        """ Removes verification from user. """
+        log.debug(f'unverify_user fired: {user}')
+
+        # get user
+        whu: WiiHacksUser = await self.user_read(user)
+
+        # Change verify status and remove role
+        whu.verified = False
+        role = disutil.get(user.guild.roles, name=redditor_role)
+        if role is None:
+            raise RuntimeError(
+                f'Could not retrieve role {redditor_role} from guild.')
+        await user.remove_roles(role, reason='Reddit name unverified')
+        await self.set_reddit_key(whu, remove=True)
+        await self.user_write(whu)
+
+    async def send_verification(self, whu: WiiHacksUser) -> None:
+        """Send Direct Message Verification.
+
+        This attempts to send a message to the given user's registered
+        reddit account.
+
+        :param whu -> User to attempt to send message to.
+        """
+        from constants import (
+            confirmation_message_subject,
+            confirmation_message_body)
+
+        # Is this record a registered reddit user?
+        if whu.reddit_name == '':
+            raise RuntimeError(
+                f"User: '{whu.snowflake_id}' has no registered reddit name.")
+        if whu.verified:
+            raise RuntimeError(
+                f"User: '{whu.snowflake_id}' is already verified")
+
+        # verify that user exists,
+        reddit: praw.Reddit = await self.get_reddit()
+        redditor: praw.reddit.models.Redditor = reddit.redditor(whu.reddit_name)
+        if redditor is None:
+            raise RuntimeError(
+                f'Redditor {whu.reddit_name} not a valid redditor.')
+
+        # send dm
+        # This was made non-subreddit sent to prevent modmail litter.
+        redditor.message(
+            subject=confirmation_message_subject,
+            message=confirmation_message_body.format(whu.reddit_name))
+        log.debug(f'Send verification request sent to {whu.reddit_name}')
+
+    async def check_message(self, msg: praw.reddit.models.Message) -> bool:
+        """Check Messages for Confirmation.
+
+        This function, given a msg will determine if it meets the conditions
+        of successful verification.
+        :param msg -> Praw Message
+        """
+        await self.bot.wait_until_ready()
+        log.debug(f'check_message fired: {repr(msg)}')
+
+        # regex search it for the {name}#{discriminator} format
+        result = re.match(username_regex, msg.body)
+        if result is not None:
+            log.debug(f'Matched {result.group()} | '
+                      f'group1: {result.group(1)} | group2: {result.group(2)}')
+
+        # If found associate it with a whu
+        from constants import id_wiihacks
+        wiihacks: discord.Guild = self.bot.get_guild(id_wiihacks)
+        discord_display = result.group(1) + "#" + result.group(2)
+        member = wiihacks.get_member_named(discord_display)
+        if member is None:
+            log.error(f'u/{msg.author.name} tried to register to ' +
+                      f'{discord_display} discord account.')
+            msg.mark_read()
+            return False
+        log.debug(f'Found Member: {member}')
+
+        whu = await self.user_read(member)
+        log.debug(f'Found user: {whu}|{whu.reddit_name}')
+        # User already verified? Nothing to do.
+        if whu.verified:
+            log.warning(f"User '{member.id}' has re-verified.")
+            return True
+
+        # make sure the message came from the registered account in whu
+        if msg.author.name.lower() == whu.reddit_name.lower():
+            log.debug(f'Successfully match {msg.author.name.lower()} == '
+                      f'{whu.reddit_name.lower()} = '
+                      f'{msg.author.name.lower() == whu.reddit_name.lower()}')
+            await self.verify_user(member)
+            txt_reddit_verified = 'Your reddit account has been verified!'
+            await member.send(txt_reddit_verified)
+            system_cog = self.bot.get_cog('System')
+            if system_cog is None:
+                log.error(f'Could not obtain system cog to log verify action.')
+            else:
+                await system_cog.send_to_log(
+                    f'{member.display_name} has been verified as '
+                    f'u/{whu.reddit_name} on Reddit!')
+            return True
+        else:
+            log.warning(
+                f'Registered name and message author do not match: '
+                f'{msg.author.name.lower()}|{whu.reddit_name.lower()}')
+            msg.mark_read()
+            return False
+
+    async def up_vote_user(self, user: discord.User, add: bool = True):
+        whu = await self.user_read(user)
+        if add:
+            whu.up_votes += 1
+        else:
+            whu.up_votes -= 1
+        await self.user_write(whu)
+
+    async def down_vote_user(self, user: discord.User, add: bool = True):
+        whu = await self.user_read(user)
+        if add:
+            whu.down_votes += 1
+        else:
+            whu.down_votes -= 1
+        await self.user_write(whu)
+
+    async def process_inbox(self) -> None:
+        """ Processes the inbox for return verifications. """
+        def mark_read(
+                m: praw.reddit.models.Message
+        ) -> praw.reddit.models.Message:
+            if m[1] is True:
+                m[0].mark_read()
+                return m
+
+        log.debug(f'Process Inbox fired.')
+        results = None
+        verified = None
+        try:
+            # grab all unread inbox messages
+            reddit: praw.Reddit = await self.get_reddit()
+
+            # Check each one (only messages)
+            in_messages = \
+                [a for a in reddit.inbox.unread(limit=None)
+                 if (type(a) == praw.reddit.models.Message)]
+            results = list(zip(
+                in_messages,
+                await asyncio.gather(
+                    *(self.check_message(m) for m in in_messages))))
+            verified = list(map(mark_read, results))
+        except Exception as e:
+            log.error(
+                f'An error was encountered processing the inbox: {e.args}')
+        log.debug(f'{results}|{verified}')
 
 
 def setup(bot: disextc.Bot) -> None:

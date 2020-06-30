@@ -355,7 +355,7 @@ class Feeds(disextc.Cog):
     # Events
 
     # TODO: listeners for on_member_join, on_member_remove, bot_check_once
-
+    # TODO: This doesn't work when the cog is reloaded
     @disextc.Cog.listener()
     async def on_ready(self):
         """ Prep the Cog on load. """

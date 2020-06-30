@@ -65,7 +65,7 @@ class FuzzyCogName(disextc.Converter):
 
         # Apply threshold
         if (results[0][1] < 75) or (results[0][1] - results[1][1]) < 5:
-            raise disextc.CommandError(f"'{argument}' too ambiguous.")
+            raise disextc.BadArgument(f"'{argument}' too ambiguous.")
 
         # return result if passed.
         return results[0][0]

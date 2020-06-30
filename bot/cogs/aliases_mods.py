@@ -38,11 +38,13 @@ class ModAliases(disextc.Cog):
             self,
             ctx: disextc.Context,
             count: int = 500,
-            key: bool = True
+            key: bool = True,
+            compact: bool = False
     ) -> None:
         """ Retrieve the stats for mod actions. """
         await self.invoke(
-            ctx, "red mod stats", count=count, display_key=key)
+            ctx, "red mod stats",
+            count=count, display_key=key, compact=compact)
 
     @disextc.command(name='regreset', aliases=("regr",))
     @decorators.with_roles(constants.moderator_and_up)

@@ -1,4 +1,4 @@
-import discord as discord
+import discord
 import discord.ext.commands as disextc
 import logging as lg
 import typing as typ
@@ -6,7 +6,7 @@ import typing as typ
 import constants
 import converters
 import decorators
-
+from converters import BooleanFuzzyConverter as FuzzyBool
 # TODO: Get this out of here.
 from constants import paginate, send_paginator
 
@@ -112,6 +112,20 @@ class System(disextc.Cog):
 
     # Listeners
 
+    # TODO: More error info in discord
+    @disextc.Cog.listener(name='on_command_error')
+    async def command_error(self, ctx: disextc.Context, error):
+        """ Error Handler for commands. """
+        import cogs.persona
+        persona: cogs.persona.Persona = self.bot.get_cog('Persona')
+        if persona is not None:
+            pag = await paginate(
+                f'{await persona.random_error}:-'
+                f'command>|{ctx.message.content}|-'
+                f'error>|{error}')
+            await send_paginator(ctx, pag)
+        log.error(f"{ctx.message.author} <|> {error}")
+
     @disextc.Cog.listener()
     async def on_ready(self):
         """ Start up checks.
@@ -133,7 +147,7 @@ class System(disextc.Cog):
 
     @disextc.group(name='sys', hidden=True)
     @disextc.is_owner()
-    async def system_group(self, ctx: disextc.Context):
+    async def system_group(self, ctx: disextc.Context) -> None:
         """ Grouping for system commands. """
         # TODO: Resolve this gracefully
         if ctx.invoked_subcommand is None:
@@ -168,6 +182,33 @@ class System(disextc.Cog):
             for page in pages.pages:
                 await ctx.send(page)
 
+    @system_group.command(name='com', hidden=True)
+    @disextc.is_owner()
+    async def list_commands_command(self, ctx) -> None:
+        await ctx.send([a.name for a in ctx.bot.commands])
+
+    @system_group.command(name='err', hidden=True)
+    @disextc.is_owner()
+    async def error_handling(self, ctx: disextc.Context, on: FuzzyBool = True):
+        """Turn on/off error handling."""
+        if bool(on):
+            self.bot.add_listener(self.command_error, name='on_command_error')
+        else:
+            self.bot.remove_listener(
+                self.command_error, name='on_command_error')
+
+    @system_group.command(name='hs', hidden=True)
+    @decorators.with_roles(constants.moderator_and_up)
+    async def health_and_safety_display_command(
+            self, ctx: disextc.Context,
+            channel: typ.Optional[discord.TextChannel]):
+        """This command displays a mock health and safety screen."""
+        from constants import health_and_safety_text
+        if channel is None:
+            await ctx.send(content="** **\n"+health_and_safety_text)
+        else:
+            await channel.send(content="** **\n"+health_and_safety_text)
+
     @system_group.command(name='inf', hidden=True)
     @disextc.is_owner()
     async def application_info_command(self, ctx: disextc.Context) -> None:
@@ -182,14 +223,9 @@ class System(disextc.Cog):
         await send_paginator(
             ctx, await paginate(repr(await self.bot.application_info())))
 
-    @system_group.command(name='com', hidden=True)
-    @disextc.is_owner()
-    async def list_commands_command(self, ctx):
-        await ctx.send([a.name for a in ctx.bot.commands])
-
     @system_group.command(name='log', hidden=True)
     @disextc.is_owner()
-    async def log_command(self, ctx: disextc.Context, *, message: str):
+    async def txt_to_log_command(self, ctx: disextc.Context, *, message: str):
         # TODO: Make Log Entry and Paginate!
         #   Turn this into a decorator
         """Sends text to discord log."""
@@ -210,18 +246,6 @@ class System(disextc.Cog):
             await ctx.send(page)
         await ctx.bot.close()
 
-    @system_group.command(name='hs', hidden=True)
-    @decorators.with_roles(constants.moderator_and_up)
-    async def health_and_safety_display_command(
-            self, ctx: disextc.Context,
-            channel: typ.Optional[discord.TextChannel]):
-        """This command displays a mock health and safety screen."""
-        from constants import health_and_safety_text
-        if channel is None:
-            await ctx.send(content="** **\n"+health_and_safety_text)
-        else:
-            await channel.send(content="** **\n"+health_and_safety_text)
-
     # Cog Group Commands
 
     @system_group.group(name='cog', hidden=True)
@@ -233,7 +257,7 @@ class System(disextc.Cog):
 
     @cogs_group.command(name='act', hidden=True)
     @disextc.is_owner()
-    async def active_command(self, ctx: disextc.Context) -> None:
+    async def list_active_cogs_command(self, ctx: disextc.Context) -> None:
         """ Lists active cogs.
 
         Lists all cogs currently active in the bot.
@@ -245,7 +269,7 @@ class System(disextc.Cog):
 
     @cogs_group.command(name='lst', hidden=True)
     @disextc.is_owner()
-    async def list_command(self, ctx: disextc.Context) -> None:
+    async def list_all_cogs_command(self, ctx: disextc.Context) -> None:
         """ Lists all registered cogs.
 
         This will list all the cogs that are currently registered with the bot.
@@ -297,13 +321,21 @@ class System(disextc.Cog):
 
     # console group
 
-    @system_group.command(name='con', hidden=True)
+    @system_group.group(name='con', hidden=True)
     @disextc.is_owner()
-    async def change_log_level_command(
+    async def console_group(self, ctx: disextc.Context) -> None:
+        if ctx.invoked_subcommand is None:
+            await ctx.send(f"Please provide a subcommand to '{ctx.command}'")
+
+    # TODO: Make this result persistent between reboots using redis.
+    @console_group.command(name='lvl', hidden=True)
+    @disextc.is_owner()
+    async def set_get_log_level(
             self, ctx: disextc.Context,
             name: converters.FuzzyCogName,
             level: typ.Optional[
-                converters.FuzzyLogLevelName]):
+            converters.FuzzyLogLevelName]) -> None:
+        """ sets log level if given, gets log level if not."""
         log.debug(f'change log level fired: {name} | {level}')
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
@@ -315,6 +347,8 @@ class System(disextc.Cog):
         if level is not None:
             temp_log.setLevel(str(level))
         await ctx.send(f'{temp_log}')
+
+    # TODO: list all loggers
 
 
 def setup(bot: disextc.Bot) -> None:

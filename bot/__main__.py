@@ -23,8 +23,13 @@ log_format = lg.Formatter(log_format_string)
 
 log_file = Path('logs', 'botlog.log')
 log_file.parent.mkdir(exist_ok=True)
+log_file_count = 50
+max_file_size = 2**16*8*2
 file_handler = handlers.RotatingFileHandler(
-    log_file, maxBytes=524880, backupCount=10, encoding='utf-8')
+    log_file,
+    maxBytes=max_file_size,
+    backupCount=log_file_count,
+    encoding='utf-8')
 file_handler.setFormatter(log_format)
 
 stream_handler = lg.StreamHandler()
@@ -36,13 +41,10 @@ log.addHandler(file_handler)
 log.addHandler(stream_handler)
 
 # Set helper lib libraries log levels.
-lg.getLogger('discord').setLevel(lg.WARNING)
-lg.getLogger('websockets').setLevel(lg.WARNING)
-lg.getLogger('asyncio').setLevel(lg.WARNING)
-lg.getLogger('urllib3.connectionpool').setLevel(lg.WARNING)
-lg.getLogger('prawcore').setLevel(lg.WARNING)
-lg.getLogger('aioredis').setLevel(lg.WARNING)
-
+set_to_warning = ('discord', 'websockets', 'asyncio', 'urllib3.connectionpool',
+                  'prawcore', 'aioredis')
+for a in set_to_warning:
+    lg.getLogger(a).setLevel(lg.WARNING)
 
 log.info('Logger is setup.')
 
@@ -78,7 +80,6 @@ module_names = (
     cogs.discord.__name__[5:],
     cogs.laboratory.__name__[5:],
     cogs.memory.__name__[5:],
-    cogs.menusys.__name__[5:],
     cogs.persona.__name__[5:],
     cogs.reddit.reddit.__name__[5:],
     cogs.reddit.feeds.__name__[5:],
@@ -92,7 +93,6 @@ cog_names = (
     cogs.discord.Discord.__qualname__,
     cogs.laboratory.Laboratory.__qualname__,
     cogs.memory.Memory.__qualname__,
-    cogs.menusys.MenuSys.__qualname__,
     cogs.persona.Persona.__qualname__,
     cogs.reddit.reddit.Reddit.__qualname__,
     cogs.reddit.feeds.Feeds.__qualname__,
@@ -101,19 +101,9 @@ cog_names = (
     cogs.system.System.__qualname__)
 
 # Load Cog/Extensions
-wh.load_extension('cogs.aliases_mods')
-wh.load_extension('cogs.aliases_users')
-wh.load_extension('cogs.config')
-wh.load_extension('cogs.discord')
-wh.load_extension('cogs.laboratory')
-wh.load_extension('cogs.memory')
-wh.load_extension('cogs.menusys')
-wh.load_extension('cogs.persona')
-wh.load_extension('cogs.reddit.reddit')
-wh.load_extension('cogs.reddit.feeds')
-wh.load_extension('cogs.register')
-wh.load_extension('cogs.security')
-wh.load_extension('cogs.system')
+for a in module_names:
+    log.info(f'Loading module: {a}')
+    wh.load_extension('cogs.' + a)
 
 # TODO: Retry/fail attempts
 # Attempt to loin to discord

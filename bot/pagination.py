@@ -241,7 +241,6 @@ class EmbedPaginator(disextc.Paginator):
             message = await msgble.send(embed=embed)
 
         log.debug("Adding emoji reactions to message...")
-
         # Add all the applicable emoji to the message
         pagination_emoji = (EMOJI_BEGIN, EMOJI_BACK, EMOJI_FORE, EMOJI_END)
         if stop_button:
