@@ -75,4 +75,3 @@ class ModAliases(disextc.Cog):
 def setup(bot: disextc.Bot) -> None:
     """ Loads register cog. """
     bot.add_cog(ModAliases(bot))
-

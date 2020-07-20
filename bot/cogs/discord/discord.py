@@ -140,7 +140,7 @@ class Discord(disextc.Cog):
         :return None
         """
         await self.send_paginator(
-            ctx, await self.paginate(repr(ctx.bot.emojis)))
+            ctx, await self.paginate(repr(ctx.bot.test_emojis)))
 
     @discord_group.command(name='latency', hidden=True)
     @disextc.is_owner()

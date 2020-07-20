@@ -325,7 +325,13 @@ class System(disextc.Cog):
     @disextc.is_owner()
     async def console_group(self, ctx: disextc.Context) -> None:
         if ctx.invoked_subcommand is None:
-            await ctx.send(f"Please provide a subcommand to '{ctx.command}'")
+            await ctx.send(f'No subcommand given for con')
+            # loggers = [lg.getLogger()]  # get the root logger
+            # noinspection PyUnresolvedReferences
+            # loggers = loggers + [
+            #    lg.getLogger(name) for name in lg.root.manager.loggerDict]
+            # for name in loggers:
+            #    await ctx.send(f"Registered Logs: {name}")
 
     # TODO: Make this result persistent between reboots using redis.
     @console_group.command(name='lvl', hidden=True)

@@ -1,3 +1,5 @@
+# TODO: All this is moving to synergii in some form or another.
+
 import asyncio
 import contextlib as ctxlib
 import discord
@@ -336,6 +338,36 @@ class EmbedPaginator(disextc.Paginator):
         log.debug("Ending pagination and clearing reactions.")
         with ctxlib.suppress(discord.NotFound):
             await message.clear_reactions()
+
+
+class RedditItemPaginator(disextc.Paginator):
+
+    # TODO: This should return the selected message for another paginator.
+    # Note: This should take a list of reddit.Message or reddit.Comment,
+    #   or reddit.Submission
+    @classmethod
+    async def paginate(
+        cls,
+        bot: disextc.Bot,
+        lines: typ.List[typ.Union[
+            praw.reddit.Submission,
+            praw.reddit.Comment,
+            praw.reddit.models.Message]],
+        msgble: discord.abc.Messageable,
+        restrict_to_user: discord.User = None,
+        timeout: int = 300,
+        clear_on_timeout: bool = True,
+        header_text: str = None,
+        stop_button: bool = True,
+        eject_button: bool = True
+    ) -> typ.Tuple[discord.Message, typ.Union[
+            praw.reddit.Submission,
+            praw.reddit.Comment,
+            praw.reddit.models.Message]]:
+        """Given a list of reddit items this will paginate it into a
+        navigable list.
+        """
+        pass
 
 
 def linefy_submission_text(text: str, max_size: int = 975):

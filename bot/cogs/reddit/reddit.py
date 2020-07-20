@@ -25,6 +25,17 @@ reddit_config_group = 'reddit'
 log = lg.getLogger(__name__)
 
 
+async def reddit_credential_check() -> bool:
+    """ Check Reddit config for bot. """
+    return all([
+        'REDDIT_USER_AGENT' in os.environ,
+        'REDDIT_CLIENT_ID' in os.environ,
+        'REDDIT_CLIENT_SECRET' in os.environ,
+        'REDDIT_USERNAME' in os.environ,
+        'REDDIT_PASSWORD' in os.environ
+    ])
+
+
 # praw uses tons of protected members we need access to.
 # noinspection PyProtectedMember
 class Reddit(disextc.Cog):
@@ -50,7 +61,7 @@ class Reddit(disextc.Cog):
 
     @property
     async def reddit(self) -> typ.Optional[praw.reddit.Reddit]:
-        if not await utils.reddit_credential_check():
+        if not await reddit_credential_check():
             return None
         return praw.Reddit(
             user_agent=os.environ['REDDIT_USER_AGENT'],
@@ -83,7 +94,7 @@ class Reddit(disextc.Cog):
         owner: discord.User = appinfo.owner
 
         # This fires if the bot can't find the credentials in env.
-        if not await utils.reddit_credential_check():
+        if not await reddit_credential_check():
             log.info(txt_no_creds)
             pag_msg = await constants.paginate(txt_no_creds)
             if owner is not None:
@@ -195,7 +206,7 @@ class Reddit(disextc.Cog):
         # TODO: Configurable? v Magic String
         reddit = await self.reddit
         wh = reddit.subreddit('WiiHacks')
-        from cogs.discord import ModStatsDisplay
+        from cogs.discord.discord import ModStatsDisplay
         test = ModStatsDisplay(
             subreddit=wh,
             count=count,

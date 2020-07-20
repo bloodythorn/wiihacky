@@ -1,0 +1,37 @@
+Security Module:
+
+# ALERTS
+
+  Alerts Broadcast to a specific channel -> Create channel if it doesn't exist.
+
+  Alerts are:
+
+  * Hourly, daily, monthly? report, stats posts, etc. (How many items in the spam queue that don't have reasons)
+  * unread modmail?
+  * Anytime any new mod-items hit the mod queues
+  * Anytime a filter is triggered
+
+# Remove Posts
+
+  Posts/comments need to be able to remove for stuff for a template reason
+
+# Report Posts
+
+  Why would the bot need to ever do this?
+
+# Logging
+
+  Anything a moderator can use needs to leave a solid log
+
+# Pythonbot's Defcon module -> Lock down the discord
+
+# an oncall system?
+
+  Something you can log into an the bot will know to address them to you.
+Automatically removes you from it after a time. (if you're not Online for n minutes.)
+
+  I was also thinking of a system that tracked which mod/admin was 'online' and would track uncovered time as well as if anything really important came to its filter's attention notifications on only people who are online as opposed to just pinging the entire team.
+
+# A user-watch
+
+  Something that logs everything a user does on the server.

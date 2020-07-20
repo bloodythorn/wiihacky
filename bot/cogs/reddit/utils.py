@@ -10,27 +10,6 @@ log = lg.getLogger(__name__)
 
 
 # Checks
-async def reddit_credential_check() -> bool:
-    """ Check Reddit config for bot. """
-    return all([
-        'REDDIT_USER_AGENT' in os.environ,
-        'REDDIT_CLIENT_ID' in os.environ,
-        'REDDIT_CLIENT_SECRET' in os.environ,
-        'REDDIT_USERNAME' in os.environ,
-        'REDDIT_PASSWORD' in os.environ
-    ])
-
-
-def red_creds_check():
-    # noinspection PyUnusedLocal
-    async def predicate(ctx: disextc.Context) -> bool:
-        """ Check Reddit config for bot."""
-        if await reddit_credential_check():
-            return True
-        else:
-            raise disextc.CommandError(
-                r'No reddit credentials set in env')
-
 
 # TODO: timestamp: in dicscord output of submissions.
 

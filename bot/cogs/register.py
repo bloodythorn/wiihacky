@@ -28,6 +28,7 @@ thumbs_down = '👎'
 up_vote_emoji_id = 718726011759493126
 down_vote_emoji_id = 718725629847142410
 
+
 # todo: command that auto-nicks you to your reddit name and alias
 # TODO: Multiple reactions on the same profile doesn't seem to work. (prolly
 #   because it was hit after the message was removed from cache.
@@ -72,6 +73,8 @@ class Register(disextc.Cog):
 
     @staticmethod
     def in_context(reaction: discord.Reaction, user: discord.User) -> bool:
+        # Self-tagging prevention
+        # TODO: Prevent a user from upvoting themselves.
         # Currently it's a free-for all. Refine this later maybe?
         # Context Considerations:
         # reaction.message.author reaction.emoji.name user
