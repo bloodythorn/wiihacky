@@ -197,6 +197,7 @@ class System(disextc.Cog):
             self.bot.remove_listener(
                 self.command_error, name='on_command_error')
 
+    # TODO: Move to personality
     @system_group.command(name='hs', hidden=True)
     @decorators.with_roles(constants.moderator_and_up)
     async def health_and_safety_display_command(
@@ -353,8 +354,6 @@ class System(disextc.Cog):
         if level is not None:
             temp_log.setLevel(str(level))
         await ctx.send(f'{temp_log}')
-
-    # TODO: list all loggers
 
 
 def setup(bot: disextc.Bot) -> None:

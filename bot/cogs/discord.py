@@ -61,9 +61,7 @@ class Discord(disextc.Cog):
         log.debug(f'on_member_join: {member}')
 
     # Discord Group Commands
-
     @disextc.group(name='dis', hidden=True)
-    @disextc.is_owner()
     async def discord_group(self, ctx: disextc.Context) -> None:
         """ Discord Subgroup.
 

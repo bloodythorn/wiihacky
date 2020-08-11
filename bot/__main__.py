@@ -9,8 +9,6 @@ from pathlib import Path
 
 import cogs
 
-# TODO: Make the log level settable at during runtime.
-
 # Set Debug Level: Pull debug mode from env
 DEBUG_MODE = None
 if 'DEBUG' in os.environ:
@@ -44,12 +42,15 @@ log.addHandler(stream_handler)
 set_to_warning = ('discord', 'websockets', 'asyncio', 'urllib3.connectionpool',
                   'prawcore', 'aioredis')
 for a in set_to_warning:
-    lg.getLogger(a).setLevel(lg.WARNING)
+    if log_level == lg.DEBUG:
+        lg.getLogger(a).setLevel(lg.DEBUG)
+    else:
+        lg.getLogger(a).setLevel(lg.WARNING)
 
 log.info('Logger is setup.')
 
 # Module Constants
-command_chars = ('!',)
+command_chars = ('^',)
 message_cache = 1000 * 10
 txt_help_description = \
     """r/WiiHacks Discord Help Menu"""
@@ -75,22 +76,27 @@ wh = disextc.Bot(
 # I believe this needs to be here
 st = len('cogs.')
 module_names = (
-    cogs.aliases_mods.__name__[st:], cogs.aliases_users.__name__[st:],
-    cogs.config.__name__[st:], cogs.discord.discord.__name__[st:],
-    cogs.discord.synergii.__name__[st:], cogs.laboratory.__name__[st:],
-    cogs.memory.__name__[st:], cogs.persona.__name__[st:],
-    cogs.reddit.reddit.__name__[st:], cogs.reddit.feeds.__name__[st:],
-    cogs.register.__name__[st:], cogs.security.__name__[st:],
+    cogs.aliases_mods.__name__[st:],
+    cogs.aliases_users.__name__[st:],
+    cogs.config.__name__[st:],
+    cogs.discord.__name__[st:],
+    cogs.memory.__name__[st:],
+    cogs.persona.__name__[st:],
+    cogs.reddit.reddit.__name__[st:],
+    cogs.reddit.feeds.__name__[st:],
+    cogs.register.__name__[st:],
     cogs.system.__name__[st:])
 cog_names = (
     cogs.aliases_mods.ModAliases.__qualname__,
     cogs.aliases_users.UserAliases.__qualname__,
-    cogs.config.Config.__qualname__, cogs.discord.Discord.__qualname__,
-    cogs.discord.Synergii.__qualname__,
-    cogs.laboratory.Laboratory.__qualname__, cogs.memory.Memory.__qualname__,
-    cogs.persona.Persona.__qualname__, cogs.reddit.reddit.Reddit.__qualname__,
-    cogs.reddit.feeds.Feeds.__qualname__, cogs.register.Register.__qualname__,
-    cogs.security.Security.__qualname__, cogs.system.System.__qualname__)
+    cogs.config.Config.__qualname__,
+    cogs.discord.Discord.__qualname__,
+    cogs.memory.Memory.__qualname__,
+    cogs.persona.Persona.__qualname__,
+    cogs.reddit.reddit.Reddit.__qualname__,
+    cogs.reddit.feeds.Feeds.__qualname__,
+    cogs.register.Register.__qualname__,
+    cogs.system.System.__qualname__)
 
 # Load Cog/Extensions
 for a in module_names:
@@ -102,7 +108,6 @@ for a in module_names:
 try:
     log.info('Bot Starting...')
     # Check to make sure we have a token
-    import os
     txt_token_key = 'DISCORD_BOT_TOKEN'
     discord_token = os.environ[txt_token_key]
     wh.run(discord_token)
@@ -110,11 +115,11 @@ except KeyError as e:
     log.critical('DISCORD_BOT_TOKEN not set in env.')
     exit(-1)
 except discord.errors.LoginFailure as e:
-    log.error('Failed to login with given token: {}'.format(e.args))
+    log.error(f'Failed to login with given token: {e.args}')
     exit(-1)
 except aiohttp.ClientConnectionError as e:
     log.error(f'Failed to login to discord: {e.args}')
     exit(-1)
 except RuntimeError as e:
-    log.info('Loop experienced a runtime error: {}'.format(e.args))
+    log.info(f'Loop experienced a runtime error: {e.args}')
     exit(0)

@@ -206,7 +206,7 @@ class Reddit(disextc.Cog):
         # TODO: Configurable? v Magic String
         reddit = await self.reddit
         wh = reddit.subreddit('WiiHacks')
-        from cogs.discord.discord import ModStatsDisplay
+        from cogs.discord import ModStatsDisplay
         test = ModStatsDisplay(
             subreddit=wh,
             count=count,
