@@ -8,8 +8,8 @@ import random
 import torch
 import typing as typ
 
-import constants
-import decorators
+import bot.constants as constants
+import bot.decorators as decorators
 
 log = lg.getLogger(__name__)
 

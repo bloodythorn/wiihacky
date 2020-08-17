@@ -6,7 +6,7 @@ import logging as lg
 import praw
 import typing as typ
 
-import cogs.reddit.utils as utils
+import bot.cogs.reddit.utils as utils
 
 from collections import deque
 from datetime import timedelta

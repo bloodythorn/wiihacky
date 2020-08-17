@@ -1,9 +1,7 @@
 import discord
 import discord.ext.commands as disextc
 import logging as lg
-import os
 import praw
-import typing as typ
 
 
 log = lg.getLogger(__name__)

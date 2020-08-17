@@ -3,12 +3,12 @@ import discord.ext.commands as disextc
 import logging as lg
 import typing as typ
 
-import constants
-import converters
-import decorators
-from converters import BooleanFuzzyConverter as FuzzyBool
+import bot.constants as constants
+import bot.converters as converters
+import bot.decorators as decorators
+from bot.converters import BooleanFuzzyConverter as FuzzyBool
 # TODO: Get this out of here.
-from constants import paginate, send_paginator
+from bot.constants import paginate, send_paginator
 
 system_defaults = {
     'bot_category': 'bot',

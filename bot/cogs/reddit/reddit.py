@@ -6,9 +6,9 @@ import os
 import praw
 import typing as typ
 
-import constants
-import cogs.reddit.utils as utils
-from converters import BooleanFuzzyConverter as FuzzyBool
+import bot.constants as constants
+import bot.cogs.reddit.utils as utils
+from bot.converters import BooleanFuzzyConverter as FuzzyBool
 
 # TODO: Upvote/downvote query.
 # TODO: watch for upvote/down vote, tally per user, use as money.

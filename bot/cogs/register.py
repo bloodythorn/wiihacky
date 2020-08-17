@@ -10,8 +10,8 @@ import praw
 import typing as typ
 import re
 
-import constants
-import decorators
+import bot.constants as constants
+import bot.decorators as decorators
 
 log = lg.getLogger(__name__)
 

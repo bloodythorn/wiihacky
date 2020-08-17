@@ -2,7 +2,7 @@ import discord.ext.commands as disextc
 import logging as lg
 import typing as typ
 
-import constants
+import bot.constants as constants
 
 # Log instance for this module
 log = lg.getLogger(__name__)

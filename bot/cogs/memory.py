@@ -6,8 +6,9 @@ import discord.ext.commands as disextc
 import logging as lg
 import os
 import typing as typ
+
 # TODO: Get rid of these
-from constants import paginate, send_paginator
+from bot.constants import paginate, send_paginator
 
 # TODO: Make SQL Console Channel
 # TODO: Clean up what you have
