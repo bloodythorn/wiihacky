@@ -7,7 +7,7 @@ import os
 from logging import handlers
 from pathlib import Path
 
-import cogs
+import bot.cogs as cogs
 
 # Set Debug Level: Pull debug mode from env
 DEBUG_MODE = None
@@ -74,7 +74,7 @@ wh = disextc.Bot(
         details=txt_activity_details))
 
 # I believe this needs to be here
-st = len('cogs.')
+st = len('bot.cogs.')
 module_names = (
     cogs.aliases_mods.__name__[st:],
     cogs.aliases_users.__name__[st:],
