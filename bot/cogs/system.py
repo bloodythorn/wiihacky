@@ -79,11 +79,6 @@ class System(disextc.Cog):
                     system_defaults['bot_category'],
                     system_defaults['log_channel']))
             return
-        # Not in the right category?
-        elif log_chan.category.name != system_defaults['bot_category']:
-            await owner.send('Log channel found but not in category {}'.format(
-                        system_defaults['bot_category']))
-            return
 
         # This is it!
         self.log_channel = log_chan.id
@@ -116,14 +111,15 @@ class System(disextc.Cog):
     @disextc.Cog.listener(name='on_command_error')
     async def command_error(self, ctx: disextc.Context, error):
         """ Error Handler for commands. """
-        import cogs.persona
-        persona: cogs.persona.Persona = self.bot.get_cog('Persona')
-        if persona is not None:
-            pag = await paginate(
-                f'{await persona.random_error}:-'
-                f'command>|{ctx.message.content}|-'
-                f'error>|{error}')
-            await send_paginator(ctx, pag)
+        # TODO: Handle this more gracefully.
+        # import cogs.persona
+        # persona: cogs.persona.Persona = self.bot.get_cog('Persona')
+        # if persona is not None:
+        #    pag = await paginate(
+        #        f'{await persona.random_error}:-'
+        #        f'command>|{ctx.message.content}|-'
+        #        f'error>|{error}')
+        #    await send_paginator(ctx, pag)
         log.error(f"{ctx.message.author} <|> {error}")
 
     @disextc.Cog.listener()

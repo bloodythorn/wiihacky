@@ -3,9 +3,10 @@ import discord as discord
 import discord.ext.commands as disextc
 import logging as lg
 import nltk
+import numpy
 import praw
 import random
-import torch
+# import torch
 import typing as typ
 
 import bot.constants as constants
@@ -49,16 +50,7 @@ class Discord(disextc.Cog):
         self.paginate = paginate
         self.send_paginator = send_paginator
 
-    # Helpers
-
-    # TODO: Send Greeting (Person, Location)
-
     # Listeners
-
-    @disextc.Cog.listener(name='on_member_join')
-    async def greeter(self, member: discord.Member):
-        # TODO: Create Welcomer Here!
-        log.debug(f'on_member_join: {member}')
 
     # Discord Group Commands
     @disextc.group(name='dis', hidden=True)
@@ -454,18 +446,21 @@ class ModStatsDisplay:
         self._actions = list(sorted(set(self._actions)))
 
         # Convert to a torch tensor
-        self._matrix = torch.zeros(
-            len(self._actors) + 1,
-            len(self._actions) + 1,
-            dtype=torch.int)
+        self._matrix = numpy.array([0, ], dtype=numpy.int64)
+        self._matrix.resize(
+            ((len(self._actors) + 1), (len(self._actions) + 1)))
+        # self._matrix = torch.zeros(
+        #    len(self._actors) + 1,
+        #    len(self._actions) + 1,
+        #    dtype=torch.int)
         for idx_y, actor in enumerate(self._actors):
             for idx_x, action in enumerate(self._actions):
                 if action in self._data[actor]:
                     self._matrix[idx_y][idx_x] = self._data[actor][action]
 
         # Calc the Totals
-        self._matrix[len(self._actors), :] = self._matrix.sum(dim=0)
-        self._matrix[:, len(self._actions)] = self._matrix.sum(dim=1)
+        self._matrix[len(self._actors), :] = self._matrix.sum(axis=0)
+        self._matrix[:, len(self._actions)] = self._matrix.sum(axis=1)
 
         # Headers
         self._display_table.field_names = await self.headers
@@ -473,9 +468,9 @@ class ModStatsDisplay:
         # Add Data Rows
         for idx, actor in enumerate(self._actors):
             self._display_table.add_row(
-             [idx] + list(self._matrix[idx, :].numpy()))
+             [idx] + list(self._matrix[idx, :]))
         self._display_table.add_row(
-            ['ttl'] + list(self._matrix[len(self._actors), :].numpy()))
+            ['ttl'] + list(self._matrix[len(self._actors), :]))
 
         # Fill in blanks of the shorter list.
         while len(self._actions) > len(self._actors):
