@@ -1,4 +1,3 @@
-import decorators
 import discord
 import discord.ext.commands as disextc
 import logging as lg
@@ -7,6 +6,7 @@ import praw
 import typing as typ
 
 import bot.constants as constants
+import bot.decorators as decorators
 import bot.cogs.reddit.utils as utils
 from bot.converters import BooleanFuzzyConverter as FuzzyBool
 
