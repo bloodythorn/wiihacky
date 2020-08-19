@@ -74,7 +74,8 @@ wh = disextc.Bot(
         details=txt_activity_details))
 
 # I believe this needs to be here
-st = len('bot.cogs.')
+cog_pref = 'bot.cogs.'
+st = len(cog_pref)
 module_names = (
     cogs.aliases_mods.__name__[st:],
     cogs.aliases_users.__name__[st:],
@@ -101,7 +102,7 @@ cog_names = (
 # Load Cog/Extensions
 for a in module_names:
     log.info(f'Loading module: {a}')
-    wh.load_extension('cogs.' + a)
+    wh.load_extension(cog_pref + a)
 
 # TODO: Retry/fail attempts
 # Attempt to loin to discord

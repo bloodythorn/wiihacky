@@ -9,8 +9,10 @@ import random
 # import torch
 import typing as typ
 
-import bot.constants as constants
 import bot.decorators as decorators
+
+from bot.constants import (
+    paginate, send_paginator, id_bloodythorn, moderator_and_up)
 
 log = lg.getLogger(__name__)
 
@@ -46,7 +48,6 @@ class Discord(disextc.Cog):
         super().__init__()
         self.bot = bot
         # TODO: Get rid of these
-        from constants import paginate, send_paginator
         self.paginate = paginate
         self.send_paginator = send_paginator
 
@@ -298,7 +299,6 @@ class Discord(disextc.Cog):
         """
         message_format = 'From:{}|Where:{}|:-> {}'
         dev_not_found = 'Developer could not be found on discord!'
-        from constants import id_bloodythorn
         dev: discord.User = self.bot.get_user(id_bloodythorn)
         if dev is not None:
             snd = message_format.format(ctx.author, ctx.channel, message)
@@ -307,7 +307,7 @@ class Discord(disextc.Cog):
             raise disextc.BadArgument(dev_not_found)
 
     @discord_group.command(name='rename', hidden=True)
-    @decorators.with_roles(constants.moderator_and_up)
+    @decorators.with_roles(moderator_and_up)
     async def rename_command(
             self, ctx: disextc.Context,
             member: discord.Member,
