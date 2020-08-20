@@ -9,6 +9,9 @@ from pathlib import Path
 
 import bot.cogs as cogs
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # Set Debug Level: Pull debug mode from env
 DEBUG_MODE = None
 if 'DEBUG' in os.environ:
@@ -22,7 +25,7 @@ log_format = lg.Formatter(log_format_string)
 log_file = Path('logs', 'botlog.log')
 log_file.parent.mkdir(exist_ok=True)
 log_file_count = 50
-max_file_size = 2**16*8*2
+max_file_size = 2**16 * 8 * 2
 file_handler = handlers.RotatingFileHandler(
     log_file,
     maxBytes=max_file_size,

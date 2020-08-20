@@ -144,7 +144,7 @@ class Register(disextc.Cog):
         if memory is None:
             raise RuntimeError('I have no memory.')
 
-        from cogs.memory import redis_db_config
+        from bot.cogs.memory import redis_db_config
         return await memory.get_redis_pool(redis_db_config)
 
     async def get_next_user_index(self) -> int:
@@ -577,12 +577,11 @@ class Register(disextc.Cog):
         """
         await self.bot.wait_until_ready()
         log.debug('sync_users fired')
-        from constants import id_wiihacks
         from time import time
 
         start_time = time()
 
-        wh: discord.Guild = self.bot.get_guild(id_wiihacks)
+        wh: discord.Guild = self.bot.get_guild(constants.id_wiihacks)
         if wh is None:
             raise RuntimeError("Could not find WiiHacks Guild!")
         members = wh.members

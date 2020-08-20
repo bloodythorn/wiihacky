@@ -62,7 +62,7 @@ class Config(disextc.Cog):
         if memory is None:
             raise RuntimeError('Could not get memory cog to save config.')
 
-        from cogs.memory import redis_db_config
+        from bot.cogs.memory import redis_db_config
         pool = await memory.get_redis_pool(redis_db_config)
 
         self.data = yl.safe_load(await pool.get('config'))

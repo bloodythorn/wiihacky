@@ -64,8 +64,6 @@ class Memory(disextc.Cog):
         """
         # txt/constants
         txt_on_ready_db_event = 'on_ready memory db init fired.'
-        txt_no_mysql_creds = \
-            'MYSQL Database credentials not setup, DB functions disabled.'
 
         # Wait until ready
         await self.bot.wait_until_ready()
@@ -76,7 +74,7 @@ class Memory(disextc.Cog):
         owner: discord.User = appinfo.owner
 
         # MySQL & redis checks
-        await asyncio.gather(self.mysql_on_ready(), self.redis_on_ready())
+        await asyncio.gather(self.redis_on_ready())
 
     # Helpers
 
@@ -196,7 +194,6 @@ class Memory(disextc.Cog):
         """ Check to confirm Redis DB env variables. """
         return all([
             'REDIS_HOST' in os.environ,
-            'REDIS_PASSWORD' in os.environ
         ])
 
     @staticmethod
