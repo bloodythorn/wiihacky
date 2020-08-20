@@ -16,6 +16,8 @@ system_defaults = {
     'commands_channel': 'commands',
 }
 
+# TODO: REloads are possibly now broken
+
 log = lg.getLogger(__name__)
 
 # TODO:
@@ -271,7 +273,7 @@ class System(disextc.Cog):
 
         This will list all the cogs that are currently registered with the bot.
         """
-        from __main__ import cog_names
+        from __main__ import cog_names, module_names, cog_pref
         await ctx.send('```' + repr(list(cog_names)) + '```')
 
     @cogs_group.command(name='loa', hidden=True)
@@ -283,9 +285,8 @@ class System(disextc.Cog):
         if name not in cog_names:
             raise disextc.CommandError(
                 f'{name} not found in installed cogs.')
-        from __main__ import cog_names, module_names
         cog_to_module = dict(zip(cog_names, module_names))
-        self.bot.load_extension('cogs.' + cog_to_module[str(name)])
+        self.bot.load_extension(cog_pref + cog_to_module[str(name)])
         await ctx.send(f'{name} cog has been loaded.')
 
     @cogs_group.command(name='unl', hidden=True)
@@ -298,9 +299,9 @@ class System(disextc.Cog):
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
                 f'No loaded cog found with the name {name}.')
-        from __main__ import cog_names, module_names
+        from __main__ import cog_names, module_names, cog_pref
         cog_to_module = dict(zip(cog_names, module_names))
-        self.bot.unload_extension('cogs.' + cog_to_module[str(name)])
+        self.bot.unload_extension(cog_pref + cog_to_module[str(name)])
         await ctx.send(f'{name} cog unloaded.')
 
     @cogs_group.command(name='rel', hidden=True, aliases=('reboot',))
@@ -311,9 +312,9 @@ class System(disextc.Cog):
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
                 f"Could not find cog '{name}' in loaded cog list.")
-        from __main__ import cog_names, module_names
+        from __main__ import cog_names, module_names, cog_pref
         cog_to_module = dict(zip(cog_names, module_names))
-        self.bot.reload_extension('cogs.' + cog_to_module[str(name)])
+        self.bot.reload_extension(cog_pref + cog_to_module[str(name)])
         await ctx.send(f'{name} cog reloaded.')
 
     # console group
@@ -343,9 +344,9 @@ class System(disextc.Cog):
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
                 f"Could not find cog '{name}' in loaded cog list.")
-        from __main__ import cog_names, module_names
+        from __main__ import cog_names, module_names, cog_pref
         cog_to_module = dict(zip(cog_names, module_names))
-        module_name = 'cogs.' + cog_to_module[name]
+        module_name = cog_pref + cog_to_module[name]
         temp_log = lg.getLogger(module_name)
         if level is not None:
             temp_log.setLevel(str(level))

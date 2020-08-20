@@ -17,6 +17,10 @@ DEBUG_MODE = None
 if 'DEBUG' in os.environ:
     DEBUG_MODE = os.environ['DEBUG']
 
+DEBUG_FULL = None
+if 'DEBUG_FULL' in os.environ:
+    DEBUG_FULL = os.environ['DEBUG_FULL']
+
 # Prep Logger
 log_level = lg.DEBUG if DEBUG_MODE else lg.INFO
 log_format_string = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
@@ -45,7 +49,7 @@ log.addHandler(stream_handler)
 set_to_warning = ('discord', 'websockets', 'asyncio', 'urllib3.connectionpool',
                   'prawcore', 'aioredis')
 for a in set_to_warning:
-    if log_level == lg.DEBUG:
+    if DEBUG_FULL:
         lg.getLogger(a).setLevel(lg.DEBUG)
     else:
         lg.getLogger(a).setLevel(lg.WARNING)

@@ -424,8 +424,7 @@ class Register(disextc.Cog):
     async def last_seen_command(
             self, ctx: disextc.Context, *, user: discord.Member) -> None:
         """ Will retrieve when user was last seen. """
-        from constants import id_bloodythorn
-        if user.id == id_bloodythorn:
+        if user.id == constants.id_bloodythorn:
             await ctx.send(
                 f'Do you really think I am not paranoid enough not'
                 f' to make something that tracks me?')
@@ -665,7 +664,7 @@ class Register(disextc.Cog):
 
         :param whu -> User to attempt to send message to.
         """
-        from constants import (
+        from bot.constants import (
             confirmation_message_subject,
             confirmation_message_body)
 
@@ -708,7 +707,7 @@ class Register(disextc.Cog):
                       f'group1: {result.group(1)} | group2: {result.group(2)}')
 
         # If found associate it with a whu
-        from constants import id_wiihacks
+        from bot.constants import id_wiihacks
         wiihacks: discord.Guild = self.bot.get_guild(id_wiihacks)
         discord_display = result.group(1) + "#" + result.group(2)
         member = wiihacks.get_member_named(discord_display)

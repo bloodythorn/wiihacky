@@ -50,7 +50,7 @@ async def display_submission(
         name=submission.author.name,
         url=f'https://www.reddit.com/u/{submission.author.name}')
 
-    from pagination import EmbedPaginator, linefy_submission_text
+    from bot.pagination import EmbedPaginator, linefy_submission_text
     await EmbedPaginator.paginate(
         bot,
         linefy_submission_text(submission.selftext), msgble, embed,
@@ -82,7 +82,7 @@ async def display_comment(
         name=com.author.name,
         url=f'https://www.reddit.com/u/{com.author.name}')
 
-    from pagination import EmbedPaginator, linefy_submission_text
+    from bot.pagination import EmbedPaginator, linefy_submission_text
     await EmbedPaginator.paginate(
         bot,
         linefy_submission_text(com.body), msgble, embed,

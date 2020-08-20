@@ -2,6 +2,7 @@ import discord.ext.commands as disextc
 import logging as lg
 
 from fuzzywuzzy import process
+from bot.cogs.persona import txt_positive, txt_negative
 
 fuzzy_error = "'{}' too ambiguous for fuzzy id."
 
@@ -13,7 +14,6 @@ class BooleanFuzzyConverter(disextc.Converter):
     intended to be true or false.
     """
     async def convert(self, ctx: disextc.Context, argument: str):
-        from cogs.persona import txt_positive, txt_negative
         n_results = process.extract(argument, txt_negative)
         p_results = process.extract(argument, txt_positive)
 

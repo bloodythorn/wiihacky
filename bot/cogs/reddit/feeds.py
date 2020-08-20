@@ -373,6 +373,7 @@ class Feeds(disextc.Cog):
         """This processes all configured feeds."""
         await self.bot.wait_until_ready()
         try:
+            log.debug(f'reddit.feeds processing loop.')
             reddit = await self.bot.get_cog('Reddit').reddit
             for feed in self.feeds.values():
                 await feed.execute(self.bot, reddit)
@@ -411,6 +412,7 @@ class Feeds(disextc.Cog):
         # Grab the feed group and put them in.
         feed_group = config.data[config_group_reddit][config_group_feeds]
         for feed_data in feed_group.values():
+            log.debug(f'processing feed: {feed_data}')
             await self.add_feed(feed_from_dict(feed_data))
         log.debug('Feeds Loaded.')
         return True
