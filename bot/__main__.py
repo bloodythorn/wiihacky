@@ -141,4 +141,5 @@ while True:
     # TODO: Make this more robust
     #   (a loop that looks at the time past and prints a retry count)
     #   Also we need better error handling
+    # TODO: Test all this, it's poo poo
     time.sleep(const.retry_pause_secs)

@@ -149,40 +149,6 @@ class System(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(f'No system subcommand given.')
 
-    @system_group.command(name='cdm', hidden=True)
-    @disextc.is_owner()
-    async def clear_direct_messages_command(
-            self, ctx: disextc.Context) -> None:
-        # TODO: This needs a better place. Clear the bot's DMs to you is all it
-        #   really does and should be transitioned accordingly.
-        """ Clear Log.
-
-        If typed from a DMChannel, this will have the bot delete the last
-        50 messages to you.
-
-        :param ctx -> Context the command was called from
-        :return None
-        """
-        txt_dmonly = """I can only clear a DM, dingbat."""
-        pages = disextc.Paginator()
-        pages.add_line(txt_dmonly)
-        count = 0
-        if isinstance(ctx.channel, discord.DMChannel):
-            async for message in ctx.channel.history(limit=200):
-                if message.author == self.bot.user:
-                    count += 1
-                    if count > 50:
-                        return
-                    await message.delete()
-        else:
-            for page in pages.pages:
-                await ctx.send(page)
-
-    @system_group.command(name='com', hidden=True)
-    @disextc.is_owner()
-    async def list_commands_command(self, ctx) -> None:
-        await ctx.send([a.name for a in ctx.bot.commands])
-
     @system_group.command(name='err', hidden=True)
     @disextc.is_owner()
     async def error_handling(self, ctx: disextc.Context, on: FuzzyBool = True):
@@ -200,11 +166,12 @@ class System(disextc.Cog):
             self, ctx: disextc.Context,
             channel: typ.Optional[discord.TextChannel]):
         """This command displays a mock health and safety screen."""
-        from constants import health_and_safety_text
         if channel is None:
-            await ctx.send(content="** **\n" + health_and_safety_text)
+            await ctx.send(
+                content="** **\n" + constants.health_and_safety_text)
         else:
-            await channel.send(content="** **\n" + health_and_safety_text)
+            await channel.send(
+                content="** **\n" + constants.health_and_safety_text)
 
     @system_group.command(name='inf', hidden=True)
     @disextc.is_owner()
