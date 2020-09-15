@@ -43,8 +43,6 @@ log = lg.getLogger(__name__)
 # TODO: Confirm Action for more destructive commands.
 # TODO: Get Cog Listeners
 # https://discordpy.readthedocs.io/en/latest/ext/commands/cogs.html#inspection
-# TODO: Might consider moving *EVERYTHING* to a module so it can be dynamically
-#   reloaded.
 
 txt_cog_sub_err = 'Invalid system cog subcommand.'
 
@@ -204,9 +202,9 @@ class System(disextc.Cog):
         """This command displays a mock health and safety screen."""
         from constants import health_and_safety_text
         if channel is None:
-            await ctx.send(content="** **\n"+health_and_safety_text)
+            await ctx.send(content="** **\n" + health_and_safety_text)
         else:
-            await channel.send(content="** **\n"+health_and_safety_text)
+            await channel.send(content="** **\n" + health_and_safety_text)
 
     @system_group.command(name='inf', hidden=True)
     @disextc.is_owner()
@@ -281,7 +279,7 @@ class System(disextc.Cog):
     async def load_cog_command(
             self, ctx: disextc.Context, name: converters.FuzzyCogName):
         """ Loads given extension/cog. """
-        from __main__ import cog_names
+        from __main__ import cog_names, module_names, cog_pref
         if name not in cog_names:
             raise disextc.CommandError(
                 f'{name} not found in installed cogs.')

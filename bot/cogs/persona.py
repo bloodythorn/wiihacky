@@ -27,8 +27,8 @@ txt_insults = [
     """What’s up with your body hair, Big Shots?""" +
     """ You look like a 12 year old Dutch girl.""",
     """Buddy, you couldn’t wheel a tire down a hill.""",
-    "I bet you know exactly how many days there are until Christmas.",
-    "You need to take about 20% of the top there, bub.",
+    """I bet you know exactly how many days there are until Christmas.""",
+    """You need to take about 20% of the top there, bub.""",
     """Let's take about 5 to 10 percent off 'er over there.""",
 ]
 
