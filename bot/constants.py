@@ -26,7 +26,7 @@ max_file_size = 2**16 * 8
 
 command_chars = ('^',)
 message_cache = 1000 * 10
-retry_pause_secs = 30
+retry_pause_secs = 10
 moderator_and_up = [
     657740509854302222,
     708923965824827454,

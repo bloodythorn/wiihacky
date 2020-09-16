@@ -117,29 +117,33 @@ for a in module_names:
     wh.load_extension(cog_pref + a)
 
 # Attempt to loin to discord
+log.info('Bot Starting...\nPress ctrl-c to stop.')
 while True:
     try:
-        log.info('Bot Starting...')
         # Check to make sure we have a token
         txt_token_key = 'DISCORD_BOT_TOKEN'
         discord_token = os.environ[txt_token_key]
         wh.run(discord_token)
+
+    except aiohttp.ClientConnectionError as e:
+        log.error(f'Failed to login to discord: {e.args}')
     except KeyError as e:
         log.critical(f'DISCORD_BOT_TOKEN not set in env:{e.args}')
         exit(-1)
     except discord.errors.LoginFailure as e:
         log.error(f'Failed to login with given token: {e.args}')
         exit(-1)
-    except aiohttp.ClientConnectionError as e:
-        log.error(f'Failed to login to discord: {e.args}')
-        exit(-1)
     except RuntimeError as e:
         log.info(f'Loop experienced a runtime error: {e.args}')
         exit(0)
+    except KeyboardInterrupt:
+        log.info(f'Keyboard Interrupt Pressed!')
+        exit(0)
+    except Exception as e:
+        log.debug(f'Other exception: {e.args}')
 
-    # If we make it here we need to pause, start over.
-    # TODO: Make this more robust
-    #   (a loop that looks at the time past and prints a retry count)
-    #   Also we need better error handling
-    # TODO: Test all this, it's poo poo
-    time.sleep(const.retry_pause_secs)
+    try:
+        time.sleep(const.retry_pause_secs)
+    except KeyboardInterrupt:
+        log.info(f'Keyboard Interrupt Pressed!')
+        exit(0)
