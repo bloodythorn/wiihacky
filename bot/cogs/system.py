@@ -43,12 +43,15 @@ log = lg.getLogger(__name__)
 # TODO: Confirm Action for more destructive commands.
 # TODO: Get Cog Listeners
 # https://discordpy.readthedocs.io/en/latest/ext/commands/cogs.html#inspection
+# TODO: When bot boots it should give a lot more info in the log
+# TODO: Error handling should be context sensitive based on the error
 
 txt_cog_sub_err = 'Invalid system cog subcommand.'
 
 
 class System(disextc.Cog):
-    """ Cog responsible for the Bot Operation.
+    """
+    Cog responsible for the Bot Operation.
 
     This bot carries all commands, listeners, etc, that tend to the bot itself.
     """
@@ -148,16 +151,6 @@ class System(disextc.Cog):
         # TODO: Resolve this gracefully
         if ctx.invoked_subcommand is None:
             await ctx.send(f'No system subcommand given.')
-
-    @system_group.command(name='err', hidden=True)
-    @disextc.is_owner()
-    async def error_handling(self, ctx: disextc.Context, on: FuzzyBool = True):
-        """Turn on/off error handling."""
-        if bool(on):
-            self.bot.add_listener(self.command_error, name='on_command_error')
-        else:
-            self.bot.remove_listener(
-                self.command_error, name='on_command_error')
 
     # TODO: Move to personality
     @system_group.command(name='hs', hidden=True)
@@ -316,6 +309,9 @@ class System(disextc.Cog):
         if level is not None:
             temp_log.setLevel(str(level))
         await ctx.send(f'{temp_log}')
+
+# TODO: Set botlog channel
+# TODO: Remove botlog channel
 
 
 def setup(bot: disextc.Bot) -> None:

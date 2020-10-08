@@ -7,7 +7,7 @@ reserved_commands = [
     'giphy', 'tenor', 'tts', 'me', 'tableflip',
     'unflip', 'shrug', 'spoiler']
 
-__version__ = 'v0.0.2'
+__version__ = 'v0.0.3'
 text_wh_version = 'wiihacky_version'
 text_wh_name = 'WiiHacks'
 id_bloodythorn = 574629343142346757
@@ -32,6 +32,7 @@ moderator_and_up = [
     708923965824827454,
     657743368415215637, ]
 
+psql_uri = 'postgresql://{}:{}@{}/{}'
 
 confirmation_message_subject = \
     'Associate your Discord r/WiiHacks account with your Reddit account!'

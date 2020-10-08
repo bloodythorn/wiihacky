@@ -1,52 +1,72 @@
 import aioredis
-import asyncio
-import aiomysql
-import discord
 import discord.ext.commands as disextc
 import logging as lg
 import os
-import typing as typ
-
-# TODO: Get rid of these
-from bot.constants import paginate, send_paginator
-
-# TODO: Make SQL Console Channel
-# TODO: Clean up what you have
-# TODO: Implement redis
-# todo: db backup
-# https://www.tutorialspoint.com/redis/redis_backup.htm
 
 log = lg.getLogger(__name__)
 
+# txt/constants
 redis_db_scratch = 0
 redis_db_config = 1
-
 redis_databases = {redis_db_scratch, redis_db_config}
+txt_on_ready_db_event = 'on_ready memory db init fired.'
+redis_uri = 'redis://{}'
+
+
+async def redis_connection_check() -> bool:
+    """ Determine if the bot is able to connect to the Redis server.
+    """
+    test_key = 'key'
+    test_value = 'value'
+
+    try:
+        redis = await aioredis.create_redis_pool(
+            redis_uri.format(os.environ['REDIS_HOST']))
+        await redis.set(test_key, test_value)
+        value = await redis.get(test_key, encoding='utf-8')
+        await redis.delete(test_key)
+        redis.close()
+        await redis.wait_closed()
+        log.debug(f'redis connection check results: {test_value==value}')
+        return value == test_value
+    except Exception as e:
+        log.debug(f'Failure connecting to redis db: {e}')
+        return False
+
+
+async def redis_credentials_check() -> bool:
+    """ Determines if the conditions are set for the bot to be able to connect
+    to the redis server.
+    """
+    # TODO: Redis needs to be more secure.
+    return all([
+        'REDIS_HOST' in os.environ,
+    ])
+
+
+async def test_database_connections() -> bool:
+    """ This is all the above tests in a single sequence.
+    """
+    check = all([
+        await redis_credentials_check(),
+        await redis_connection_check()])
+    log.debug(f'DB full test result: {check}')
+    return check
 
 
 class Memory(disextc.Cog):
+    # TODO: This needs to be redone
     """ Bot Memory
 
-    This module handles permanent or cached storage.
+        Handler for redis interaction
 
-    The following env keys need to be set for a mysql db connection:
+        Currently to work you need:
 
-    SQL_HOST_NAME
-    SQL_PORT_NUMBER
-    SQL_USER_NAME
-    SQL_PASSWORD
-    SQL_DB_NAME
+        # Redis:
+        REDIS_HOST='localhost'
 
-    The following env keys need to be set for a Redis connection:
+        Changed to match the information for your DB.
 
-    REDIS_HOST
-    REDIS_PASSWORD -> not currently implemented
-
-    If they are not set, or the bot cannot connect to the db, db functionality
-    will be disabled.
-
-    Currently MySQL isn't used for anything, but Redis will be for
-    configuration storage.
     """
 
     def __init__(self, bot: disextc.Bot):
@@ -57,127 +77,30 @@ class Memory(disextc.Cog):
 
     @disextc.Cog.listener()
     async def on_ready(self):
+        # TODO: Description needs to be redone
         """ DB Check at startup.
 
         This makes sure the db credentials are set and the bot can connect
         to each configured database.
         """
-        # txt/constants
-        txt_on_ready_db_event = 'on_ready memory db init fired.'
 
         # Wait until ready
         await self.bot.wait_until_ready()
         log.debug(txt_on_ready_db_event)
 
-        # Grab the owner
-        appinfo: discord.AppInfo = await self.bot.application_info()
-        owner: discord.User = appinfo.owner
-
-        # MySQL & redis checks
-        await asyncio.gather(self.redis_on_ready())
+        system = self.bot.get_cog('System')
+        if system is None:
+            txt_no_system_cog = 'System cog unable to be retrieved.'
+            log.error(txt_no_system_cog)
+        if not await test_database_connections():
+            log.debug('db check failed.')
 
     # Helpers
-
-    async def mysql_on_ready(self):
-        """ This performs the initial mysql checks. """
-        txt_no_mysql_creds = \
-            'MYSQL Database credentials not setup, DB functions disabled.'
-        sql_could_not_connect = \
-            'Could not connect with MYSQL creds given.'
-
-        system = self.bot.get_cog('System')
-        if system is None:
-            log.error('System cog unable to be retrieved')
-
-        if not await self.mysql_credential_check():
-            log.error(txt_no_mysql_creds)
-            system = self.bot.get_cog('System')
-            # TODO: Paginate?
-            if system is not None:
-                await system.send_to_log(txt_no_mysql_creds)
-        else:
-            if not await self.mysql_connection_check():
-                # TODO: Better failure reason given for troubleshooting.
-                log.error(sql_could_not_connect)
-                if system is not None:
-                    await system.send_to_log(sql_could_not_connect)
-            else:
-                # Test was a success.
-                log.debug('mysql connection successful.')
-
-    async def redis_on_ready(self):
-        """ This performs the initial redis checks. """
-        txt_no_redis_creds = "Redis creds not setup in env, redis disabled."
-        redis_could_not_connect = "Could not connect with Redis creds given."
-        system = self.bot.get_cog('System')
-        if system is None:
-            log.error('System cog unable to be retrieved.')
-
-        if not await self.redis_credentials_check():
-            log.error(txt_no_redis_creds)
-            # TODO: Paginate?
-            if system is not None:
-                await system.send_to_log(txt_no_redis_creds)
-        else:
-            if not await self.redis_connection_check():
-                log.error(redis_could_not_connect)
-                # TODO: Paginate?
-                if system is not None:
-                    await system.send_to_log(redis_could_not_connect)
-            else:
-                # Test was successful.
-                log.debug('redis connection successful')
-
-    @staticmethod
-    async def mysql_connection_check() -> bool:
-        """ Verify bot can connect to DB. """
-        try:
-            conn = await aiomysql.connect(
-                host=os.environ['SQL_HOST_NAME'],
-                port=int(os.environ['SQL_PORT_NUMBER']),
-                user=os.environ['SQL_USER_NAME'],
-                password=os.environ['SQL_PASSWORD'],
-                db='mysql',
-                loop=asyncio.get_event_loop())
-            cur = await conn.cursor()
-            await cur.execute("SELECT VERSION()")
-            output = await cur.fetchall()
-            await cur.close()
-            conn.close()
-            return True
-        except:
-            return False
-
-    @staticmethod
-    async def mysql_credential_check() -> bool:
-        """ Check MYSQL DB config for bot. """
-        return all([
-            'SQL_HOST_NAME' in os.environ,
-            'SQL_PORT_NUMBER' in os.environ,
-            'SQL_USER_NAME' in os.environ,
-            'SQL_PASSWORD' in os.environ,
-            'SQL_DB_NAME' in os.environ
-        ])
-
-    @staticmethod
-    async def get_mysql_db_connection() -> typ.Optional[aiomysql.Connection]:
-        """ Get the db connection. """
-        log.debug('SQL Connection Requested.')
-        if Memory.mysql_credential_check:
-            return await aiomysql.connect(
-                    host=os.environ['SQL_HOST_NAME'],
-                    port=int(os.environ['SQL_PORT_NUMBER']),
-                    user=os.environ['SQL_USER_NAME'],
-                    password=os.environ['SQL_PASSWORD'],
-                    db=os.environ['SQL_DB_NAME'],
-                    loop=asyncio.get_event_loop())
-        else:
-            raise Exception("SQL Connection request failed.")
 
     @staticmethod
     async def redis_connection_check() -> bool:
         """ Check Redis DB Config for the bot. """
-        test_key = 'test'
+        test_key = 'key'
         test_value = 'value'
         redis = await aioredis.create_redis_pool(
             f"redis://{os.environ['REDIS_HOST']}")
@@ -190,16 +113,36 @@ class Memory(disextc.Cog):
         return value == test_value
 
     @staticmethod
-    async def redis_credentials_check() -> bool:
-        """ Check to confirm Redis DB env variables. """
-        return all([
-            'REDIS_HOST' in os.environ,
-        ])
-
-    @staticmethod
     async def get_redis_pool(database: int):
         return await aioredis.create_redis_pool(
             f"redis://{os.environ['REDIS_HOST']}", db=database)
+
+    @staticmethod
+    async def redis_get(key: str, database: int = 0) -> str:
+        rd = await aioredis.create_redis_pool(
+            f"redis://{os.environ['REDIS_HOST']}", db=database)
+        output = await rd.get(key)
+        await rd.close()
+        await rd.wait_closed()
+        return output
+
+    @staticmethod
+    async def redis_set(key: str, value: str, database: int = 0) -> None:
+        rd = await aioredis.create_redis_pool(
+            f"redis://{os.environ['REDIS_HOST']}", db=database)
+        rt = await rd.set(key, value)
+        await rd.close()
+        await rd.wait_closed()
+        return rt
+
+    @staticmethod
+    async def redis_del(key: str, database: int = 0) -> None:
+        rd = await aioredis.create_redis_pool(
+            f"redis://{os.environ['REDIS_HOST']}", db=database)
+        rt = await rd.delete(key)
+        await rd.close()
+        await rd.wait_closed()
+        return rt
 
     # Memory Group Commands
 
@@ -211,30 +154,6 @@ class Memory(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send('no subcommand given for memory group.')
 
-    # SQL Group Commands
-
-    @memory_group.group(name='sql', hidden=True)
-    @disextc.is_owner()
-    async def sql_group(self, ctx: disextc.Context) -> None:
-        """SQL Command Group. """
-        if ctx.invoked_subcommand is None:
-            await ctx.send('No sql subcommand given.')
-
-    @sql_group.command(name='sql', hidden=True)
-    @disextc.is_owner()
-    async def sql_cli_command(self, ctx: disextc.Context, *, arg: str) -> None:
-        """ Execute SQL """
-        try:
-            conn = await self.get_mysql_db_connection()
-            cur = await conn.cursor()
-            await cur.execute(arg)
-            output = await cur.fetchone()
-            await send_paginator(ctx, await paginate(f'Output: {str(output)}'))
-            await cur.close()
-            conn.close()
-        except Exception as e:
-            await ctx.send(f'SQL Raised exception : {e.args}')
-
     # Redis Group Commands
 
     @memory_group.group(name='red', hidden=True)
@@ -244,12 +163,22 @@ class Memory(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send("No redis subcommand given.")
 
-    @redis_group.command(name='redis', hidden=True)
+    @redis_group.command(name='crd', hidden=True)
     @disextc.is_owner()
-    async def redis_cli_command(
-            self, ctx: disextc.Context, *, arg: str) -> None:
-        # TODO: Implement, document
-        await ctx.send(f'{await self.redis_connection_check()} {arg}')
+    async def redis_credentials_check_command(self, ctx: disextc.Context):
+        if await redis_credentials_check():
+            await ctx.send(f'Redis credentials have been set.')
+        else:
+            await ctx.send(f'Redis credentials are NOT set!')
+
+    @redis_group.command(name='con', hidden=True)
+    @disextc.is_owner()
+    async def redis_connection_check_command(self, ctx: disextc.Context):
+        if await redis_connection_check():
+            await ctx.send(f'Connection to Redis DB established.')
+        else:
+            await ctx.send(
+                f'Unable to connect to Redis. Check log for details.')
 
 
 def setup(bot: disextc.Bot) -> None:

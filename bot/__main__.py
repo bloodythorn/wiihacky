@@ -5,11 +5,13 @@ import logging as lg
 import os
 import time
 
+import bot.cogs as cogs
+import bot.constants as const
+
 from logging import handlers
 from pathlib import Path
 
-import bot.cogs as cogs
-import bot.constants as const
+from sqlalchemy import create_engine
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -115,6 +117,13 @@ cog_names = (
 for a in module_names:
     log.info(f'Loading module: {a}')
     wh.load_extension(cog_pref + a)
+
+# Attach the PSQL DB Engine
+wh.engine = engine = create_engine(const.psql_uri.format(
+    os.environ['PSQL_USER'],
+    os.environ['PSQL_PSSW'],
+    os.environ['PSQL_HOST'],
+    os.environ['PSQL_DB']))
 
 # Attempt to loin to discord
 log.info('Bot Starting...\nPress ctrl-c to stop.')
