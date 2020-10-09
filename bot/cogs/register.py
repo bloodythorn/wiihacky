@@ -185,9 +185,23 @@ class Register(disextc.Cog):
     async def add_user(self, user: discord.Member) -> None:
         """ Adds a user to the registry. """
         log.debug(f'add_user fired: {user}')
-
-        usr = User(snowflake=user.id, utc_added=datetime.utcnow())
-        with session_scope as session:
+        from datetime import datetime
+        usr = User(
+            snowflake=user.id,
+            reddit_name='',
+            utc_added=datetime.utcnow(),
+            locked=False,
+            verified=False,
+            last_status=str(user.status),
+            since=datetime.utcnow(),
+            last_online=datetime.utcnow(),
+            deleted=False,
+            up_votes=0,
+            down_votes=0
+        )
+        # with session_scope as session:
+        #    session.add(usr)
+        with session_scope(self.bot.engine) as session:
             session.add(usr)
 
     async def sync_users(self) -> typ.Tuple[int, float]:
@@ -204,20 +218,20 @@ class Register(disextc.Cog):
         wh: discord.Guild = self.bot.get_guild(constants.id_wiihacks)
         if wh is None:
             raise RuntimeError("Could not find WiiHacks Guild!")
-        futures = []
+        count = 0
         for member in wh.members:
             with session_scope(self.bot.engine) as session:
                 usr = session.query(
                     User).filter_by(snowflake=member.id).first()
                 if usr is None:
-                    futures.append(self.add_user(member))
-        await asyncio.gather(*futures)
+                    await self.add_user(member)
+                    count += 1
 
         finish_time = time()
         duration = finish_time - start_time
 
-        log.debug(f'Synced {len(futures)} users in {duration}.')
-        return len(futures), duration
+        log.debug(f'Synced {count} users in {duration}.')
+        return count, duration
 
     async def register_reddit(
         self,

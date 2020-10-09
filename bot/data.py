@@ -19,7 +19,7 @@ def session_scope(engine):
         yield session
         session.commit()
     except Exception as e:
-        log.error(f'Session exception : {e}')
+        log.error(f'Session exception : {e}:{e.args}')
         session.rollback()
     finally:
         session.close()
