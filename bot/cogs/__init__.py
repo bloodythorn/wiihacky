@@ -3,7 +3,6 @@ from .aliases_users import UserAliases
 from .config import Config
 from .discord import Discord
 from .memory import Memory
-from .parlor import Parlor
 from .persona import Persona
 from .reddit import Feeds, Reddit
 from .register import Register
