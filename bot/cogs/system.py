@@ -5,8 +5,8 @@ import typing as typ
 
 import bot.constants as constants
 import bot.converters as converters
+
 import bot.decorators as decorators
-from bot.converters import BooleanFuzzyConverter as FuzzyBool
 # TODO: Get this out of here.
 from bot.constants import paginate, send_paginator
 

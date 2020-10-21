@@ -1,5 +1,3 @@
-# TODO: All this is moving to synergii in some form or another.
-
 import asyncio
 import contextlib as ctxlib
 import discord
@@ -8,9 +6,7 @@ import logging
 import praw
 import typing as typ
 
-# TODO: CodeBlock Paginator
-# TODO: Image archive paginator
-
+# Control Emoji
 EMOJI_BEGIN = u"\u23EE"  # [:track_previous:]
 EMOJI_BACK = u"\u2B05"   # [:arrow_left:]
 EMOJI_FORE = u"\u27A1"   # [:arrow_right:]
@@ -19,6 +15,22 @@ EMOJI_EJECT = u"\u23cf"  # eject button | 1410 | U+23CF
 EMOJI_STOP = u"\u23F9"   # [:stop_button:]
 
 log = logging.getLogger(__name__)
+
+
+class Paginator():
+
+    def __init__(self, data):
+        # Check to make sure data is acceptable type
+        pass
+
+# What do we need?
+# A paginator that can display its information either in an embed or
+# descriprtion text
+# what is the input?
+# Text Blobs and Lists of objects that are text printable.
+# what does it need to do? from simple to complex
+# Display a paginated blob of text that means:
+#   Text is split into chunks that will keep it below the 2000char max
 
 
 class EmptyPaginatorEmbed(Exception):

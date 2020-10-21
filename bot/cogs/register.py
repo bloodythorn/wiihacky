@@ -242,6 +242,8 @@ class Register(disextc.Cog):
 
         log.debug(f'register_reddit fired: {user.display_name}|{reddit_name}')
         with session_scope(self.bot.engine) as session:
+            # TODO: This should prolly be more robust. Prolly just errors
+            #   when it doesn't work
             session.query(User).filter_by(snowflake=user.id).update({
                 'reddit_name': reddit_name
             })
