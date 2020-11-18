@@ -21,6 +21,10 @@ txt_log_format = '%(asctime)s|%(name)s|%(levelname)s|%(message)s'
 txt_log_file_name = 'botlog.log'
 txt_log_path = 'logs'
 
+txt_on_ready_db_event = 'on_ready memory db init fired.'
+redis_uri = """redis://{}/{}"""
+psql_uri = 'postgresql://{}:{}@{}/{}'
+
 max_log_files = 50
 max_file_size = 2**16 * 8
 

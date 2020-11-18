@@ -7,8 +7,8 @@ import typing as typ
 
 import bot.constants as constants
 import bot.decorators as decorators
-import bot.cogs.reddit.utils as utils
-from bot.converters import BooleanFuzzyConverter as FuzzyBool
+import bot.cogs.utils as utils
+from bot.convert import BooleanFuzzyConverter as FuzzyBool
 
 # TODO: Upvote/downvote query.
 # TODO: watch for upvote/down vote, tally per user, use as money.
@@ -41,18 +41,18 @@ async def reddit_credential_check() -> bool:
 class Reddit(disextc.Cog):
     """ Reddit Connection.
 
-    This cog handles the connection and commands and procesess related to
-    reddit.
+        This cog handles the connection and commands and procesess related to
+        reddit.
 
-    To be able to log into to reddit, it needs these env keys set:
-    REDDIT_USER_AGENT
-    REDDIT_CLIENT_ID
-    REDDIT_CLIENT_SECRET
-    REDDIT_USERNAME
-    REDDIT_PASSWORD
+        To be able to log into to reddit, it needs these env keys set:
+        REDDIT_USER_AGENT
+        REDDIT_CLIENT_ID
+        REDDIT_CLIENT_SECRET
+        REDDIT_USERNAME
+        REDDIT_PASSWORD
 
-    If they are not set or it cannot connect, Reddit functionality will be
-    disabled.
+        If they are not set or it cannot connect, Reddit functionality will be
+        disabled.
     """
 
     def __init__(self, bot: disextc.Bot):

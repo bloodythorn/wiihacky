@@ -3,148 +3,137 @@ import discord.ext.commands as disextc
 import logging as lg
 import typing as typ
 
-import bot.constants as constants
-import bot.converters as converters
+import bot.convert as converters
 
-import bot.decorators as decorators
-# TODO: Get this out of here.
-from bot.constants import paginate, send_paginator
+txt_log_channel_key = 'botwrangler:log'
 
-system_defaults = {
-    'bot_category': 'bot',
-    'log_channel': 'log',
-    'commands_channel': 'commands',
-}
-
-# TODO: REloads are possibly now broken
-
+__version__ = '0.0.2'
 log = lg.getLogger(__name__)
 
-# TODO:
-#   Log COG RELOADS
-#   Add logging to functions
-#   Logging will need a state of a list of tuples storing guild/channel
-#   Cog Functions need logging.
-#   on_message_delete, on_message_edit, on_reaction_clear,
-#   on_reaction_clear_emoji,
-#   on_private_channel_delete, on_private_channel_create,
-#   on_private_channel_update, on_private_channel_pins_update,
-#   on_guild_channel_delete, on_guild_channel_create,
-#   on_guild_channel_update, on_guild_channel_pins_update
-#   on_guild_integrations_update, on_webhooks_update
-#   on_member_join, on_member_remove, on_member_update
-#   on_user_update, on_guild_join, on_guild_remove, on_guild_update,
-#   on_guild_role_create, on_guild_role_delete, on_guild_role_update
-#   on_guild_emojis_update, on_guild_available, on_guild_unavailable
-#   on_voice_state_update, on_member_ban, on_member_unban,
-#   on_invite_create, on_invite_delete, on_group_join, on_group_remove
-#   on_relationship_add, on_relationship_update,
+# TODO: ping command -> client.latency
+# TODO: bot info -> client.user, client.guilds, client.emojis,
+#   private channels, voice clients?
 # TODO: Bot.description : maybe after DB hookup?
+# Set description, get description, clear description
+# ^ Same thing for status, etc.
 # TODO: Confirm Action for more destructive commands.
 # TODO: Get Cog Listeners
 # https://discordpy.readthedocs.io/en/latest/ext/commands/cogs.html#inspection
 # TODO: When bot boots it should give a lot more info in the log
-# TODO: Error handling should be context sensitive based on the error
 
+
+txt_system_on_ready = "on_ready system cog fired."
 txt_cog_sub_err = 'Invalid system cog subcommand.'
+log_key = 'log_channel'
 
 
 class System(disextc.Cog):
     """
-    Cog responsible for the Bot Operation.
+        Cog responsible for the Bot Operation.
 
-    This bot carries all commands, listeners, etc, that tend to the bot itself.
+        This bot carries all commands, listeners, etc, that tend to the bot
+        itself.
     """
 
     def __init__(self, bot: disextc.Bot) -> None:
         super().__init__()
         self.bot = bot
-        self.log_channel = None
+        self._log_channel = None
 
     # Helpers
 
-    async def init_log(self) -> None:
-        """This discovers the ID of the log channel."""
-        # TODO: There should be an option for saving/loading this to/from
-        #  the config.
-        # Fetch Owner (WE shouldn't have to worry about waiting for the bot)
-        appinfo: discord.AppInfo = await self.bot.application_info()
-        owner = appinfo.owner
+    async def set_log_channel(self, snowflake: int) -> bool:
+        """ Setter for log channel id.
+        """
+        self._log_channel = snowflake
+        try:
+            await self.set_log_to_memory(snowflake)
+        except Exception as e:
+            log.error(f"Exception saving log channel: {e}")
+            return False
+        finally:
+            return True
 
-        # See if we can find the designated log channel
-        log_chan: discord.TextChannel = discord.utils.find(
-            lambda m: m.name == system_defaults['log_channel'],
-            self.bot.get_all_channels())
-        # No?
-        if log_chan is None:
-            await owner.send(
-                'No logging channel configured for {}->{}'.format(
-                    system_defaults['bot_category'],
-                    system_defaults['log_channel']))
-            return
+    async def get_log_channel(self) -> int:
+        """ Getter for log channel id.
+        """
+        output = 0
+        try:
+            output = await self.get_log_from_memory()
+        except Exception as e:
+            log.error(f"Could not get log channel: {e}")
+        self._log_channel = output
+        return output
 
-        # This is it!
-        self.log_channel = log_chan.id
-        log_chan = self.bot.get_channel(self.log_channel)
+    async def clear_log_channel(self) -> None:
+        """ Setter for log channel snowflake.
+        """
+        self._log_channel = None
+        await self.clear_log_from_memory()
 
-        # This shouldn't happen
-        if log_chan is None:
-            await owner.send("Unknown error finding logging channel.")
+    async def send_to_log(self, text: str) -> bool:
+        """ Sends text to log.
+        """
+        if self._log_channel is None:
+            self._log_channel = await self.get_log_from_memory()
+        log_chan = self.bot.get_channel(self._log_channel)
+        await log_chan.send(text)
+        if self._log_channel is None:
+            log.error(f'Failed to send to chan_log: {text}')
 
-        # TODO: More information in the bootup? Cog Statuses?
-        boot_txt = """Discord.py Version: {} Praw Version: {}"""
-        import praw
-        await log_chan.send(boot_txt.format(
-            discord.__version__, praw.__version__))
-        await log_chan.send('Log channel initialized, bot has booted.')
-        # TODO: Output whether in debug or not.
+    async def set_log_to_memory(self, snowflake: int) -> bool:
+        """ Writes the log channel sf to memory.
+        """
+        from bot.cogs.memory import redis_scope
+        from constants import redis_config_db
+        async with redis_scope(redis_config_db) as redis:
+            await redis.set(log_key, snowflake)
 
-    async def send_to_log(self, message: str):
-        """Sends a messaged to the designated, connected log channel. """
-        # It's not setup...
-        if self.log_channel is None:
-            return
-        log_chan = self.bot.get_channel(self.log_channel)
-        if log_chan is not None:
-            await log_chan.send(message)
+    async def get_log_from_memory(self) -> int:
+        """ Reads the sf id from memory.
+        """
+        from bot.cogs.memory import redis_scope
+        from constants import redis_config_db
+        async with redis_scope(redis_config_db) as redis:
+            return await redis.get(log_key)
+
+    async def clear_log_from_memory(self) -> bool:
+        """ Clears the ID from memory.
+        """
+        from bot.cogs.memory import redis_scope
+        from constants import redis_config_db
+        async with redis_scope(redis_config_db) as redis:
+            return await redis.delete(log_key)
+
+    async def boot_text(self) -> None:
+        """ Prints boot up text to log channel and console log.
+        """
+        pass
+        # TODO: Implement me.
 
     # Listeners
 
-    # TODO: More error info in discord
     @disextc.Cog.listener(name='on_command_error')
     async def command_error(self, ctx: disextc.Context, error):
-        """ Error Handler for commands. """
-        # TODO: Handle this more gracefully.
-        # import cogs.persona
-        # persona: cogs.persona.Persona = self.bot.get_cog('Persona')
-        # if persona is not None:
-        #    pag = await paginate(
-        #        f'{await persona.random_error}:-'
-        #        f'command>|{ctx.message.content}|-'
-        #        f'error>|{error}')
-        #    await send_paginator(ctx, pag)
-        log.error(f"{ctx.message.author} <|> {error}")
+        """ Error Handler.
+        """
+        log.error(f'{type(error)}:{error}')
+        if isinstance(error, disextc.errors.MissingRequiredArgument):
+            await ctx.send(f'Error : {error}')
 
     @disextc.Cog.listener()
     async def on_ready(self):
         """ Start up checks.
-
-        Checks that the bot needs at the start will fire here. If there are
-        any issues, the owner will be notified and told how to correct them.
         """
-        txt_system_on_ready = "on_ready system cog fired."
-        lg.getLogger().debug(txt_system_on_ready)
         await self.bot.wait_until_ready()
-
-        # TODO: Check Config
-        # TODO: Check Channels
-
-        if self.log_channel is None:
-            await self.init_log()
+        log.debug(txt_system_on_ready)
+        # TODO: Boot text should be sent to con and log
+        #   But we also need a command that just gets the text
+        await self.boot_text()
 
     # System Group
 
-    @disextc.group(name='sys', hidden=True)
+    @disextc.group(name='sys')
     @disextc.is_owner()
     async def system_group(self, ctx: disextc.Context) -> None:
         """ Grouping for system commands. """
@@ -152,21 +141,7 @@ class System(disextc.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send(f'No system subcommand given.')
 
-    # TODO: Move to personality
-    @system_group.command(name='hs', hidden=True)
-    @decorators.with_roles(constants.moderator_and_up)
-    async def health_and_safety_display_command(
-            self, ctx: disextc.Context,
-            channel: typ.Optional[discord.TextChannel]):
-        """This command displays a mock health and safety screen."""
-        if channel is None:
-            await ctx.send(
-                content="** **\n" + constants.health_and_safety_text)
-        else:
-            await channel.send(
-                content="** **\n" + constants.health_and_safety_text)
-
-    @system_group.command(name='inf', hidden=True)
+    @system_group.command(name='inf')
     @disextc.is_owner()
     async def application_info_command(self, ctx: disextc.Context) -> None:
         """ Bot's application info.
@@ -177,67 +152,51 @@ class System(disextc.Cog):
         :return None
         """
         # TODO: Flesh this out.
-        await send_paginator(
-            ctx, await paginate(repr(await self.bot.application_info())))
-
-    @system_group.command(name='log', hidden=True)
-    @disextc.is_owner()
-    async def txt_to_log_command(self, ctx: disextc.Context, *, message: str):
-        # TODO: Make Log Entry and Paginate!
-        #   Turn this into a decorator
-        """Sends text to discord log."""
-        await self.send_to_log(message)
-        await ctx.send(f"Sent '{message}' to the log.")
-
-    @system_group.command(name='shutdown', hidden=True)
-    @disextc.is_owner()
-    async def shutdown_command(self, ctx: disextc.Context):
-        # TODO: Confirmation
-        # TODO: Use this to create a relogon ->
-        #   as I tink the only way you can change the bot activity is at
-        #   login
-        pag = disextc.Paginator()
-        pag.add_line('Daisy, Daisy, give me your answer, do,')
-        pag.add_line("""I'm half crazy all for the love of you ...""")
-        for page in pag.pages:
-            await ctx.send(page)
-        await ctx.bot.close()
+        # This should mirror what is printed to the log channel upon boot.
+        # Praw Version
+        # discord.py verion
+        # whether the bot is in debug mode
+        pass
 
     # Cog Group Commands
 
-    @system_group.group(name='cog', hidden=True)
+    @system_group.group(name='cog')
     @disextc.is_owner()
     async def cogs_group(self, ctx: disextc.Context) -> None:
         """ Cog related commands. """
         if ctx.invoked_subcommand is None:
             await ctx.send(txt_cog_sub_err)
 
-    @cogs_group.command(name='act', hidden=True)
+    @cogs_group.command(name='act')
     @disextc.is_owner()
     async def list_active_cogs_command(self, ctx: disextc.Context) -> None:
         """ Lists active cogs.
 
-        Lists all cogs currently active in the bot.
+            Lists all cogs currently active in the bot.
 
-        :param ctx -> Invocation Context
-        :return None
+            :param ctx -> Invocation Context
+            :return None
         """
         await ctx.send('```' + repr(list(ctx.bot.cogs.keys())) + '```')
 
-    @cogs_group.command(name='lst', hidden=True)
+    @cogs_group.command(name='lst')
     @disextc.is_owner()
     async def list_all_cogs_command(self, ctx: disextc.Context) -> None:
         """ Lists all registered cogs.
 
-        This will list all the cogs that are currently registered with the bot.
+            This will list all the cogs that are currently registered with the
+            bot.
         """
-        from __main__ import cog_names, module_names, cog_pref
+        from __main__ import cog_names
         await ctx.send('```' + repr(list(cog_names)) + '```')
 
-    @cogs_group.command(name='loa', hidden=True)
+    @cogs_group.command(name='loa')
     @disextc.is_owner()
     async def load_cog_command(
-            self, ctx: disextc.Context, name: converters.FuzzyCogName):
+        self,
+        ctx: disextc.Context,
+        name: converters.FuzzyCogName
+    ) -> None:
         """ Loads given extension/cog. """
         from __main__ import cog_names, module_names, cog_pref
         if name not in cog_names:
@@ -245,14 +204,18 @@ class System(disextc.Cog):
                 f'{name} not found in installed cogs.')
         cog_to_module = dict(zip(cog_names, module_names))
         self.bot.load_extension(cog_pref + cog_to_module[str(name)])
-        await ctx.send(f'{name} cog has been loaded.')
+        txt_cog_loaded = \
+            f'{name} cog has been loaded by {ctx.message.author.name}'
+        log.info(txt_cog_loaded)
+        await ctx.send(txt_cog_loaded)
 
-    @cogs_group.command(name='unl', hidden=True)
+    @cogs_group.command(name='unl')
     @disextc.is_owner()
     async def unload_cog_command(
-            self,
-            ctx: disextc.Context,
-            name: converters.FuzzyCogName):
+        self,
+        ctx: disextc.Context,
+        name: converters.FuzzyCogName
+    ) -> None:
         """ Unloads given extension/cog. """
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
@@ -260,12 +223,17 @@ class System(disextc.Cog):
         from __main__ import cog_names, module_names, cog_pref
         cog_to_module = dict(zip(cog_names, module_names))
         self.bot.unload_extension(cog_pref + cog_to_module[str(name)])
-        await ctx.send(f'{name} cog unloaded.')
+        txt_cog_unloaded = f'{name} cog unloaded by {ctx.message.author.name}.'
+        log.info(txt_cog_unloaded)
+        await ctx.send(txt_cog_unloaded)
 
-    @cogs_group.command(name='rel', hidden=True, aliases=('reboot',))
+    @cogs_group.command(name='rel', aliases=('reboot',))
     @disextc.is_owner()
     async def reload_cog_command(
-            self, ctx: disextc.Context, name: converters.FuzzyCogName) -> None:
+        self,
+        ctx: disextc.Context,
+        name: converters.FuzzyCogName
+    ) -> None:
         """Reloads given cog."""
         if name not in ctx.bot.cogs.keys():
             raise disextc.CommandError(
@@ -273,11 +241,13 @@ class System(disextc.Cog):
         from __main__ import cog_names, module_names, cog_pref
         cog_to_module = dict(zip(cog_names, module_names))
         self.bot.reload_extension(cog_pref + cog_to_module[str(name)])
-        await ctx.send(f'{name} cog reloaded.')
+        txt_cog_reloaded = f'{name} cog reloaded by {ctx.message.author.name}.'
+        log.info(txt_cog_reloaded)
+        await ctx.send(txt_cog_reloaded)
 
-    # console group
+    # Console group
 
-    @system_group.group(name='con', hidden=True)
+    @system_group.group(name='con')
     @disextc.is_owner()
     async def console_group(self, ctx: disextc.Context) -> None:
         if ctx.invoked_subcommand is None:
@@ -290,13 +260,13 @@ class System(disextc.Cog):
             #    await ctx.send(f"Registered Logs: {name}")
 
     # TODO: Make this result persistent between reboots using redis.
-    @console_group.command(name='lvl', hidden=True)
+    @console_group.command(name='lvl')
     @disextc.is_owner()
     async def set_get_log_level(
-            self, ctx: disextc.Context,
-            name: converters.FuzzyCogName,
-            level: typ.Optional[
-            converters.FuzzyLogLevelName]) -> None:
+        self, ctx: disextc.Context,
+        name: converters.FuzzyCogName,
+        level: typ.Optional[converters.FuzzyLogLevelName]
+    ) -> None:
         """ sets log level if given, gets log level if not."""
         log.debug(f'change log level fired: {name} | {level}')
         if name not in ctx.bot.cogs.keys():
@@ -310,8 +280,54 @@ class System(disextc.Cog):
             temp_log.setLevel(str(level))
         await ctx.send(f'{temp_log}')
 
-# TODO: Set botlog channel
-# TODO: Remove botlog channel
+    # Log Group
+
+    @system_group.group(name='log')
+    @disextc.is_owner()
+    async def log_group(self, ctx: disextc.Context) -> None:
+        """ This is the group dealing with in-discord logging.
+        """
+        if ctx.invoked_subcommand is None:
+            if self._log_channel is None:
+                self._log_channel = await self.get_log_from_memory()
+            if self._log_channel is None:
+                await ctx.send(f'No log channel currently set.')
+            else:
+                await ctx.send(f'Log channel set to : {self._log_channel}')
+
+    @log_group.command(name='snd')
+    @disextc.is_owner()
+    async def txt_to_log_command(self, ctx: disextc.Context, *, message: str):
+        """Sends text to discord log."""
+        await self.send_to_log(message)
+        await ctx.send(f"Sent '{message}' to the log.")
+
+    @log_group.command(name='set')
+    @disextc.is_owner()
+    async def set_log_channel_command(
+        self,
+        ctx: disextc.Context,
+        chan: discord.TextChannel
+    ) -> None:
+        """ This command will set the logging channel to the given channel.
+        """
+        await self.set_log_channel(chan.id)
+        txt_set_log_chan = 'Log set to {}.'
+        await ctx.send(txt_set_log_chan.format('#' + chan.name))
+        await self.send_to_log(txt_set_log_chan.format('this channel'))
+        log.debug(txt_set_log_chan.format('#' + chan.name))
+
+    @log_group.command(name='clr')
+    @disextc.is_owner()
+    async def clear_log_channel_command(
+        self,
+        ctx: disextc.Context
+    ) -> None:
+        """ This command clears the given channel to send logs to.
+        """
+        await self.clear_log_from_memory()
+        self._log_channel = None
+        await ctx.send(f'Log channel cleared.')
 
 
 def setup(bot: disextc.Bot) -> None:

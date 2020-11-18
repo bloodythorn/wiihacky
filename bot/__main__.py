@@ -1,9 +1,10 @@
-import aiohttp
 import discord
 import discord.ext.commands as disextc
 import logging as lg
 import os
-import time
+
+import bot.cogs as cogs
+import bot.constants as const
 
 import bot.cogs as cogs
 import bot.constants as const
@@ -93,23 +94,23 @@ st = len(cog_pref)
 module_names = (
     cogs.aliases_mods.__name__[st:],
     cogs.aliases_users.__name__[st:],
-    cogs.config.__name__[st:],
     cogs.discord.__name__[st:],
+    cogs.feeds.__name__[st:],
     cogs.memory.__name__[st:],
+    cogs.parlor.__name__[st:],
     cogs.persona.__name__[st:],
-    cogs.reddit.reddit.__name__[st:],
-    cogs.reddit.feeds.__name__[st:],
+    cogs.reddit.__name__[st:],
     cogs.register.__name__[st:],
     cogs.system.__name__[st:])
 cog_names = (
     cogs.aliases_mods.ModAliases.__qualname__,
     cogs.aliases_users.UserAliases.__qualname__,
-    cogs.config.Config.__qualname__,
     cogs.discord.Discord.__qualname__,
+    cogs.feeds.Feeds.__qualname__,
     cogs.memory.Memory.__qualname__,
+    cogs.parlor.Parlor.__qualname__,
     cogs.persona.Persona.__qualname__,
-    cogs.reddit.reddit.Reddit.__qualname__,
-    cogs.reddit.feeds.Feeds.__qualname__,
+    cogs.reddit.Reddit.__qualname__,
     cogs.register.Register.__qualname__,
     cogs.system.System.__qualname__)
 
@@ -127,32 +128,6 @@ wh.engine = engine = create_engine(const.psql_uri.format(
 
 # Attempt to loin to discord
 log.info('Bot Starting...\nPress ctrl-c to stop.')
-while True:
-    try:
-        # Check to make sure we have a token
-        txt_token_key = 'DISCORD_BOT_TOKEN'
-        discord_token = os.environ[txt_token_key]
-        wh.run(discord_token)
-
-    except aiohttp.ClientConnectionError as e:
-        log.error(f'Failed to login to discord: {e.args}')
-    except KeyError as e:
-        log.critical(f'DISCORD_BOT_TOKEN not set in env:{e.args}')
-        exit(-1)
-    except discord.errors.LoginFailure as e:
-        log.error(f'Failed to login with given token: {e.args}')
-        exit(-1)
-    except RuntimeError as e:
-        log.info(f'Loop experienced a runtime error: {e.args}')
-        exit(0)
-    except KeyboardInterrupt:
-        log.info(f'Keyboard Interrupt Pressed!')
-        exit(0)
-    except Exception as e:
-        log.debug(f'Other exception: {e.args}')
-
-    try:
-        time.sleep(const.retry_pause_secs)
-    except KeyboardInterrupt:
-        log.info(f'Keyboard Interrupt Pressed!')
-        exit(0)
+txt_token_key = 'DISCORD_BOT_TOKEN'
+discord_token = os.environ[txt_token_key]
+wh.run(discord_token)
