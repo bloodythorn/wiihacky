@@ -16,6 +16,8 @@ id_wiihacky = 630280409137283085
 
 reddit_user_role_id = 708924829679747073
 
+redis_config_db = 1
+
 
 txt_log_format = '%(asctime)s|%(name)s|%(levelname)s|%(message)s'
 txt_log_file_name = 'botlog.log'

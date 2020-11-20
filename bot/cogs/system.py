@@ -71,13 +71,18 @@ class System(disextc.Cog):
         self._log_channel = None
         await self.clear_log_from_memory()
 
+    # FIXME: If this has no log channel set any command that uses it will
+    # not work.
     async def send_to_log(self, text: str) -> bool:
         """ Sends text to log.
         """
         if self._log_channel is None:
             self._log_channel = await self.get_log_from_memory()
         log_chan = self.bot.get_channel(self._log_channel)
-        await log_chan.send(text)
+        if log_chan is None:
+            raise disextc.CommandError('Could not find log channel!')
+        else:
+            await log_chan.send(text)
         if self._log_channel is None:
             log.error(f'Failed to send to chan_log: {text}')
 
@@ -85,7 +90,7 @@ class System(disextc.Cog):
         """ Writes the log channel sf to memory.
         """
         from bot.cogs.memory import redis_scope
-        from constants import redis_config_db
+        from bot.constants import redis_config_db
         async with redis_scope(redis_config_db) as redis:
             await redis.set(log_key, snowflake)
 
@@ -93,7 +98,7 @@ class System(disextc.Cog):
         """ Reads the sf id from memory.
         """
         from bot.cogs.memory import redis_scope
-        from constants import redis_config_db
+        from bot.constants import redis_config_db
         async with redis_scope(redis_config_db) as redis:
             return await redis.get(log_key)
 
@@ -101,7 +106,7 @@ class System(disextc.Cog):
         """ Clears the ID from memory.
         """
         from bot.cogs.memory import redis_scope
-        from constants import redis_config_db
+        from bot.constants import redis_config_db
         async with redis_scope(redis_config_db) as redis:
             return await redis.delete(log_key)
 
@@ -113,13 +118,13 @@ class System(disextc.Cog):
 
     # Listeners
 
-    @disextc.Cog.listener(name='on_command_error')
-    async def command_error(self, ctx: disextc.Context, error):
-        """ Error Handler.
-        """
-        log.error(f'{type(error)}:{error}')
-        if isinstance(error, disextc.errors.MissingRequiredArgument):
-            await ctx.send(f'Error : {error}')
+    # @disextc.Cog.listener(name='on_command_error')
+    # async def command_error(self, ctx: disextc.Context, error):
+    #     """ Error Handler.
+    #     """
+    #     log.error(f'{type(error)}:{error}')
+    #     if isinstance(error, disextc.errors.MissingRequiredArgument):
+    #         await ctx.send(f'Error : {error}')
 
     @disextc.Cog.listener()
     async def on_ready(self):
