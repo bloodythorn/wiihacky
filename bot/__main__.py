@@ -78,7 +78,6 @@ txt_activity_details = \
 wh = disextc.Bot(
     max_messages=const.message_cache,
     command_prefix=disextc.when_mentioned_or(*const.command_chars),
-    fetch_offline_members=True,
     description=txt_help_description,
     activity=discord.Activity(
         name=txt_activity_name,
