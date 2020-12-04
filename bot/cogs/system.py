@@ -63,6 +63,7 @@ class System(disextc.Cog):
         except Exception as e:
             log.error(f"Could not get log channel: {e}")
         self._log_channel = output
+        log.debug("Returning Log ID: %s" % output)
         return output
 
     async def clear_log_channel(self) -> None:
@@ -78,7 +79,8 @@ class System(disextc.Cog):
         """
         if self._log_channel is None:
             self._log_channel = await self.get_log_from_memory()
-        log_chan = self.bot.get_channel(self._log_channel)
+        log_chan = self.bot.get_channel(int(self._log_channel))
+        log.debug("Log_chan: %s | log_id: %s" % (log_chan, self._log_channel))
         if log_chan is None:
             raise disextc.CommandError('Could not find log channel!')
         else:
@@ -100,7 +102,9 @@ class System(disextc.Cog):
         from bot.cogs.memory import redis_scope
         from bot.constants import redis_config_db
         async with redis_scope(redis_config_db) as redis:
-            return await redis.get(log_key)
+            log_id = await redis.get(log_key, encoding='utf-8')
+            log.debug("Log_ID Obtained : %s" % log_id)
+            return log_id
 
     async def clear_log_from_memory(self) -> bool:
         """ Clears the ID from memory.

@@ -634,15 +634,18 @@ class Register(disextc.Cog):
     async def reset_registration_command(
         self,
         ctx: disextc.Context,
-        user_id: int
+        # user_id: int
+        member: discord.Member
     ) -> None:
         """ Reset user's verification. User ID required. """
-        member: discord.Member = disutil.find(
-            lambda m: m.id == user_id, ctx.guild.members)
-        if member is None:
-            raise disextc.CommandError(
-                f'Could not find member with id {user_id}')
-        await ctx.send(f'Resetting registration for {member.display_name}.')
+        # log.debug("Looking for : %s | in | %s | and | %s" %
+        #          (user_id, ctx.guild, ctx.guild.members))
+        # member: discord.Member = disutil.find(
+        #    lambda m: m.id == user_id, ctx.guild.members)
+        # if member is None:
+        #    raise disextc.CommandError(
+        #        f'Could not find member with id {user_id}')
+        await ctx.send(f'Resetting registration for {member}.')
         await self.unverify_user(member)
         with session_scope(self.bot.engine) as session:
             session.query(User).filter_by(snowflake=member.id).update({

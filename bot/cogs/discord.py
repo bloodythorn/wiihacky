@@ -516,7 +516,7 @@ class ModStatsDisplay:
         """
         # TODO: I'm sure this needs to check to see if the bot has access to
         #  the moderator log.
-        log.debug(f'tally_moderator_actions: {history_limit}' 
+        log.debug(f'tally_moderator_actions: {history_limit}'
                   f'{subreddit.display_name} {user_names} {actions_names}')
         return_data = {}
         oldest_entry = None
@@ -591,11 +591,6 @@ class ModStatsDisplay:
         # up/down -> scroll display when appropriate
         # eject/stop -> normal results, exit or exit leaving display
         # timout removes display.
-
-
-class PythonDataDisplay:
-    """This class will take and paginate and format python data output. """
-    pass
 
 
 def setup(bot: disextc.Bot) -> None:
