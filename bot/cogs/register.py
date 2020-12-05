@@ -635,16 +635,17 @@ class Register(disextc.Cog):
         self,
         ctx: disextc.Context,
         # user_id: int
-        member: discord.Member
+        user_id: int
     ) -> None:
         """ Reset user's verification. User ID required. """
-        # log.debug("Looking for : %s | in | %s | and | %s" %
-        #          (user_id, ctx.guild, ctx.guild.members))
-        # member: discord.Member = disutil.find(
-        #    lambda m: m.id == user_id, ctx.guild.members)
-        # if member is None:
-        #    raise disextc.CommandError(
-        #        f'Could not find member with id {user_id}')
+        log.debug("Looking for : %s | in | %s | and | %s" %
+                  (user_id, ctx.guild, ctx.guild.members))
+        await self.bot.wait_until_ready()
+        member: discord.Member = disutil.find(
+            lambda m: m.id == user_id, ctx.guild.members)
+        if member is None:
+            raise disextc.CommandError(
+                f'Could not find member with id {user_id}')
         await ctx.send(f'Resetting registration for {member}.')
         await self.unverify_user(member)
         with session_scope(self.bot.engine) as session:

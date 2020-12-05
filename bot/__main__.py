@@ -75,8 +75,13 @@ txt_activity_details = \
     "First I will start with the weak, while the strong are enslaved."
 
 # Create Bot
+intents = discord.Intents.default()
+intents.members = True
+intents.guilds = True
 wh = disextc.Bot(
+    intents=intents,
     max_messages=const.message_cache,
+    chunk_guilds_at_startup=True,
     command_prefix=disextc.when_mentioned_or(*const.command_chars),
     description=txt_help_description,
     activity=discord.Activity(

@@ -49,7 +49,7 @@ class ModAliases(disextc.Cog):
     @disextc.command(name='regreset', aliases=("regr",))
     @decorators.with_roles(constants.moderator_and_up)
     async def reset_registration_alias(
-            self, ctx: disextc.Context, user_id: int
+            self, ctx: disextc.Context, user_id
     ) -> None:
         """ Reset user's verification. User ID required. """
         await self.invoke(ctx, "reg reset", user_id)
